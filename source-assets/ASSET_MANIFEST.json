@@ -1,0 +1,62 @@
+[
+  {
+    "writerId": "emma",
+    "path": "avatars/emma.jpg",
+    "format": "JPEG",
+    "width": 1024,
+    "height": 1024,
+    "mode": "RGB",
+    "hasAlpha": false,
+    "status": "selected design reference; opaque checkerboard background; temporary site asset",
+    "finalTarget": "public/avatars/emma.png",
+    "sha256": "6fb8a697e4cf10e5618574ae5b21b266ee721632f59dda22785c07be39c1e770"
+  },
+  {
+    "writerId": "jack",
+    "path": "avatars/jack.jpg",
+    "format": "JPEG",
+    "width": 1024,
+    "height": 1024,
+    "mode": "RGB",
+    "hasAlpha": false,
+    "status": "selected design reference; opaque checkerboard background; temporary site asset",
+    "finalTarget": "public/avatars/jack.png",
+    "sha256": "59fcbe90f8b03ed2151e3a502171417cc42e3d6a442b2397dcc507996364825e"
+  },
+  {
+    "writerId": "grace",
+    "path": "avatars/grace.jpg",
+    "format": "JPEG",
+    "width": 1024,
+    "height": 1024,
+    "mode": "RGB",
+    "hasAlpha": false,
+    "status": "selected design reference; opaque checkerboard background; temporary site asset",
+    "finalTarget": "public/avatars/grace.png",
+    "sha256": "5cb77e6152198af6685cb1988b3e9474aec8f5a021d62c2b66952b7e7463551f"
+  },
+  {
+    "writerId": "luke",
+    "path": "avatars/luke.jpg",
+    "format": "JPEG",
+    "width": 1024,
+    "height": 1024,
+    "mode": "RGB",
+    "hasAlpha": false,
+    "status": "selected design reference; opaque checkerboard background; temporary site asset",
+    "finalTarget": "public/avatars/luke.png",
+    "sha256": "95cfa2ac37419e50117fae81e3f1809ccc7db4b27d403d204a8651ecef764735"
+  },
+  {
+    "writerId": "ben",
+    "path": "avatars/ben.jpg",
+    "format": "JPEG",
+    "width": 1024,
+    "height": 1024,
+    "mode": "RGB",
+    "hasAlpha": false,
+    "status": "selected design reference; opaque checkerboard background; temporary site asset",
+    "finalTarget": "public/avatars/ben.png",
+    "sha256": "50cf45dd85db93ece00114318a8bd17739e6b2867f789916732a5062d96a4156"
+  }
+]

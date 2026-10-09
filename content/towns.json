@@ -1,0 +1,17 @@
+[
+  { "id": "minneapolis", "name": "Minneapolis", "region": "twin-cities" },
+  { "id": "st-paul", "name": "St. Paul", "region": "twin-cities" },
+  { "id": "bloomington", "name": "Bloomington", "region": "twin-cities" },
+  { "id": "dawson", "name": "Dawson", "region": "west-central" },
+  { "id": "madison", "name": "Madison", "region": "west-central" },
+  { "id": "montevideo", "name": "Montevideo", "region": "west-central" },
+  { "id": "willmar", "name": "Willmar", "region": "west-central" },
+  { "id": "marshall", "name": "Marshall", "region": "southwest" },
+  { "id": "st-cloud", "name": "St. Cloud", "region": "central" },
+  { "id": "rochester", "name": "Rochester", "region": "southeast" },
+  { "id": "mankato", "name": "Mankato", "region": "south-central" },
+  { "id": "duluth", "name": "Duluth", "region": "northeast" },
+  { "id": "hibbing", "name": "Hibbing", "region": "northeast" },
+  { "id": "bemidji", "name": "Bemidji", "region": "northwest" },
+  { "id": "moorhead", "name": "Moorhead", "region": "northwest" }
+]

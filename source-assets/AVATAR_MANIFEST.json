@@ -1,0 +1,82 @@
+[
+  {
+    "writerId": "emma",
+    "source": "source-assets/avatars/emma.jpg",
+    "sourceSha256": "6fb8a697e4cf10e5618574ae5b21b266ee721632f59dda22785c07be39c1e770",
+    "selectedVersion": "Jake's Gemini selection, supplied in the Oct 9 2026 handoff",
+    "sourceFormat": "JPEG 1024x1024, opaque, checkerboard painted into the image",
+    "cutout": "source-assets/avatars/emma.cutout-1024.png",
+    "cutoutNote": "Reviewed background removal: edge flood-fill of light low-saturation checker pixels, 1px erode + soft edge. Face and clothing pixels unchanged. NOT a Gemini transparent export.",
+    "siteAsset": "src/assets/avatars/emma.png",
+    "siteAssetSize": [
+      384,
+      384
+    ],
+    "siteAssetSha256": "1fb082c9bd51f490c6cefccbf7db9f9887e8ac926315155c7ef0709feaea634d",
+    "status": "temporary; replace with genuine transparent PNG export from Gemini"
+  },
+  {
+    "writerId": "jack",
+    "source": "source-assets/avatars/jack.jpg",
+    "sourceSha256": "59fcbe90f8b03ed2151e3a502171417cc42e3d6a442b2397dcc507996364825e",
+    "selectedVersion": "Jake's Gemini selection, supplied in the Oct 9 2026 handoff",
+    "sourceFormat": "JPEG 1024x1024, opaque, checkerboard painted into the image",
+    "cutout": "source-assets/avatars/jack.cutout-1024.png",
+    "cutoutNote": "Reviewed background removal: edge flood-fill of light low-saturation checker pixels, 1px erode + soft edge. Face and clothing pixels unchanged. NOT a Gemini transparent export.",
+    "siteAsset": "src/assets/avatars/jack.png",
+    "siteAssetSize": [
+      384,
+      384
+    ],
+    "siteAssetSha256": "7b3b2a41e982910f7dc854d2d0ef1cad87b2e2bd46ccc10a6f17002e3c2d0631",
+    "status": "temporary; replace with genuine transparent PNG export from Gemini"
+  },
+  {
+    "writerId": "grace",
+    "source": "source-assets/avatars/grace.jpg",
+    "sourceSha256": "5cb77e6152198af6685cb1988b3e9474aec8f5a021d62c2b66952b7e7463551f",
+    "selectedVersion": "Jake's Gemini selection, supplied in the Oct 9 2026 handoff",
+    "sourceFormat": "JPEG 1024x1024, opaque, checkerboard painted into the image",
+    "cutout": "source-assets/avatars/grace.cutout-1024.png",
+    "cutoutNote": "Reviewed background removal: edge flood-fill of light low-saturation checker pixels, 1px erode + soft edge. Face and clothing pixels unchanged. NOT a Gemini transparent export.",
+    "siteAsset": "src/assets/avatars/grace.png",
+    "siteAssetSize": [
+      384,
+      384
+    ],
+    "siteAssetSha256": "a31b8b7ec1d9397b21e051134c8095a22e84334b8bdc4e19c0478211a3826851",
+    "status": "temporary; replace with genuine transparent PNG export from Gemini"
+  },
+  {
+    "writerId": "luke",
+    "source": "source-assets/avatars/luke.jpg",
+    "sourceSha256": "95cfa2ac37419e50117fae81e3f1809ccc7db4b27d403d204a8651ecef764735",
+    "selectedVersion": "Jake's Gemini selection, supplied in the Oct 9 2026 handoff",
+    "sourceFormat": "JPEG 1024x1024, opaque, checkerboard painted into the image",
+    "cutout": "source-assets/avatars/luke.cutout-1024.png",
+    "cutoutNote": "Reviewed background removal: edge flood-fill of light low-saturation checker pixels, 1px erode + soft edge. Face and clothing pixels unchanged. NOT a Gemini transparent export.",
+    "siteAsset": "src/assets/avatars/luke.png",
+    "siteAssetSize": [
+      384,
+      384
+    ],
+    "siteAssetSha256": "6e3cc5f27fc7436524fb654d5e7e57975c67ef535531bd10559c6349110efd2c",
+    "status": "temporary; replace with genuine transparent PNG export from Gemini"
+  },
+  {
+    "writerId": "ben",
+    "source": "source-assets/avatars/ben.jpg",
+    "sourceSha256": "50cf45dd85db93ece00114318a8bd17739e6b2867f789916732a5062d96a4156",
+    "selectedVersion": "Jake's Gemini selection, supplied in the Oct 9 2026 handoff",
+    "sourceFormat": "JPEG 1024x1024, opaque, checkerboard painted into the image",
+    "cutout": "source-assets/avatars/ben.cutout-1024.png",
+    "cutoutNote": "Reviewed background removal: edge flood-fill of light low-saturation checker pixels, 1px erode + soft edge. Face and clothing pixels unchanged. NOT a Gemini transparent export.",
+    "siteAsset": "src/assets/avatars/ben.png",
+    "siteAssetSize": [
+      384,
+      384
+    ],
+    "siteAssetSha256": "ba55516bcc2b4bfed31b61b7de2d036cf9b997cd2aa4c0acc7c1e3443efbb207",
+    "status": "temporary; replace with genuine transparent PNG export from Gemini"
+  }
+]

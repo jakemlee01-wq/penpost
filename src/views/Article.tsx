@@ -39,7 +39,7 @@ export function Article({ slug }: { slug: string }) {
           </figure>
         ) : null}
         <p className="article-kicker">
-          {townNames(story.cities)} · {story.estimatedReadMinutes} min read
+          {story.cities.length ? townNames(story.cities) : "Minnesota"} · {story.estimatedReadMinutes} min read
         </p>
         <h1 className="article-headline">{story.headline}</h1>
         {story.isDemo ? (

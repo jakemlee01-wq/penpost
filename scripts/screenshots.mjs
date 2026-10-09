@@ -24,7 +24,19 @@ for (const [w, h] of [[320, 568], [390, 844]]) {
   };
 
   await p.goto(url + "#/");
+  // First visit: pick places
+  await shot("0-onboarding");
+  await p.getByRole("button", { name: "Twin Cities metro" }).click();
+  await p.getByPlaceholder("Search a town, county or region").fill("daw");
+  await p.getByRole("button", { name: "Dawson", exact: true }).click();
+  await p.getByPlaceholder("Search a town, county or region").fill("");
+  await shot("0b-onboarding-picked");
+  await p.getByRole("button", { name: "Show my edition" }).click();
   await shot("1-deck");
+  const label = await p.textContent(".topbar-date");
+  if (!label.includes("Twin Cities metro + Dawson")) problems.push(`edition label wrong: ${label}`);
+  const total = (await p.textContent(".counter")).split(" of ")[1];
+  if (total !== "8") problems.push(`expected 8 stories for Twin Cities + Dawson, got ${total}`);
   const counter = await p.textContent(".counter");
   // Vote, confirm it doesn't navigate, then undo
   await p.click(".vote-up");

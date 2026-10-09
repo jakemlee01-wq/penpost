@@ -1,14 +1,18 @@
 import writersJson from "../../content/writers/writers.json";
-import townsJson from "../../content/towns.json";
+import areasJson from "../../content/areas.json";
+import { AreasSchema, areaLabel, expandAreas, townsWithRegion } from "./areas";
 import { parseStoryFile } from "./parse";
-import { EditionManifestSchema, TownSchema, WriterSchema, type EditionManifest, type Story, type Town, type Writer } from "./schema";
+import { EditionManifestSchema, WriterSchema, type EditionManifest, type Story, type Town, type Writer } from "./schema";
 
 const storyFiles = import.meta.glob("../../content/stories/*.md", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const editionFiles = import.meta.glob("../../content/editions/*.json", { import: "default", eager: true }) as Record<string, unknown>;
 const avatarFiles = import.meta.glob("../assets/avatars/*.{png,jpg,webp}", { import: "default", eager: true }) as Record<string, string>;
 
 export const writers: Writer[] = WriterSchema.array().parse(writersJson);
-export const towns: Town[] = TownSchema.array().parse(townsJson);
+export const areas = AreasSchema.parse(areasJson);
+export const towns: Town[] = townsWithRegion(areas);
+export const expand = (areaIds: string[]) => expandAreas(areaIds, areas);
+export const labelFor = (areaIds: string[]) => areaLabel(areaIds, areas);
 
 export const stories: Story[] = Object.entries(storyFiles)
   .map(([path, raw]) => parseStoryFile(raw, path.split("/").pop()))
@@ -46,4 +50,11 @@ export const TOPIC_LABELS: Record<string, string> = {
   innovation: "Innovation",
   financing: "Financing",
   logistics: "Logistics",
+  policy: "Policy",
+  community: "Community",
+  technology: "Technology",
+  "real-estate": "Real estate",
+  trade: "Trade",
+  "health-care": "Health care",
+  cooperatives: "Cooperatives",
 };

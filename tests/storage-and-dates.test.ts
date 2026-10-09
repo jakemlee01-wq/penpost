@@ -27,18 +27,18 @@ describe("storage", () => {
     _resetMemory();
     localStorage.clear();
   });
-  it("defaults to Minneapolis + Dawson", () => {
-    expect(loadState().prefs.towns).toEqual(["minneapolis", "dawson"]);
+  it("starts with no places so a new visitor is asked", () => {
+    expect(loadState().prefs.areas).toEqual([]);
   });
-  it("persists across reloads", () => {
+  it("persists picks across reloads", () => {
     const s = loadState();
-    saveState({ ...s, prefs: { ...s.prefs, towns: ["duluth"] } });
+    saveState({ ...s, prefs: { ...s.prefs, areas: ["region:twin-cities", "town:dawson"] } });
     _resetMemory();
-    expect(loadState().prefs.towns).toEqual(["duluth"]);
+    expect(loadState().prefs.areas).toEqual(["region:twin-cities", "town:dawson"]);
   });
   it("survives corrupted storage", () => {
     localStorage.setItem(STORAGE_KEY, "{not json");
-    expect(loadState().prefs.towns).toEqual(["minneapolis", "dawson"]);
+    expect(loadState().prefs.areas).toEqual([]);
   });
   it("keeps working when storage throws", () => {
     const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
@@ -49,8 +49,8 @@ describe("storage", () => {
     expect(loadState().hintSeen).toBe(true);
     spy.mockRestore();
   });
-  it("sanitizes imported data and refuses an empty town list", () => {
-    expect(sanitize({ prefs: { towns: [] } }).prefs.towns).toEqual(["minneapolis", "dawson"]);
+  it("upgrades older saves that stored plain town IDs", () => {
+    expect(sanitize({ prefs: { towns: ["minneapolis", "dawson"] } }).prefs.areas).toEqual(["minneapolis", "dawson"]);
     expect(sanitize(null)).toEqual(defaultState());
   });
 });

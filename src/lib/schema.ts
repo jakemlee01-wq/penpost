@@ -31,7 +31,8 @@ export const StoryMetaSchema = z.object({
   writerId: z.enum(WRITER_IDS),
   publishedAt: isoTimestampWithOffset,
   updatedAt: isoTimestampWithOffset.optional(),
-  cities: z.array(z.string()).min(1),
+  // Towns the story is about. Statewide stories with no single place may leave this empty.
+  cities: z.array(z.string()),
   topics: z.array(z.string()).min(1),
   significance: z.enum(["local", "regional", "statewide"]),
   significanceReason: z.string().min(5),
@@ -40,7 +41,7 @@ export const StoryMetaSchema = z.object({
   status: z.enum(["draft", "reviewed", "published"]),
   isDemo: z.boolean(),
   correctionNote: z.string().optional(),
-});
+}).refine((s) => s.significance === "statewide" || s.cities.length > 0, { message: "local and regional stories need at least one town", path: ["cities"] });
 
 export type Source = z.infer<typeof SourceSchema>;
 export type StoryMeta = z.infer<typeof StoryMetaSchema>;
@@ -108,7 +109,8 @@ export type Feedback = {
 };
 
 export type ReaderPreferences = {
-  towns: string[];
+  /** Picked areas, e.g. "region:twin-cities", "county:lac-qui-parle", "town:dawson". Empty until the reader chooses. */
+  areas: string[];
   explicitTopics: string[];
   explicitWriters: string[];
 };

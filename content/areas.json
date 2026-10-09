@@ -1,0 +1,330 @@
+{
+  "regions": [
+    {
+      "id": "twin-cities",
+      "name": "Twin Cities metro"
+    },
+    {
+      "id": "west-central",
+      "name": "West central Minnesota"
+    },
+    {
+      "id": "southwest",
+      "name": "Southwest Minnesota"
+    },
+    {
+      "id": "central",
+      "name": "Central Minnesota"
+    },
+    {
+      "id": "southeast",
+      "name": "Southeast Minnesota"
+    },
+    {
+      "id": "south-central",
+      "name": "South central Minnesota"
+    },
+    {
+      "id": "northeast",
+      "name": "Northeast Minnesota"
+    },
+    {
+      "id": "northwest",
+      "name": "Northwest Minnesota"
+    }
+  ],
+  "counties": [
+    {
+      "id": "hennepin",
+      "name": "Hennepin County",
+      "region": "twin-cities"
+    },
+    {
+      "id": "ramsey",
+      "name": "Ramsey County",
+      "region": "twin-cities"
+    },
+    {
+      "id": "dakota",
+      "name": "Dakota County",
+      "region": "twin-cities"
+    },
+    {
+      "id": "anoka",
+      "name": "Anoka County",
+      "region": "twin-cities"
+    },
+    {
+      "id": "washington",
+      "name": "Washington County",
+      "region": "twin-cities"
+    },
+    {
+      "id": "scott",
+      "name": "Scott County",
+      "region": "twin-cities"
+    },
+    {
+      "id": "carver",
+      "name": "Carver County",
+      "region": "twin-cities"
+    },
+    {
+      "id": "lac-qui-parle",
+      "name": "Lac qui Parle County",
+      "region": "west-central"
+    },
+    {
+      "id": "chippewa",
+      "name": "Chippewa County",
+      "region": "west-central"
+    },
+    {
+      "id": "yellow-medicine",
+      "name": "Yellow Medicine County",
+      "region": "west-central"
+    },
+    {
+      "id": "swift",
+      "name": "Swift County",
+      "region": "west-central"
+    },
+    {
+      "id": "kandiyohi",
+      "name": "Kandiyohi County",
+      "region": "west-central"
+    },
+    {
+      "id": "lyon",
+      "name": "Lyon County",
+      "region": "southwest"
+    },
+    {
+      "id": "stearns",
+      "name": "Stearns County",
+      "region": "central"
+    },
+    {
+      "id": "olmsted",
+      "name": "Olmsted County",
+      "region": "southeast"
+    },
+    {
+      "id": "blue-earth",
+      "name": "Blue Earth County",
+      "region": "south-central"
+    },
+    {
+      "id": "st-louis",
+      "name": "St. Louis County",
+      "region": "northeast"
+    },
+    {
+      "id": "beltrami",
+      "name": "Beltrami County",
+      "region": "northwest"
+    },
+    {
+      "id": "clay",
+      "name": "Clay County",
+      "region": "northwest"
+    },
+    {
+      "id": "steele",
+      "name": "Steele County",
+      "region": "south-central"
+    }
+  ],
+  "towns": [
+    {
+      "id": "minneapolis",
+      "name": "Minneapolis",
+      "county": "hennepin"
+    },
+    {
+      "id": "bloomington",
+      "name": "Bloomington",
+      "county": "hennepin"
+    },
+    {
+      "id": "edina",
+      "name": "Edina",
+      "county": "hennepin"
+    },
+    {
+      "id": "eden-prairie",
+      "name": "Eden Prairie",
+      "county": "hennepin"
+    },
+    {
+      "id": "minnetonka",
+      "name": "Minnetonka",
+      "county": "hennepin"
+    },
+    {
+      "id": "plymouth",
+      "name": "Plymouth",
+      "county": "hennepin"
+    },
+    {
+      "id": "maple-grove",
+      "name": "Maple Grove",
+      "county": "hennepin"
+    },
+    {
+      "id": "brooklyn-park",
+      "name": "Brooklyn Park",
+      "county": "hennepin"
+    },
+    {
+      "id": "st-louis-park",
+      "name": "St. Louis Park",
+      "county": "hennepin"
+    },
+    {
+      "id": "richfield",
+      "name": "Richfield",
+      "county": "hennepin"
+    },
+    {
+      "id": "st-anthony",
+      "name": "St. Anthony",
+      "county": "hennepin"
+    },
+    {
+      "id": "st-paul",
+      "name": "St. Paul",
+      "county": "ramsey"
+    },
+    {
+      "id": "roseville",
+      "name": "Roseville",
+      "county": "ramsey"
+    },
+    {
+      "id": "maplewood",
+      "name": "Maplewood",
+      "county": "ramsey"
+    },
+    {
+      "id": "arden-hills",
+      "name": "Arden Hills",
+      "county": "ramsey"
+    },
+    {
+      "id": "eagan",
+      "name": "Eagan",
+      "county": "dakota"
+    },
+    {
+      "id": "burnsville",
+      "name": "Burnsville",
+      "county": "dakota"
+    },
+    {
+      "id": "blaine",
+      "name": "Blaine",
+      "county": "anoka"
+    },
+    {
+      "id": "woodbury",
+      "name": "Woodbury",
+      "county": "washington"
+    },
+    {
+      "id": "shakopee",
+      "name": "Shakopee",
+      "county": "scott"
+    },
+    {
+      "id": "chaska",
+      "name": "Chaska",
+      "county": "carver"
+    },
+    {
+      "id": "dawson",
+      "name": "Dawson",
+      "county": "lac-qui-parle"
+    },
+    {
+      "id": "madison",
+      "name": "Madison",
+      "county": "lac-qui-parle"
+    },
+    {
+      "id": "montevideo",
+      "name": "Montevideo",
+      "county": "chippewa"
+    },
+    {
+      "id": "granite-falls",
+      "name": "Granite Falls",
+      "county": "yellow-medicine"
+    },
+    {
+      "id": "canby",
+      "name": "Canby",
+      "county": "yellow-medicine"
+    },
+    {
+      "id": "appleton",
+      "name": "Appleton",
+      "county": "swift"
+    },
+    {
+      "id": "benson",
+      "name": "Benson",
+      "county": "swift"
+    },
+    {
+      "id": "willmar",
+      "name": "Willmar",
+      "county": "kandiyohi"
+    },
+    {
+      "id": "marshall",
+      "name": "Marshall",
+      "county": "lyon"
+    },
+    {
+      "id": "st-cloud",
+      "name": "St. Cloud",
+      "county": "stearns"
+    },
+    {
+      "id": "rochester",
+      "name": "Rochester",
+      "county": "olmsted"
+    },
+    {
+      "id": "mankato",
+      "name": "Mankato",
+      "county": "blue-earth"
+    },
+    {
+      "id": "duluth",
+      "name": "Duluth",
+      "county": "st-louis"
+    },
+    {
+      "id": "hibbing",
+      "name": "Hibbing",
+      "county": "st-louis"
+    },
+    {
+      "id": "bemidji",
+      "name": "Bemidji",
+      "county": "beltrami"
+    },
+    {
+      "id": "moorhead",
+      "name": "Moorhead",
+      "county": "clay"
+    },
+    {
+      "id": "owatonna",
+      "name": "Owatonna",
+      "county": "steele"
+    }
+  ]
+}

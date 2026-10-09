@@ -108,7 +108,7 @@ const scenes: Record<Scene, ReactNode> = {
   office: (
     <g>
       {ground("#EADBC4")}
-      <rect x="-600" y="40" width="1600" height="200" fill="#FFF8EE" />
+      <rect x="-600" y="-900" width="1600" height="1140" fill="#FFF8EE" />
       <g fill="#CFE6F8">
         <rect x="24" y="60" width="104" height="130" rx="6" />
         <rect x="148" y="60" width="104" height="130" rx="6" />

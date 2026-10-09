@@ -1,17 +1,16 @@
 {
   "id": "2026-10-09",
   "date": "2026-10-09",
-  "isDemo": true,
+  "isDemo": false,
   "candidateStoryIds": [
-    "2026-10-09-lantern-coffee",
-    "2026-10-09-ledgerline",
-    "2026-10-09-north-star-hvac",
-    "2026-10-09-dawson-hardware",
-    "2026-10-09-dawson-grain",
-    "2026-10-09-rochester-meridian",
-    "2026-10-09-hibbing-battery",
-    "2026-10-09-montevideo-trucking",
-    "2026-10-09-rochester-bakery",
-    "2026-10-09-st-cloud-salon"
+    "2026-10-09-mpls-permits",
+    "2026-10-09-latino-business-week",
+    "2026-10-09-gudea",
+    "2026-10-09-hmongtown",
+    "2026-10-09-harvest-weight-order",
+    "2026-10-09-ag-trade",
+    "2026-10-09-bair-hugger",
+    "2026-10-09-land-olakes",
+    "2026-10-09-revol-greens"
   ]
 }

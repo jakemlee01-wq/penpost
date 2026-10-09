@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import { Avatar } from "../components/Avatar";
 import { ChevronLeft } from "../components/Icons";
-import { TOPIC_LABELS, towns, writerById, writers } from "../lib/content";
+import { AreaPicker } from "../components/AreaPicker";
+import { normalizeAreaIds } from "../lib/areas";
+import { TOPIC_LABELS, areas, writerById, writers } from "../lib/content";
 import { formatEditionDate } from "../lib/dates";
 import { tasteFromFeedback } from "../lib/ranking";
 import { goBack, href } from "../lib/router";
@@ -57,20 +59,18 @@ export function Settings({ reader }: { reader: Reader }) {
   const { state } = reader;
   const [msg, setMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const selected = new Set(state.prefs.towns);
+  const [draft, setDraft] = useState<string[]>(state.prefs.areas);
+  const changed = draft.join() !== state.prefs.areas.join();
   const taste = tasteFromFeedback(Object.values(state.feedback));
   const votes = Object.values(state.feedback).filter((f) => f.vote);
 
-  const toggle = (id: string) => {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    if (next.size === 0) {
-      setMsg("Keep at least one town.");
+  const saveAreas = () => {
+    if (!draft.length) {
+      setMsg("Keep at least one place.");
       return;
     }
-    setMsg("");
-    reader.setTowns([...next]);
+    reader.setAreas(draft);
+    setMsg("Saved. Your edition now follows these places.");
   };
 
   const exportData = () => {
@@ -84,7 +84,9 @@ export function Settings({ reader }: { reader: Reader }) {
 
   const importData = async (file: File) => {
     try {
-      reader.importState(sanitize(JSON.parse(await file.text())));
+      const next = sanitize(JSON.parse(await file.text()), (ids) => normalizeAreaIds(ids, areas));
+      reader.importState(next);
+      setDraft(next.prefs.areas);
       setMsg("Imported.");
     } catch {
       setMsg("That file couldn't be read.");
@@ -100,17 +102,14 @@ export function Settings({ reader }: { reader: Reader }) {
     <div className="screen">
       <Bar title="Settings" />
       <main className="page">
-        <h1>Your towns</h1>
-        <p className="muted">Your edition follows these places. Other towns only appear for big statewide stories.</p>
-        <fieldset className="towns">
-          <legend className="sr-only">Towns</legend>
-          {towns.map((t) => (
-            <label key={t.id} className={`town${selected.has(t.id) ? " on" : ""}`}>
-              <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggle(t.id)} />
-              {t.name}
-            </label>
-          ))}
-        </fieldset>
+        <h1>Your places</h1>
+        <p className="muted">Your edition follows these places. Stories from elsewhere only appear when they matter statewide.</p>
+        <AreaPicker value={draft} onChange={(ids) => { setDraft(ids); setMsg(""); }} />
+        <div className="btn-row">
+          <button className="pill-btn" onClick={saveAreas} disabled={!changed}>
+            Save places
+          </button>
+        </div>
         {msg ? <p className="notice" role="status">{msg}</p> : null}
 
         <h2>Your votes</h2>
@@ -139,7 +138,7 @@ export function Settings({ reader }: { reader: Reader }) {
         <div className="btn-row">
           <button className="pill-btn ghost" onClick={exportData}>Export</button>
           <button className="pill-btn ghost" onClick={() => fileRef.current?.click()}>Import</button>
-          <button className="pill-btn ghost danger" onClick={() => { reader.resetAll(); setMsg("Everything reset to defaults."); }}>
+          <button className="pill-btn ghost danger" onClick={() => { reader.resetAll(); setDraft([]); setMsg("Everything reset. You'll pick your places again on the next visit."); }}>
             Reset everything
           </button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && importData(e.target.files[0])} />
@@ -187,10 +186,10 @@ export function About() {
           day the edition is shorter. Your optional thumbs gently reorder future editions on this device. Swiping past a story is never
           counted as a vote.
         </p>
-        <h2>This is a prototype</h2>
+        <h2>This is an early version</h2>
         <p>
-          The stories you see now are demo stories. The companies, people, and amounts in them are fictional examples, marked "Demo," and
-          are not current news.
+          Penpost is new and still being shaped. Story pictures are illustrations, not news photos. If something looks wrong, it gets
+          corrected and the article says so.
         </p>
       </main>
     </div>

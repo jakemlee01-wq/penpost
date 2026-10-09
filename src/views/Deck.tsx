@@ -55,7 +55,7 @@ export function Deck({ reader }: { reader: Reader }) {
         <main className="empty">
           <h1>A quiet day</h1>
           <p>There's no business news for {edition.label} in this edition that clears the bar. Rather than pad it, Penpost stops here.</p>
-          <a className="pill-link" href={href.settings()}>Change your towns</a>
+          <a className="pill-link" href={href.settings()}>Change your places</a>
         </main>
       </div>
     );

@@ -368,6 +368,37 @@ button { font: inherit; color: inherit; }
 .story-list-h { display: block; font-weight: 700; line-height: 1.35; }
 .story-list-m { display: block; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
 
+/* Area picker */
+.picker { display: flex; flex-direction: column; gap: 14px; margin: 14px 0 18px; }
+.picks { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pick {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px 0 14px;
+  border: 0; border-radius: 999px; background: var(--accent-ink); color: #fff; font-weight: 700; cursor: pointer;
+}
+.pick svg { width: 14px; height: 14px; }
+.picks-note { font-size: 13px; color: var(--ink-2); }
+.search input {
+  width: 100%; min-height: 46px; padding: 0 16px; border-radius: 999px; border: 0;
+  box-shadow: inset 0 0 0 1.5px var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 16px;
+}
+.search input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.picker-section h3 { font-size: 13px; font-weight: 800; color: var(--ink-2); margin: 0 0 8px; letter-spacing: 0.02em; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.town { border: 0; font: inherit; color: var(--ink); }
+.onboarding { padding-bottom: 96px; }
+.onboarding h1 { text-wrap: balance; }
+.cta-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--bg) 70%, rgba(255, 249, 242, 0));
+}
+.cta {
+  width: 100%; max-width: 448px; min-height: 52px; border: 0; border-radius: 999px;
+  background: var(--accent-ink); color: #fff; font-weight: 800; font-size: 17px; cursor: pointer;
+}
+.cta:disabled { background: #c9d3dd; color: var(--ink-2); cursor: default; }
+.pill-btn:disabled { opacity: 0.5; cursor: default; }
+
 .towns { border: 0; padding: 0; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .town {
   display: inline-flex;

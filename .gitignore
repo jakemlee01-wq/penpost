@@ -5,3 +5,4 @@ screenshots/
 *.local
 .env
 .env.*
+pipeline/out/

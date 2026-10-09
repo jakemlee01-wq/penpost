@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { AreasSchema, townsWithRegion } from "../src/lib/areas";
 import { parseStoryFile } from "../src/lib/parse";
 import {
   BASE_SCORE,
@@ -13,10 +14,12 @@ import {
 import type { Feedback, Story, Town } from "../src/lib/schema";
 
 const root = join(__dirname, "..", "content");
-const towns: Town[] = JSON.parse(readFileSync(join(root, "towns.json"), "utf8"));
-const pool: Story[] = readdirSync(join(root, "stories"))
+const towns: Town[] = townsWithRegion(AreasSchema.parse(JSON.parse(readFileSync(join(root, "areas.json"), "utf8"))));
+// Ranking rules are tested against fixed fictional fixtures so tests don't change with the news.
+const fixtures = join(__dirname, "fixtures", "stories");
+const pool: Story[] = readdirSync(fixtures)
   .filter((f) => f.endsWith(".md"))
-  .map((f) => parseStoryFile(readFileSync(join(root, "stories", f), "utf8"), f));
+  .map((f) => parseStoryFile(readFileSync(join(fixtures, f), "utf8"), f));
 const byId = (id: string) => pool.find((s) => s.id === id)!;
 const JAKE = ["minneapolis", "dawson"];
 

@@ -7,7 +7,6 @@ import type { Feedback, ReaderPreferences, Vote } from "./schema";
  */
 
 export const STORAGE_KEY = "penpost.v1";
-export const DEFAULT_TOWNS = ["minneapolis", "dawson"];
 
 export type DeckState = {
   storyIds: string[];
@@ -27,7 +26,7 @@ export type LocalState = {
 export function defaultState(): LocalState {
   return {
     version: 1,
-    prefs: { towns: [...DEFAULT_TOWNS], explicitTopics: [], explicitWriters: [] },
+    prefs: { areas: [], explicitTopics: [], explicitWriters: [] },
     feedback: {},
     decks: {},
     hintSeen: false,
@@ -35,6 +34,16 @@ export function defaultState(): LocalState {
 }
 
 let memory: LocalState | null = null;
+let normalizer: (ids: unknown) => string[] = defaultNormalize;
+
+function defaultNormalize(ids: unknown): string[] {
+  return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === "string") : [];
+}
+
+/** The app registers the catalog-aware normalizer at startup. */
+export function setAreaNormalizer(fn: (ids: unknown) => string[]) {
+  normalizer = fn;
+}
 
 function safeStorage(): Storage | null {
   try {
@@ -48,15 +57,19 @@ function safeStorage(): Storage | null {
   }
 }
 
-export function sanitize(value: unknown): LocalState {
+/**
+ * Clean anything read from storage or an import file. `normalizeAreas` checks
+ * area IDs against the catalog and upgrades older saves that stored plain town IDs.
+ */
+export function sanitize(value: unknown, normalizeAreas: (ids: unknown) => string[] = defaultNormalize): LocalState {
   const base = defaultState();
   if (!value || typeof value !== "object") return base;
-  const v = value as Partial<LocalState>;
-  const towns = Array.isArray(v.prefs?.towns) ? v.prefs!.towns.filter((t) => typeof t === "string") : base.prefs.towns;
+  const v = value as Partial<LocalState> & { prefs?: { towns?: unknown } };
+  const rawAreas = Array.isArray(v.prefs?.areas) ? v.prefs!.areas : v.prefs?.towns;
   return {
     version: 1,
     prefs: {
-      towns: towns.length ? towns : base.prefs.towns,
+      areas: normalizeAreas(rawAreas),
       explicitTopics: Array.isArray(v.prefs?.explicitTopics) ? v.prefs!.explicitTopics : [],
       explicitWriters: Array.isArray(v.prefs?.explicitWriters) ? v.prefs!.explicitWriters : [],
     },
@@ -72,7 +85,7 @@ export function loadState(): LocalState {
   if (s) {
     try {
       const raw = s.getItem(STORAGE_KEY);
-      memory = raw ? sanitize(JSON.parse(raw)) : defaultState();
+      memory = raw ? sanitize(JSON.parse(raw), normalizer) : defaultState();
       return memory;
     } catch {
       /* fall through */
@@ -102,8 +115,8 @@ export function _resetMemory() {
   memory = null;
 }
 
-export function deckKey(editionId: string, towns: string[]): string {
-  return `${editionId}|${[...towns].sort().join(",")}`;
+export function deckKey(editionId: string, townIds: string[]): string {
+  return `${editionId}|${[...townIds].sort().join(",")}`;
 }
 
 /** Set, switch, or clear a vote. Passing the current vote again clears it. */

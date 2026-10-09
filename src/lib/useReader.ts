@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { editions, stories, storyById, towns, townNames } from "./content";
+import { editions, expand, labelFor, stories, storyById, towns } from "./content";
 import { chicagoDate, pickEdition } from "./dates";
 import { assembleStoryIds } from "./ranking";
 import type { Edition, Story, Vote } from "./schema";
@@ -20,18 +20,21 @@ export function useReader() {
     });
   }, []);
 
-  const key = manifest ? deckKey(manifest.id, state.prefs.towns) : "";
+  // Picked areas (regions, counties, towns) expand to the towns they cover.
+  const readerTowns = useMemo(() => expand(state.prefs.areas), [state.prefs.areas]);
+  const needsAreas = readerTowns.length === 0;
+  const key = manifest && !needsAreas ? deckKey(manifest.id, readerTowns) : "";
 
   // The deck is assembled once per edition + town set, then frozen so it
   // never reshuffles under the reader's thumb. Votes affect the next assembly.
   const deck: DeckState | null = useMemo(() => {
-    if (!manifest) return null;
+    if (!manifest || needsAreas) return null;
     const existing = state.decks[key];
     if (existing && existing.storyIds.every((id) => storyById.has(id))) return existing;
     const pool = manifest.candidateStoryIds.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s));
-    const storyIds = assembleStoryIds(pool, state.prefs.towns, towns, Object.values(state.feedback));
+    const storyIds = assembleStoryIds(pool, readerTowns, towns, Object.values(state.feedback));
     return { storyIds, index: 0, seen: [], frozenAt: new Date().toISOString() };
-  }, [manifest, key, state.decks, state.prefs.towns, state.feedback]);
+  }, [manifest, needsAreas, key, state.decks, readerTowns, state.feedback]);
 
   // Persist a freshly assembled deck right away so a vote can't reshuffle it.
   useEffect(() => {
@@ -52,7 +55,7 @@ export function useReader() {
       ? {
           id: manifest.id,
           date: manifest.date,
-          label: townNames(state.prefs.towns),
+          label: labelFor(state.prefs.areas),
           storyIds: deck.storyIds,
           estimatedTotalReadMinutes: Math.round(deckStories.reduce((n, s) => n + s.estimatedReadMinutes, 0)),
           isDemo: manifest.isDemo,
@@ -106,7 +109,9 @@ export function useReader() {
     vote,
     voteFor: (storyId: string) => state.feedback[storyId]?.vote ?? null,
     markHintSeen: () => commit((s) => (s.hintSeen ? s : { ...s, hintSeen: true })),
-    setTowns: (ids: string[]) => commit((s) => ({ ...s, prefs: { ...s.prefs, towns: ids.length ? ids : s.prefs.towns } })),
+    needsAreas,
+    readerTowns,
+    setAreas: (ids: string[]) => commit((s) => ({ ...s, prefs: { ...s.prefs, areas: ids } })),
     /** Rebuild the current deck with the latest votes and towns. */
     rebuildDeck: () =>
       commit((s) => {

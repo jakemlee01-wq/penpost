@@ -1,0 +1,69 @@
+name: Draft daily edition
+
+# Weekday mornings. Cron runs in UTC: 10:20 UTC is 5:20 a.m. Central in summer
+# and 4:20 a.m. in winter. Adjust if you want a different time.
+on:
+  schedule:
+    - cron: "20 10 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Edition date (YYYY-MM-DD, America/Chicago). Leave blank for today."
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: draft-edition
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Draft stories
+        env:
+          PENPOST_PROVIDER: gemini
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Set these as repository variables to change models without editing code.
+          PENPOST_TRIAGE_MODEL: ${{ vars.PENPOST_TRIAGE_MODEL }}
+          PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}
+          PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '40' }}
+        run: npx tsx pipeline/run.ts ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+
+      - name: Validate content
+        run: npm run validate
+
+      - name: Read summary
+        id: summary
+        run: |
+          echo "changes=$(cat pipeline/out/has-changes)" >> "$GITHUB_OUTPUT"
+          {
+            echo 'body<<PENPOST_EOF'
+            cat pipeline/out/summary.md
+            echo 'PENPOST_EOF'
+          } >> "$GITHUB_OUTPUT"
+          cat pipeline/out/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open pull request for review
+        if: steps.summary.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: edition/${{ github.run_id }}
+          title: "Proposed edition: ${{ inputs.date || 'today' }}"
+          commit-message: "Draft edition"
+          add-paths: |
+            content/stories/*.md
+            content/editions/*.json
+          body: ${{ steps.summary.outputs.body }}
+          delete-branch: true

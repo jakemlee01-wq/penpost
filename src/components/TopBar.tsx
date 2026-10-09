@@ -36,7 +36,7 @@ export function TopBar({ dateLabel, sub }: { dateLabel: string; sub?: string }) 
             </div>
             <a href={href.deck()} onClick={() => setOpen(false)}>Today's paper</a>
             <a href={href.today()} onClick={() => setOpen(false)}>All of today's stories</a>
-            <a href={href.settings()} onClick={() => setOpen(false)}>Your towns and settings</a>
+            <a href={href.settings()} onClick={() => setOpen(false)}>Your places and settings</a>
             <a href={href.about()} onClick={() => setOpen(false)}>About Penpost and our AI writers</a>
             <p className="sheet-note">Penpost is written by AI writers. Every story links to its sources.</p>
           </nav>

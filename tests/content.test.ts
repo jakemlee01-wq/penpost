@@ -42,3 +42,15 @@ describe("preview card", () => {
     expect(up).not.toContain(".vote(");
   });
 });
+
+describe("real edition", () => {
+  it("has no demo stories or placeholder sources in published content", async () => {
+    const { parseStoryFile } = await import("../src/lib/parse");
+    const dir = join(root, "content/stories");
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".md"))) {
+      const s = parseStoryFile(readFileSync(join(dir, f), "utf8"), f);
+      expect(s.isDemo, f).toBe(false);
+      for (const src of s.sources) expect(src.url, f).not.toMatch(/example\.(com|org)/);
+    }
+  });
+});

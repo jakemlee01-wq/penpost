@@ -19,7 +19,7 @@ import { z } from "zod";
 import { AreasSchema } from "../src/lib/areas";
 import { chicagoDate } from "../src/lib/dates";
 import { parseStoryFile } from "../src/lib/parse";
-import { WriterSchema, type Writer } from "../src/lib/schema";
+import { CATEGORY_IDS, WriterSchema, type Writer } from "../src/lib/schema";
 import { fetchSource, filterCandidates, type Candidate, type Source } from "./feeds";
 import { createModel, parseJson, type Call, type Model } from "./model";
 import { CHECK_SYSTEM, FACTS_SYSTEM, checkPrompt, factsPrompt, triagePrompt, triageSystem, writerPrompt, writerSystem, type Facts } from "./prompts";
@@ -31,7 +31,10 @@ const TriageSchema = z.object({
       keep: z.boolean(),
       reason: z.string().default(""),
       cities: z.array(z.string()).default([]),
-      significance: z.enum(["local", "regional", "statewide"]).catch("local"),
+      significance: z.enum(["local", "regional", "statewide", "national"]).catch("local"),
+      categories: z.array(z.enum(CATEGORY_IDS).catch("business")).min(1).catch(["business"]),
+      tone: z.enum(["light", "neutral", "heavy"]).catch("neutral"),
+      mustKnow: z.boolean().catch(false),
       significanceReason: z.string().default(""),
       topics: z.array(z.string()).default([]),
       storyKey: z.string().default(""),
@@ -100,7 +103,7 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
   const root = opts.root;
   const now = opts.now ?? new Date();
   const date = opts.date ?? chicagoDate(now);
-  const maxStories = opts.maxStories ?? 10;
+  const maxStories = opts.maxStories ?? 12;
   const outDir = opts.outDir ?? join(root, "pipeline", "out");
   mkdirSync(outDir, { recursive: true });
 
@@ -142,13 +145,14 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
     // 3. Triage (cheap model, one call for all candidates)
     const catalog = `Town IDs: ${areas.towns.map((t) => t.id).join(", ")}`;
     const triage = await ask(model, { tier: "triage", system: triageSystem(catalog), prompt: triagePrompt(candidates), temperature: 0 }, TriageSchema);
-    const order = { statewide: 0, regional: 1, local: 2 } as const;
+    // Keep the pool varied: must-knows first, then statewide, regional, local, national.
+    const order = { statewide: 1, regional: 2, local: 3, national: 4 } as const;
     const seenKeys = new Set<string>();
     const picks = triage.items
       .filter((t) => t.keep && candidates[t.i])
       .map((t) => ({ ...t, cities: t.cities.filter((c) => townIds.has(c)) }))
       .filter((t) => {
-        if (!t.cities.length && t.significance !== "statewide") {
+        if (!t.cities.length && t.significance !== "statewide" && t.significance !== "national") {
           skipped.push(`${candidates[t.i].title} (no known town)`);
           return false;
         }
@@ -157,7 +161,7 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
         seenKeys.add(k);
         return true;
       })
-      .sort((a, b) => order[a.significance] - order[b.significance])
+      .sort((a, b) => (a.mustKnow ? 0 : order[a.significance]) - (b.mustKnow ? 0 : order[b.significance]))
       .slice(0, maxStories);
     for (const t of triage.items.filter((x) => !x.keep && candidates[x.i])) skipped.push(`${candidates[t.i].title} (${t.reason || "not kept"})`);
 
@@ -191,6 +195,9 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
           publishedAt: `${date}T06:00:00-05:00`,
           cities: t.cities,
           topics: t.topics.slice(0, 3).map(slugify).filter(Boolean),
+          categories: [...new Set(t.categories)].slice(0, 2),
+          tone: t.tone,
+          mustKnow: t.mustKnow && t.significance !== "national",
           significance: t.significance,
           significanceReason: t.significanceReason || t.reason || "Triaged by the daily job.",
           image: { scene: draft.scene, alt: tidy(draft.imageAlt), credit: "Penpost illustration", rightsNote: "Owned illustration. No photo from the source was used.", illustrative: true },

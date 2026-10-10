@@ -399,6 +399,34 @@ button { font: inherit; color: inherit; }
 .cta:disabled { background: #c9d3dd; color: var(--ink-2); cursor: default; }
 .pill-btn:disabled { opacity: 0.5; cursor: default; }
 
+/* Interests */
+.interests { display: flex; flex-direction: column; gap: 10px; margin: 12px 0 8px; }
+.interest { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 18px; background: var(--card); box-shadow: inset 0 0 0 1.5px var(--line); }
+.interest.on { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.interest-name { font-weight: 700; }
+.segctl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; background: var(--warm); border-radius: 999px; padding: 4px; }
+.segctl.wide { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.seg-btn {
+  min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2);
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0 4px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.seg-btn.on { background: var(--accent-ink); color: #fff; }
+.seg-btn.on-off { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(41, 55, 71, 0.12); }
+.mood { margin: 8px 0; }
+.writer-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin: 10px 0 14px; }
+.writer-pick {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border: 0; border-radius: 16px;
+  background: var(--card); box-shadow: inset 0 0 0 1.5px var(--line); font: inherit; color: var(--ink); cursor: pointer;
+}
+.writer-pick.on { box-shadow: inset 0 0 0 2px var(--accent-ink); background: var(--accent-soft); }
+.writer-pick-name { font-weight: 800; }
+.writer-pick-tag { font-size: 12px; color: var(--ink-2); line-height: 1.25; text-align: center; }
+.save-bar {
+  position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--bg); margin-bottom: 8px;
+}
+
 .towns { border: 0; padding: 0; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .town {
   display: inline-flex;
@@ -437,6 +465,10 @@ button { font: inherit; color: inherit; }
 .empty p { color: var(--ink-2); }
 
 /* Short phones: give text more room, image less */
+@media (max-width: 440px) {
+  .segctl:not(.wide) { grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 18px; }
+}
+
 @media (max-height: 640px) {
   .card-media { flex-basis: 50%; }
   .card-panel { padding: 14px 16px 12px; }

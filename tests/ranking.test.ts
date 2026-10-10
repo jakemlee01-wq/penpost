@@ -53,8 +53,11 @@ describe("geography", () => {
 });
 
 describe("edition assembly", () => {
-  it("builds Jake's default edition with eight stories and no excluded items", () => {
-    const ids = assembleStoryIds(pool, JAKE, towns, []);
+  it("caps an edition at five stories", () => {
+    expect(assembleStoryIds(pool, JAKE, towns, [])).toHaveLength(5);
+  });
+  it("finds all eight eligible fixture stories when the cap is raised, and no excluded items", () => {
+    const ids = assembleStoryIds(pool, JAKE, towns, [], 8);
     expect(ids).toHaveLength(8);
     expect(ids).not.toContain("2026-10-09-rochester-bakery");
     expect(ids).not.toContain("2026-10-09-st-cloud-salon");
@@ -63,7 +66,7 @@ describe("edition assembly", () => {
     expect(assembleStoryIds(pool, JAKE, towns, [])).toEqual(assembleStoryIds(pool, JAKE, towns, []));
   });
   it("avoids the same writer twice in a row when it can", () => {
-    const ids = assembleStoryIds(pool, JAKE, towns, []);
+    const ids = assembleStoryIds(pool, JAKE, towns, [], 8);
     const writers = ids.map((id) => byId(id).writerId);
     for (let i = 1; i < writers.length; i++) expect(writers[i]).not.toBe(writers[i - 1]);
   });

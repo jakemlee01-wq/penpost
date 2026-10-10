@@ -1,0 +1,19 @@
+{
+  "categories": [
+    { "id": "business", "name": "Business" },
+    { "id": "economy", "name": "Economy" },
+    { "id": "agriculture", "name": "Farming and food production" },
+    { "id": "technology", "name": "Technology" },
+    { "id": "sports", "name": "Sports" },
+    { "id": "politics", "name": "Politics and government" },
+    { "id": "health", "name": "Health" },
+    { "id": "real-estate", "name": "Housing and real estate" },
+    { "id": "food", "name": "Restaurants and food" },
+    { "id": "culture", "name": "Arts and culture" }
+  ],
+  "scopes": [
+    { "id": "local", "name": "Local (your places)" },
+    { "id": "minnesota", "name": "Minnesota" },
+    { "id": "national", "name": "National" }
+  ]
+}

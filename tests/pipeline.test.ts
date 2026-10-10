@@ -32,7 +32,7 @@ function responder(opts: { unsupported?: string[] } = {}) {
     if (call.system.includes("You sort news items")) {
       return JSON.stringify({
         items: [
-          { i: 0, keep: true, reason: "", cities: ["willmar"], significance: "regional", significanceReason: "Jobs in west central MN", topics: ["jobs"], storyKey: "willmar-jobs" },
+          { i: 0, keep: true, reason: "", cities: ["willmar"], significance: "regional", significanceReason: "Jobs in west central MN", categories: ["business", "astrology"], tone: "light", mustKnow: false, topics: ["jobs"], storyKey: "willmar-jobs" },
           { i: 1, keep: false, reason: "sports", cities: [], significance: "local", significanceReason: "", topics: [], storyKey: "sports" },
           { i: 2, keep: true, reason: "", cities: ["atlantis"], significance: "local", significanceReason: "", topics: ["small-business"], storyKey: "bakery" },
         ],
@@ -65,6 +65,8 @@ describe("pipeline", () => {
     expect(story.cities).toEqual(["willmar"]);
     expect(story.bodyMarkdown).not.toContain("—");
     expect(story.isDemo).toBe(false);
+    expect(story.categories).toEqual(["business"]); // unknown category from the model is coerced, not trusted
+    expect(story.tone).toBe("light");
     const edition = JSON.parse(readFileSync(join(root, "content/editions/2026-10-09.json"), "utf8"));
     expect(edition.candidateStoryIds).toEqual([story.id]);
     expect(res.skipped.join("\n")).toMatch(/sports/);

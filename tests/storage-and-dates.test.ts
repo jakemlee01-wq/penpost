@@ -49,6 +49,12 @@ describe("storage", () => {
     expect(loadState().hintSeen).toBe(true);
     spy.mockRestore();
   });
+  it("drops invalid interests, moods and writers from saved data", () => {
+    const st = sanitize({ prefs: { areas: ["town:dawson"], interests: [{ category: "sports", scope: "minnesota" }, { category: "astrology", scope: "national" }], mood: 7, favoriteWriters: ["jack", "zed"] } });
+    expect(st.prefs.interests).toEqual([{ category: "sports", scope: "minnesota" }]);
+    expect(st.prefs.mood).toBe(1);
+    expect(st.prefs.favoriteWriters).toEqual(["jack"]);
+  });
   it("upgrades older saves that stored plain town IDs", () => {
     expect(sanitize({ prefs: { towns: ["minneapolis", "dawson"] } }).prefs.areas).toEqual(["minneapolis", "dawson"]);
     expect(sanitize(null)).toEqual(defaultState());

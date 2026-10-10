@@ -31,12 +31,20 @@ for (const [w, h] of [[320, 568], [390, 844]]) {
   await p.getByRole("button", { name: "Dawson", exact: true }).click();
   await p.getByPlaceholder("Search a town, county or region").fill("");
   await shot("0b-onboarding-picked");
+  await p.getByRole("button", { name: "Next: your interests" }).click();
+  // Business (Minnesota) is pre-set. Add Minnesota sports and national economy.
+  await p.getByRole("radiogroup", { name: "Sports" }).getByRole("radio", { name: "Minnesota" }).click();
+  await p.getByRole("radiogroup", { name: "Economy" }).getByRole("radio", { name: "National" }).click();
+  await p.getByRole("button", { name: /^Jack/ }).click();
+  await shot("0c-interests");
+  await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await shot("0d-interests-bottom");
   await p.getByRole("button", { name: "Show my edition" }).click();
   await shot("1-deck");
   const label = await p.textContent(".topbar-date");
   if (!label.includes("Twin Cities metro + Dawson")) problems.push(`edition label wrong: ${label}`);
   const total = (await p.textContent(".counter")).split(" of ")[1];
-  if (total !== "8") problems.push(`expected 8 stories for Twin Cities + Dawson, got ${total}`);
+  if (total !== "5") problems.push(`expected 5 stories, got ${total}`);
   const counter = await p.textContent(".counter");
   // Vote, confirm it doesn't navigate, then undo
   await p.click(".vote-up");

@@ -23,18 +23,24 @@ export function useReader() {
   // Picked areas (regions, counties, towns) expand to the towns they cover.
   const readerTowns = useMemo(() => expand(state.prefs.areas), [state.prefs.areas]);
   const needsAreas = readerTowns.length === 0;
-  const key = manifest && !needsAreas ? deckKey(manifest.id, readerTowns) : "";
+  const needsInterests = state.prefs.interests.length === 0;
+  const needsSetup = needsAreas || needsInterests;
+  const profile = useMemo(
+    () => ({ towns: readerTowns, interests: state.prefs.interests, mood: state.prefs.mood, favoriteWriters: state.prefs.favoriteWriters }),
+    [readerTowns, state.prefs.interests, state.prefs.mood, state.prefs.favoriteWriters],
+  );
+  const key = manifest && !needsSetup ? deckKey(manifest.id, readerTowns, state.prefs) : "";
 
   // The deck is assembled once per edition + town set, then frozen so it
   // never reshuffles under the reader's thumb. Votes affect the next assembly.
   const deck: DeckState | null = useMemo(() => {
-    if (!manifest || needsAreas) return null;
+    if (!manifest || needsSetup) return null;
     const existing = state.decks[key];
     if (existing && existing.storyIds.every((id) => storyById.has(id))) return existing;
     const pool = manifest.candidateStoryIds.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s));
-    const storyIds = assembleStoryIds(pool, readerTowns, towns, Object.values(state.feedback));
+    const storyIds = assembleStoryIds(pool, profile, towns, Object.values(state.feedback));
     return { storyIds, index: 0, seen: [], frozenAt: new Date().toISOString() };
-  }, [manifest, needsAreas, key, state.decks, readerTowns, state.feedback]);
+  }, [manifest, needsSetup, key, state.decks, profile, state.feedback]);
 
   // Persist a freshly assembled deck right away so a vote can't reshuffle it.
   useEffect(() => {
@@ -110,8 +116,11 @@ export function useReader() {
     voteFor: (storyId: string) => state.feedback[storyId]?.vote ?? null,
     markHintSeen: () => commit((s) => (s.hintSeen ? s : { ...s, hintSeen: true })),
     needsAreas,
+    needsInterests,
+    needsSetup,
     readerTowns,
     setAreas: (ids: string[]) => commit((s) => ({ ...s, prefs: { ...s.prefs, areas: ids } })),
+    setPrefs: (patch: Partial<LocalState["prefs"]>) => commit((s) => ({ ...s, prefs: { ...s.prefs, ...patch } })),
     /** Rebuild the current deck with the latest votes and towns. */
     rebuildDeck: () =>
       commit((s) => {

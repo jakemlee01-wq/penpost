@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const WRITER_IDS = ["emma", "jack", "grace", "luke", "ben"] as const;
+export const CATEGORY_IDS = ["business", "economy", "agriculture", "technology", "sports", "politics", "health", "real-estate", "food", "culture"] as const;
+export const SCOPES = ["local", "minnesota", "national"] as const;
+export type CategoryId = (typeof CATEGORY_IDS)[number];
+export type Scope = (typeof SCOPES)[number];
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD");
 const isoTimestampWithOffset = z
@@ -34,14 +38,20 @@ export const StoryMetaSchema = z.object({
   // Towns the story is about. Statewide stories with no single place may leave this empty.
   cities: z.array(z.string()),
   topics: z.array(z.string()).min(1),
-  significance: z.enum(["local", "regional", "statewide"]),
+  significance: z.enum(["local", "regional", "statewide", "national"]),
+  // Broad sections readers pick as interests. Most stories have one; a few fit two.
+  categories: z.array(z.enum(CATEGORY_IDS)).min(1).max(3).default(["business"]),
+  // For the "lighter vs everything" dial. Selection only; it never changes how a story is written.
+  tone: z.enum(["light", "neutral", "heavy"]).default("neutral"),
+  // Big news for its places that should reach readers regardless of their interests or mood.
+  mustKnow: z.boolean().default(false),
   significanceReason: z.string().min(5),
   sources: z.array(SourceSchema).min(1),
   image: StoryImageSchema.optional(),
   status: z.enum(["draft", "reviewed", "published"]),
   isDemo: z.boolean(),
   correctionNote: z.string().optional(),
-}).refine((s) => s.significance === "statewide" || s.cities.length > 0, { message: "local and regional stories need at least one town", path: ["cities"] });
+}).refine((s) => s.significance === "statewide" || s.significance === "national" || s.cities.length > 0, { message: "local and regional stories need at least one town", path: ["cities"] });
 
 export type Source = z.infer<typeof SourceSchema>;
 export type StoryMeta = z.infer<typeof StoryMetaSchema>;
@@ -108,9 +118,16 @@ export type Feedback = {
   votedAt?: string;
 };
 
+export type Interest = { category: CategoryId; scope: Scope };
+/** 0 = lighter (skip heavy stories unless must-know), 1 = balanced, 2 = everything */
+export type Mood = 0 | 1 | 2;
+
 export type ReaderPreferences = {
   /** Picked areas, e.g. "region:twin-cities", "county:lac-qui-parle", "town:dawson". Empty until the reader chooses. */
   areas: string[];
-  explicitTopics: string[];
-  explicitWriters: string[];
+  /** Topics with how wide to look. Empty until the reader chooses. */
+  interests: Interest[];
+  mood: Mood;
+  /** Writers the reader likes; a small nudge, never a filter. */
+  favoriteWriters: string[];
 };

@@ -2,7 +2,7 @@
 
 Minnesota business, in 10 minutes. A phone-first daily: one story card at a time, about eight stories, then a real ending. Written by five disclosed AI writers (Emma, Jack, Grace, Luke, Ben).
 
-Readers pick their places on the first visit (any mix of regions, counties and towns). The browser remembers the picks, so no account is needed. The current edition (Oct. 9, 2026) is real Minnesota business news written from public sources. A daily job can draft new editions with Gemini for review.
+Readers set up on the first visit: places (any mix of regions, counties and towns), sections with a scope each (Local, Minnesota, National), a mood dial, and optional favorite writers. Editions are capped at five stories, with at least one per chosen section when there's news. The browser remembers the picks, so no account is needed. The current edition (Oct. 9, 2026) is real Minnesota business news written from public sources. A daily job can draft new editions with Gemini for review.
 
 ## Run it
 
@@ -39,6 +39,17 @@ docs/PENPOST_BRIEF.md     the product brief this build follows
 ## Reader places
 
 `content/areas.json` lists 8 regions, 20 counties and 38 towns. A pick expands to towns: "Twin Cities metro" covers every listed town in the seven metro counties, "Lac qui Parle County" covers Dawson and Madison. To add a town, add it under its county. The app asks new visitors to pick on their first visit and stores the picks in that browser. Older saves that stored plain town IDs are upgraded automatically.
+
+## Interests, mood and writers
+
+Sections live in `content/interests.json`. Every story has `categories` (1 or 2 sections), `tone` (light, neutral, heavy) and `mustKnow`.
+
+- A local or regional story needs a place match AND a section the reader turned on at any scope.
+- A statewide story needs a section at Minnesota or National scope; a national story needs National.
+- Must-know stories skip the section and mood checks, so big news for a reader's places always gets through.
+- Mood only selects stories. Lighter drops heavy stories (except must-know); Balanced nudges lighter ones up a little.
+- Favorite writers get a small nudge. All nudges together stay under the gap between geography tiers.
+- Political stories are written neutrally. There is no political lean setting by design.
 
 ## Editing content
 
@@ -96,7 +107,7 @@ Before it can run:
 
 ## Status
 
-Done: first-visit place picker (regions, counties, towns); real Oct. 9 edition; daily drafting job with review step; deck, article, writer profiles, completion, settings, about, today list; geography rules; votes with undo; persistence across refresh; storage-blocked fallback; reduced motion; keyboard and button navigation; content validation; 46 unit tests; screenshot flow checks at 320px and 390px.
+Done: first-visit place picker (regions, counties, towns); real Oct. 9 edition; daily drafting job with review step; deck, article, writer profiles, completion, settings, about, today list; geography rules; votes with undo; persistence across refresh; storage-blocked fallback; reduced motion; keyboard and button navigation; content validation; 59 unit tests; screenshot flow checks at 320px and 390px.
 
 Local only: votes, towns, deck position.
 

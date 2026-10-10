@@ -12,7 +12,7 @@ export function App() {
 
   // First visit (or after a reset): ask where they want news from before showing an edition.
   // Article, writer and about pages still open directly from a shared link.
-  if (reader.needsAreas && (route.name === "deck" || route.name === "today")) return <Onboarding reader={reader} />;
+  if (reader.needsSetup && (route.name === "deck" || route.name === "today")) return <Onboarding reader={reader} />;
 
   switch (route.name) {
     case "story":

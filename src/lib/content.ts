@@ -1,8 +1,9 @@
 import writersJson from "../../content/writers/writers.json";
 import areasJson from "../../content/areas.json";
+import interestsJson from "../../content/interests.json";
 import { AreasSchema, areaLabel, expandAreas, townsWithRegion } from "./areas";
 import { parseStoryFile } from "./parse";
-import { EditionManifestSchema, WriterSchema, type EditionManifest, type Story, type Town, type Writer } from "./schema";
+import { EditionManifestSchema, WriterSchema, type CategoryId, type Scope, type EditionManifest, type Story, type Town, type Writer } from "./schema";
 
 const storyFiles = import.meta.glob("../../content/stories/*.md", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const editionFiles = import.meta.glob("../../content/editions/*.json", { import: "default", eager: true }) as Record<string, unknown>;
@@ -11,6 +12,7 @@ const avatarFiles = import.meta.glob("../assets/avatars/*.{png,jpg,webp}", { imp
 export const writers: Writer[] = WriterSchema.array().parse(writersJson);
 export const areas = AreasSchema.parse(areasJson);
 export const towns: Town[] = townsWithRegion(areas);
+export const interestCatalog = interestsJson as { categories: { id: CategoryId; name: string }[]; scopes: { id: Scope; name: string }[] };
 export const expand = (areaIds: string[]) => expandAreas(areaIds, areas);
 export const labelFor = (areaIds: string[]) => areaLabel(areaIds, areas);
 

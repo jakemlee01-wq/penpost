@@ -1,4 +1,4 @@
-import type { Feedback, ReaderPreferences, Vote } from "./schema";
+import { CATEGORY_IDS, SCOPES, WRITER_IDS, type Feedback, type Interest, type Mood, type ReaderPreferences, type Vote } from "./schema";
 
 /**
  * Everything the reader does is stored on this device only, under one key.
@@ -26,7 +26,7 @@ export type LocalState = {
 export function defaultState(): LocalState {
   return {
     version: 1,
-    prefs: { areas: [], explicitTopics: [], explicitWriters: [] },
+    prefs: { areas: [], interests: [], mood: 1, favoriteWriters: [] },
     feedback: {},
     decks: {},
     hintSeen: false,
@@ -70,13 +70,28 @@ export function sanitize(value: unknown, normalizeAreas: (ids: unknown) => strin
     version: 1,
     prefs: {
       areas: normalizeAreas(rawAreas),
-      explicitTopics: Array.isArray(v.prefs?.explicitTopics) ? v.prefs!.explicitTopics : [],
-      explicitWriters: Array.isArray(v.prefs?.explicitWriters) ? v.prefs!.explicitWriters : [],
+      interests: sanitizeInterests(v.prefs?.interests),
+      mood: ([0, 1, 2] as const).includes(v.prefs?.mood as Mood) ? (v.prefs!.mood as Mood) : 1,
+      favoriteWriters: Array.isArray(v.prefs?.favoriteWriters)
+        ? v.prefs!.favoriteWriters.filter((w): w is string => (WRITER_IDS as readonly string[]).includes(w as string))
+        : [],
     },
     feedback: v.feedback && typeof v.feedback === "object" ? v.feedback : {},
     decks: v.decks && typeof v.decks === "object" ? v.decks : {},
     hintSeen: Boolean(v.hintSeen),
   };
+}
+
+function sanitizeInterests(raw: unknown): Interest[] {
+  if (!Array.isArray(raw)) return [];
+  const out = new Map<string, Interest>();
+  for (const x of raw) {
+    const i = x as Partial<Interest>;
+    if ((CATEGORY_IDS as readonly string[]).includes(i?.category as string) && (SCOPES as readonly string[]).includes(i?.scope as string)) {
+      out.set(i.category!, { category: i.category!, scope: i.scope! });
+    }
+  }
+  return [...out.values()];
 }
 
 export function loadState(): LocalState {
@@ -115,8 +130,12 @@ export function _resetMemory() {
   memory = null;
 }
 
-export function deckKey(editionId: string, townIds: string[]): string {
-  return `${editionId}|${[...townIds].sort().join(",")}`;
+/** A deck is frozen per edition and per reader setup; changing any setting builds a new one. */
+export function deckKey(editionId: string, townIds: string[], prefs?: Pick<ReaderPreferences, "interests" | "mood" | "favoriteWriters">): string {
+  const extra = prefs
+    ? `|${prefs.interests.map((i) => `${i.category}:${i.scope}`).sort().join(",")}|m${prefs.mood}|${[...prefs.favoriteWriters].sort().join(",")}`
+    : "";
+  return `${editionId}|${[...townIds].sort().join(",")}${extra}`;
 }
 
 /** Set, switch, or clear a vote. Passing the current vote again clears it. */

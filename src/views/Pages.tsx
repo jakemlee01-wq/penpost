@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { Avatar } from "../components/Avatar";
 import { ChevronLeft } from "../components/Icons";
 import { AreaPicker } from "../components/AreaPicker";
+import { InterestPicker, MoodPicker, WriterPicker } from "../components/InterestPicker";
+import type { Interest, Mood } from "../lib/schema";
 import { normalizeAreaIds } from "../lib/areas";
 import { TOPIC_LABELS, areas, writerById, writers } from "../lib/content";
 import { formatEditionDate } from "../lib/dates";
@@ -60,18 +62,25 @@ export function Settings({ reader }: { reader: Reader }) {
   const [msg, setMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<string[]>(state.prefs.areas);
-  const changed = draft.join() !== state.prefs.areas.join();
+  const [interests, setInterests] = useState<Interest[]>(state.prefs.interests);
+  const [mood, setMood] = useState<Mood>(state.prefs.mood);
+  const [favorites, setFavorites] = useState<string[]>(state.prefs.favoriteWriters);
+  const sig = (i: Interest[]) => i.map((x) => `${x.category}:${x.scope}`).sort().join();
+  const changed =
+    draft.join() !== state.prefs.areas.join() ||
+    sig(interests) !== sig(state.prefs.interests) ||
+    mood !== state.prefs.mood ||
+    [...favorites].sort().join() !== [...state.prefs.favoriteWriters].sort().join();
   const taste = tasteFromFeedback(Object.values(state.feedback));
   const votes = Object.values(state.feedback).filter((f) => f.vote);
 
-  const saveAreas = () => {
-    if (!draft.length) {
-      setMsg("Keep at least one place.");
-      return;
-    }
-    reader.setAreas(draft);
-    setMsg("Saved. Your edition now follows these places.");
+  const save = () => {
+    if (!draft.length) return setMsg("Keep at least one place.");
+    if (!interests.length) return setMsg("Turn on at least one section.");
+    reader.setPrefs({ areas: draft, interests, mood, favoriteWriters: favorites });
+    setMsg("Saved. Today's edition now follows these settings.");
   };
+  const touch = () => setMsg("");
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -87,6 +96,9 @@ export function Settings({ reader }: { reader: Reader }) {
       const next = sanitize(JSON.parse(await file.text()), (ids) => normalizeAreaIds(ids, areas));
       reader.importState(next);
       setDraft(next.prefs.areas);
+      setInterests(next.prefs.interests);
+      setMood(next.prefs.mood);
+      setFavorites(next.prefs.favoriteWriters);
       setMsg("Imported.");
     } catch {
       setMsg("That file couldn't be read.");
@@ -103,14 +115,22 @@ export function Settings({ reader }: { reader: Reader }) {
       <Bar title="Settings" />
       <main className="page">
         <h1>Your places</h1>
-        <p className="muted">Your edition follows these places. Stories from elsewhere only appear when they matter statewide.</p>
-        <AreaPicker value={draft} onChange={(ids) => { setDraft(ids); setMsg(""); }} />
-        <div className="btn-row">
-          <button className="pill-btn" onClick={saveAreas} disabled={!changed}>
-            Save places
+        <p className="muted">Local stories follow these places. Statewide and national stories follow your interests below.</p>
+        <AreaPicker value={draft} onChange={(ids) => { setDraft(ids); touch(); }} />
+
+        <h2>Your interests</h2>
+        <InterestPicker value={interests} onChange={(v) => { setInterests(v); touch(); }} />
+        <h2>How the day should feel</h2>
+        <MoodPicker value={mood} onChange={(m) => { setMood(m); touch(); }} />
+        <h2>Writers you like</h2>
+        <WriterPicker value={favorites} onChange={(v) => { setFavorites(v); touch(); }} />
+
+        <div className="save-bar">
+          <button className="pill-btn" onClick={save} disabled={!changed}>
+            Save settings
           </button>
+          {msg ? <span className="notice" role="status">{msg}</span> : null}
         </div>
-        {msg ? <p className="notice" role="status">{msg}</p> : null}
 
         <h2>Your votes</h2>
         <p className="muted">
@@ -122,7 +142,7 @@ export function Settings({ reader }: { reader: Reader }) {
           </p>
         ) : null}
         <div className="btn-row">
-          <button className="pill-btn" onClick={() => { reader.rebuildDeck(); setMsg("Today's edition rebuilt with your latest towns and votes."); }}>
+          <button className="pill-btn" onClick={() => { reader.rebuildDeck(); setMsg("Today's edition rebuilt with your latest settings and votes."); }}>
             Rebuild today's edition
           </button>
           <button className="pill-btn ghost" onClick={() => { reader.clearFeedback(); setMsg("Votes cleared."); }}>
@@ -138,7 +158,7 @@ export function Settings({ reader }: { reader: Reader }) {
         <div className="btn-row">
           <button className="pill-btn ghost" onClick={exportData}>Export</button>
           <button className="pill-btn ghost" onClick={() => fileRef.current?.click()}>Import</button>
-          <button className="pill-btn ghost danger" onClick={() => { reader.resetAll(); setDraft([]); setMsg("Everything reset. You'll pick your places again on the next visit."); }}>
+          <button className="pill-btn ghost danger" onClick={() => { reader.resetAll(); setDraft([]); setInterests([]); setMsg("Everything reset. You'll pick your places again on the next visit."); }}>
             Reset everything
           </button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && importData(e.target.files[0])} />
@@ -154,7 +174,7 @@ export function About() {
       <Bar title="About" />
       <main className="page">
         <h1>About Penpost</h1>
-        <p>Minnesota business, in 10 minutes. A new edition every weekday, roughly eight short stories, and then it stops.</p>
+        <p>Your places and your interests, in about five short stories. A new edition every weekday, and then it stops.</p>
 
         <h2>Written by AI</h2>
         <p>
@@ -182,9 +202,10 @@ export function About() {
         </p>
         <h2>How your edition is put together</h2>
         <p>
-          Your edition follows your towns. Stories from other towns appear only when they are big enough to matter statewide. On a quiet
-          day the edition is shorter. Your optional thumbs gently reorder future editions on this device. Swiping past a story is never
-          counted as a vote.
+          Your edition follows the places and sections you pick. Local stories come from your places; statewide and national stories come
+          from the sections you chose at that scope. The mood setting only changes which stories you get, never how a story is written, and
+          big news for your places always gets through. On a quiet day the edition is shorter. Your optional thumbs gently reorder future
+          editions on this device. Swiping past a story is never counted as a vote.
         </p>
         <h2>This is an early version</h2>
         <p>

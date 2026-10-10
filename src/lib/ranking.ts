@@ -1,38 +1,67 @@
-import type { Feedback, Story, Town } from "./schema";
+import type { Feedback, Interest, Mood, Scope, Story, Town } from "./schema";
 
 /**
  * Edition assembly, kept deliberately simple and readable.
  *
- * 1. Geography decides eligibility. Taste never overrides it.
- *    local      -> only when the story's town is one of the reader's towns
- *    regional   -> the reader's town, or a reader town in the same region
- *    statewide  -> everyone
- * 2. Eligible stories get a base score from geography.
- * 3. Votes add a small, capped taste adjustment. A single story vote is
- *    a provisional nudge to that story's topics and writer together; we do
- *    NOT claim it measures topic and writer preferences separately.
- * 4. A light variety pass avoids the same writer twice in a row.
- * 5. If fewer stories qualify, the edition is shorter. Nothing is padded.
+ * 1. Eligibility. A story qualifies when BOTH its place and its section fit the reader:
+ *    place:   local/regional stories need one of the reader's towns (or, for regional, the
+ *             same region). Statewide and national stories have no place requirement.
+ *    section: one of the story's categories is an interest whose scope is wide enough.
+ *             Scopes nest: "My places" < "Minnesota" < "National". Minnesota sports covers
+ *             local and statewide sports; national economy covers local, state and national.
+ *    Must-know stories (big news for the reader's places, or statewide must-knows) skip the
+ *    section check and the mood dial, so nothing important gets filtered out.
+ * 2. Mood. "Lighter" drops heavy stories unless must-know. "Balanced" gently prefers lighter ones.
+ * 3. Score = geography tier + small capped nudges (votes, favorite writers, mood). Nudges can
+ *    reorder stories within a tier but never move one across tiers.
+ * 4. Coverage: must-know stories go in first, then each section the reader turned on gets
+ *    its best story (if it has one), then remaining slots go by score. So five slots can't
+ *    all go to one section when the reader asked for several.
+ * 5. Final order is by score, with a light pass so the same writer isn't twice in a row.
+ * 6. Up to five stories. Fewer if fewer qualify. Nothing is padded.
  */
 
-export const MAX_STORIES = 8;
+export const MAX_STORIES = 5;
 
 export const BASE_SCORE = {
   localMatch: 100,
   regionalMatch: 80,
   statewide: 70,
+  national: 60,
 } as const;
 
-/** Per-key cap on accumulated votes, and the points each unit is worth. */
 export const TASTE_UNIT_CAP = 3;
 export const TOPIC_POINTS_PER_UNIT = 2;
 export const WRITER_POINTS_PER_UNIT = 1;
-/** Total taste adjustment can never exceed this, so it can't outweigh geography tiers (gap >= 10). */
+export const FAVORITE_WRITER_POINTS = 3;
+/** Total of all nudges stays under the smallest gap between tiers (10). */
+export const MAX_NUDGE = 9;
+/** Kept for the taste-only cap used in Settings and tests. */
 export const MAX_TASTE_ADJUSTMENT = 8;
+
+const SCOPE_RANK: Record<Scope, number> = { local: 0, minnesota: 1, national: 2 };
+
+export type ReaderProfile = {
+  towns: string[];
+  interests: Interest[];
+  mood: Mood;
+  favoriteWriters: string[];
+};
 
 export type Eligibility = { eligible: boolean; base: number; reason: string };
 
-export function eligibility(story: Story, readerTowns: string[], towns: Town[]): Eligibility {
+function clamp(n: number, lo: number, hi: number) {
+  return Math.min(hi, Math.max(lo, n));
+}
+
+/** Where the story sits: 0 = needs a place match, 1 = statewide, 2 = national. */
+function storyLevel(story: Story): number {
+  if (story.significance === "national") return 2;
+  if (story.significance === "statewide") return 1;
+  return 0;
+}
+
+export function placeFit(story: Story, readerTowns: string[], towns: Town[]): Eligibility {
   const regionOf = new Map(towns.map((t) => [t.id, t.region]));
   const readerSet = new Set(readerTowns);
   const directMatch = story.cities.some((c) => readerSet.has(c));
@@ -40,6 +69,8 @@ export function eligibility(story: Story, readerTowns: string[], towns: Town[]):
   const regionMatch = story.cities.some((c) => readerRegions.has(regionOf.get(c)));
 
   switch (story.significance) {
+    case "national":
+      return { eligible: true, base: directMatch ? BASE_SCORE.localMatch : BASE_SCORE.national, reason: "national" };
     case "statewide":
       return { eligible: true, base: directMatch ? BASE_SCORE.localMatch : BASE_SCORE.statewide, reason: "statewide significance" };
     case "regional":
@@ -52,13 +83,29 @@ export function eligibility(story: Story, readerTowns: string[], towns: Town[]):
   }
 }
 
-export type Taste = { topics: Record<string, number>; writers: Record<string, number> };
-
-function clamp(n: number, lo: number, hi: number) {
-  return Math.min(hi, Math.max(lo, n));
+/** Does one of the story's sections match an interest wide enough to cover it? */
+export function sectionFit(story: Story, interests: Interest[]): boolean {
+  const level = storyLevel(story);
+  return story.categories.some((c) => interests.some((i) => i.category === c && SCOPE_RANK[i.scope] >= level));
 }
 
-/** Build provisional taste units from explicit votes only. Swipes and opens are never inputs. */
+/**
+ * Place AND section, with the must-know floor and the mood dial.
+ * Without a profile's interests (older callers), only place is checked.
+ */
+export function eligibility(story: Story, readerTowns: string[], towns: Town[], profile?: Pick<ReaderProfile, "interests" | "mood">): Eligibility {
+  const place = placeFit(story, readerTowns, towns);
+  if (!place.eligible || !profile) return place;
+  const mustKnow = story.mustKnow && story.significance !== "national";
+  if (mustKnow) return { ...place, reason: `${place.reason}, must-know` };
+  if (!sectionFit(story, profile.interests)) return { eligible: false, base: 0, reason: "not one of your interests" };
+  if (profile.mood === 0 && story.tone === "heavy") return { eligible: false, base: 0, reason: "heavy story, lighter mood" };
+  return place;
+}
+
+export type Taste = { topics: Record<string, number>; writers: Record<string, number> };
+
+/** Provisional taste units from explicit votes only. Swipes and opens are never inputs. */
 export function tasteFromFeedback(feedback: Feedback[]): Taste {
   const topics: Record<string, number> = {};
   const writers: Record<string, number> = {};
@@ -75,20 +122,31 @@ export function tasteAdjustment(story: Story, taste: Taste): number {
   const topicUnits = story.topics.map((t) => taste.topics[t] ?? 0);
   const topicAvg = topicUnits.length ? topicUnits.reduce((a, b) => a + b, 0) / topicUnits.length : 0;
   const writerUnits = taste.writers[story.writerId] ?? 0;
-  const raw = topicAvg * TOPIC_POINTS_PER_UNIT + writerUnits * WRITER_POINTS_PER_UNIT;
-  return clamp(raw, -MAX_TASTE_ADJUSTMENT, MAX_TASTE_ADJUSTMENT);
+  return clamp(topicAvg * TOPIC_POINTS_PER_UNIT + writerUnits * WRITER_POINTS_PER_UNIT, -MAX_TASTE_ADJUSTMENT, MAX_TASTE_ADJUSTMENT);
 }
 
-export type Scored = { story: Story; score: number; base: number; taste: number; reason: string };
+export function moodAdjustment(story: Story, mood: Mood): number {
+  if (mood === 2) return 0;
+  if (mood === 1) return story.tone === "light" ? 2 : story.tone === "heavy" ? -3 : 0;
+  return story.tone === "light" ? 4 : 0;
+}
 
-export function scoreStories(stories: Story[], readerTowns: string[], towns: Town[], taste: Taste): Scored[] {
+export type Scored = { story: Story; score: number; base: number; nudge: number; reason: string };
+
+const DEFAULT_PROFILE_EXTRAS = { interests: [] as Interest[], mood: 2 as Mood, favoriteWriters: [] as string[] };
+
+export function scoreStories(stories: Story[], profile: ReaderProfile | string[], towns: Town[], taste: Taste): Scored[] {
+  // Accept a bare town list for place-only ranking (used by older tests and tools).
+  const p: ReaderProfile = Array.isArray(profile) ? { towns: profile, ...DEFAULT_PROFILE_EXTRAS } : profile;
+  const checkSections = !Array.isArray(profile);
   const out: Scored[] = [];
   for (const story of stories) {
     if (story.status === "draft") continue;
-    const e = eligibility(story, readerTowns, towns);
+    const e = eligibility(story, p.towns, towns, checkSections ? p : undefined);
     if (!e.eligible) continue;
-    const t = tasteAdjustment(story, taste);
-    out.push({ story, score: e.base + t, base: e.base, taste: t, reason: e.reason });
+    const favorite = p.favoriteWriters.includes(story.writerId) ? FAVORITE_WRITER_POINTS : 0;
+    const nudge = clamp(tasteAdjustment(story, taste) + favorite + moodAdjustment(story, p.mood), -MAX_NUDGE, MAX_NUDGE);
+    out.push({ story, score: e.base + nudge, base: e.base, nudge, reason: e.reason });
   }
   return out.sort(
     (a, b) => b.score - a.score || b.story.publishedAt.localeCompare(a.story.publishedAt) || a.story.id.localeCompare(b.story.id),
@@ -107,13 +165,26 @@ export function varyWriters(scored: Scored[]): Scored[] {
   return out;
 }
 
+/** Pick up to `max`: must-knows, then one per interest section, then best remaining. Returned in score order. */
+export function selectWithCoverage(scored: Scored[], interests: Interest[], max: number): Scored[] {
+  const picked: Scored[] = [];
+  const take = (s: Scored | undefined) => {
+    if (s && picked.length < max && !picked.includes(s)) picked.push(s);
+  };
+  for (const s of scored) if (s.story.mustKnow) take(s);
+  for (const i of interests) take(scored.find((s) => !picked.includes(s) && s.story.categories.includes(i.category)));
+  for (const s of scored) take(s);
+  return scored.filter((s) => picked.includes(s));
+}
+
 export function assembleStoryIds(
   stories: Story[],
-  readerTowns: string[],
+  profile: ReaderProfile | string[],
   towns: Town[],
   feedback: Feedback[],
   max = MAX_STORIES,
 ): string[] {
-  const scored = scoreStories(stories, readerTowns, towns, tasteFromFeedback(feedback));
-  return varyWriters(scored.slice(0, max)).map((s) => s.story.id);
+  const scored = scoreStories(stories, profile, towns, tasteFromFeedback(feedback));
+  const interests = Array.isArray(profile) ? [] : profile.interests;
+  return varyWriters(selectWithCoverage(scored, interests, max)).map((s) => s.story.id);
 }

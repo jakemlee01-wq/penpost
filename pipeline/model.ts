@@ -17,7 +17,7 @@ export type Usage = { calls: number; inputTokens: number; outputTokens: number }
 export type Model = { complete(call: Call): Promise<string>; usage: Usage };
 
 const DEFAULT_MODELS: Record<string, Record<Tier, string>> = {
-  gemini: { triage: "gemini-2.5-flash", writer: "gemini-2.5-pro" },
+  gemini: { triage: "gemini-3.5-flash-lite", writer: "gemini-3.8-flash" },
   anthropic: { triage: "claude-haiku-5-5", writer: "claude-sonnet-5-5" },
 };
 

@@ -126,7 +126,7 @@ The handoff supplied 1024px **opaque JPEGs with a checkerboard painted in**. Thi
 
 Setup:
 1. Repo Settings, Secrets and variables, Actions: add secret `GEMINI_API_KEY` (the drafting key; keep a separate key for the onboarding reader later). Optional: `UNSPLASH_ACCESS_KEY` for stock photos.
-2. Optional repository variables: `PENPOST_TRIAGE_MODEL`, `PENPOST_WRITER_MODEL` (defaults are `gemini-2.5-flash` and `gemini-2.5-pro`; check Google's current model list), `PENPOST_MAX_CALLS` (default 40, a hard stop per run).
+2. Optional repository variables: `PENPOST_TRIAGE_MODEL`, `PENPOST_WRITER_MODEL` (defaults are `gemini-3.5-flash-lite` and `gemini-3.8-flash`; the 2.5 models are limited to existing users, so check Google's current model list if a run fails with a 404), `PENPOST_MAX_CALLS` (default 40, a hard stop per run).
 3. Repo Settings, Actions, General: allow GitHub Actions to create pull requests.
 4. Run it once by hand from the Actions tab and read the pull request.
 

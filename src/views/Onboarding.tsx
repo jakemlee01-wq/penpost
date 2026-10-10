@@ -1,70 +1,101 @@
-import { useState } from "react";
-import { AreaPicker } from "../components/AreaPicker";
-import { InterestPicker, MoodPicker, WriterPicker } from "../components/InterestPicker";
+import { useCallback, useRef, useState } from "react";
+import { Mic } from "../components/Icons";
+import { areas } from "../lib/content";
 import { href } from "../lib/router";
-import type { Interest, Mood } from "../lib/schema";
+import { parserConfigured, runSetup } from "../lib/setupClient";
+import { MAX_SETUP_CHARS, SETUP_EXAMPLE } from "../lib/setupParse";
+import { useSpeech } from "../lib/useSpeech";
 import type { Reader } from "../lib/useReader";
 
-const STARTER: Interest[] = [{ category: "business", scope: "minnesota" }];
+/**
+ * First-run setup: one screen, one free-text answer, one button.
+ * Personalization should be experienced, not configured: the reader says what they want in
+ * their own words and lands on an edition. Granular controls live in Settings.
+ */
+export function Onboarding({ reader, redo = false }: { reader: Reader; redo?: boolean }) {
+  const [text, setText] = useState(redo ? reader.state.prefs.setup?.text ?? "" : "");
+  const [busy, setBusy] = useState(false);
+  const textRef = useRef(text);
+  textRef.current = text;
+  const getText = useCallback(() => textRef.current, []);
+  const speech = useSpeech(getText, (t) => setText(t.slice(0, MAX_SETUP_CHARS)));
 
-export function Onboarding({ reader }: { reader: Reader }) {
-  const prefs = reader.state.prefs;
-  const [step, setStep] = useState<1 | 2>(reader.needsAreas ? 1 : 2);
-  const [areas, setAreas] = useState<string[]>(prefs.areas);
-  const [interests, setInterests] = useState<Interest[]>(prefs.interests.length ? prefs.interests : STARTER);
-  const [mood, setMood] = useState<Mood>(prefs.mood);
-  const [favorites, setFavorites] = useState<string[]>(prefs.favoriteWriters);
-
-  const finish = () => reader.setPrefs({ areas, interests, mood, favoriteWriters: favorites });
+  const submit = async () => {
+    if (busy) return;
+    speech.stop();
+    setBusy(true);
+    const result = await runSetup(text, areas);
+    reader.completeSetup(text.trim(), result);
+    if (redo) window.location.hash = href.deck();
+  };
 
   return (
     <div className="screen onboarding">
       <header className="topbar">
         <span className="brand">penpost</span>
-        <span className="topbar-date">Step {step} of 2</span>
+        {redo ? (
+          <a className="topbar-date" href={href.settings()}>
+            Cancel
+          </a>
+        ) : null}
       </header>
 
-      {step === 1 ? (
-        <main className="page">
-          <h1>Where do you want news from?</h1>
-          <p className="muted">
-            Pick any mix of regions, counties and towns. Local stories follow these places. Penpost remembers your picks on this device. No account
-            needed.
+      <main className="page setup">
+        <h1 id="setup-h">What news do you want?</h1>
+        <p className="muted">
+          Tell us in your own words: where you live or grew up, what you follow, and what you'd rather skip. Type it or tap the mic.
+        </p>
+
+        <div className={`setup-box${speech.listening ? " listening" : ""}`}>
+          <textarea
+            className="setup-input"
+            aria-labelledby="setup-h"
+            value={text}
+            maxLength={MAX_SETUP_CHARS}
+            rows={5}
+            placeholder="I live in…, I follow…, I don't care about…"
+            onChange={(e) => setText(e.target.value)}
+            disabled={busy}
+          />
+          {speech.supported ? (
+            <button
+              type="button"
+              className={`mic-btn${speech.listening ? " on" : ""}`}
+              onClick={speech.listening ? speech.stop : speech.start}
+              aria-pressed={speech.listening}
+              aria-label={speech.listening ? "Stop voice input" : "Speak your answer"}
+              disabled={busy}
+            >
+              <Mic />
+              <span>{speech.listening ? "Listening… tap to stop" : "Speak"}</span>
+            </button>
+          ) : null}
+        </div>
+        {speech.error ? (
+          <p className="fineprint" role="status">
+            {speech.error}
           </p>
-          <AreaPicker value={areas} onChange={setAreas} />
-          <p className="fineprint">
-            Written by AI writers and reviewed before publishing. <a href={href.about()}>How Penpost works</a>
-          </p>
-        </main>
-      ) : (
-        <main className="page">
-          <h1>What do you want to read about?</h1>
-          <p className="muted">
-            For each section, choose how wide to look. Local means your places. Minnesota adds statewide news, and National adds U.S. news. You get
-            about five stories a day, with at least one from each section you turn on when there's news.
-          </p>
-          <InterestPicker value={interests} onChange={setInterests} />
-          <h2>How should the day feel?</h2>
-          <MoodPicker value={mood} onChange={setMood} />
-          <h2>Writers you like (optional)</h2>
-          <p className="muted">A small nudge toward their stories. Every writer still covers every section.</p>
-          <WriterPicker value={favorites} onChange={setFavorites} />
-          <button className="text-btn" onClick={() => setStep(1)}>
-            Back to places
-          </button>
-        </main>
-      )}
+        ) : null}
+
+        <figure className="setup-example">
+          <figcaption>For example</figcaption>
+          <blockquote>{SETUP_EXAMPLE}</blockquote>
+        </figure>
+
+        <p className="fineprint">
+          No account needed.{" "}
+          {parserConfigured
+            ? "Penpost sends your answer once to an AI model to set up your edition and doesn't keep it on a server."
+            : "Your answer is read in your browser."}{" "}
+          Your settings stay on this device. Stories are written by AI writers and reviewed before publishing.{" "}
+          <a href={href.about()}>How Penpost works</a>
+        </p>
+      </main>
 
       <div className="cta-bar">
-        {step === 1 ? (
-          <button className="cta" disabled={!areas.length} onClick={() => setStep(2)}>
-            {areas.length ? "Next: your interests" : "Pick at least one place"}
-          </button>
-        ) : (
-          <button className="cta" disabled={!interests.length || !areas.length} onClick={finish}>
-            {!areas.length ? "Pick a place first" : interests.length ? "Show my edition" : "Turn on at least one section"}
-          </button>
-        )}
+        <button className="cta" onClick={submit} disabled={busy}>
+          {busy ? "Reading your answer…" : "Show my edition"}
+        </button>
       </div>
     </div>
   );

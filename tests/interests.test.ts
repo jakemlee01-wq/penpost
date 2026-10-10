@@ -14,7 +14,8 @@ const byId = (id: string) => pool.find((s) => s.id === id)!;
 const base = (over: Partial<ReaderProfile> = {}): ReaderProfile => ({
   towns: expandAreas(["region:twin-cities", "town:dawson"], areas),
   interests: [{ category: "business", scope: "minnesota" }],
-  mood: 1,
+  likes: [],
+  avoids: [],
   favoriteWriters: [],
   ...over,
 });
@@ -47,22 +48,28 @@ describe("interests and scope", () => {
   });
 });
 
-describe("mood", () => {
-  it("lighter drops heavy stories", () => {
-    const p = base({ mood: 0 });
+describe("lighter by default", () => {
+  it("drops heavy stories for everyone unless they're must-know", () => {
+    const p = base();
     expect(eligibility(byId("2026-10-09-hmongtown"), p.towns, towns, p).eligible).toBe(false);
-    expect(eligibility(byId("2026-10-09-hmongtown"), p.towns, towns, base({ mood: 2 })).eligible).toBe(true);
+    expect(eligibility({ ...byId("2026-10-09-hmongtown"), mustKnow: true }, p.towns, towns, p).eligible).toBe(true);
   });
-  it("must-know stories get through any mood or interest setting", () => {
+  it("must-know stories get through any interest setting", () => {
     const s = { ...byId("2026-10-09-hmongtown"), mustKnow: true };
-    const p = base({ mood: 0, interests: [{ category: "sports", scope: "national" }] });
+    const p = base({ interests: [{ category: "sports", scope: "national" }] });
     expect(eligibility(s, p.towns, towns, p).eligible).toBe(true);
   });
-  it("never lets mood or favorites move a story across geography tiers", () => {
-    const p = base({ mood: 0, favoriteWriters: ["emma"], interests: [{ category: "business", scope: "national" }, { category: "health", scope: "national" }] });
+  it("never lets likes, dislikes or favorites move a story across geography tiers", () => {
+    const p = base({
+      favoriteWriters: ["emma"],
+      likes: ["manufacturing", "health care", "agriculture"],
+      avoids: ["small business", "startups"],
+      interests: [{ category: "business", scope: "national" }, { category: "health", scope: "national" }],
+    });
     const scored = scoreStories(pool, p, towns, { topics: {}, writers: {} });
     const local = scored.filter((x) => x.base === 100);
     const state = scored.filter((x) => x.base === 70);
+    expect(local.length).toBeGreaterThan(0);
     expect(Math.min(...local.map((x) => x.score))).toBeGreaterThan(Math.max(...state.map((x) => x.score)));
   });
 });

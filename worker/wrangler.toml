@@ -1,0 +1,18 @@
+# Penpost setup parser. Deploy from the repo root:
+#   npx wrangler deploy --config worker/wrangler.toml
+#   npx wrangler secret put GEMINI_API_KEY --config worker/wrangler.toml
+name = "penpost-setup"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://penpost.co,https://www.penpost.co,https://jakemlee01-wq.github.io,http://localhost:5173"
+GEMINI_MODEL = "gemini-2.5-flash"
+
+# Optional: limit each visitor to 10 setup parses a minute.
+# Check Cloudflare's current rate limiting docs before enabling.
+# [[unsafe.bindings]]
+# name = "RATE_LIMITER"
+# type = "ratelimit"
+# namespace_id = "1001"
+# simple = { limit = 10, period = 60 }

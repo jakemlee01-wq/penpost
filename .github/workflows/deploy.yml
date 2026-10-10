@@ -27,6 +27,9 @@ jobs:
       - name: Download licensed story photos
         run: npm run photos
       - run: npm run build   # validates content, typechecks, builds dist/
+        env:
+          # The setup parser Worker's URL (repo variable). Empty = setup reads answers in the browser.
+          VITE_PARSE_URL: ${{ vars.PENPOST_PARSE_URL }}
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:

@@ -32,7 +32,7 @@ For each item decide:
 - cities: town IDs from this catalog only. Use the town where it happens. For statewide news with no single place (a state law, a statewide program), use []. If no catalog town fits a local story, use the nearest catalog town and say so in reason.
 ${townCatalog}
 - significance: "local" (matters mainly to that town), "regional" (matters across its part of the state), "statewide" (matters across Minnesota: major deals, significant jobs, state policy, Minnesota pro teams), or "national" (U.S.-wide news not specific to Minnesota). Be strict: most Minnesota items are local. National items use cities [].
-- topics: 1 to 3 short lowercase slugs, e.g. small-business, startups, venture-capital, private-equity, acquisitions, agriculture, manufacturing, jobs, policy, real-estate, health-care, trade, logistics, expansions, openings, closings.
+- topics: 2 to 5 short lowercase slugs. Use general ones (e.g. small-business, startups, venture-capital, private-equity, acquisitions, agriculture, manufacturing, jobs, policy, real-estate, health-care, trade, logistics, expansions, openings, closings) plus the specific sport, company, team or person the story is about (e.g. football, soccer, vikings, berkshire-hathaway). Readers' stated likes and dislikes are matched against these.
 - storyKey: a short lowercase key naming the underlying event, identical for items about the same event.
 Return JSON: {"items":[{"i":number,"keep":boolean,"reason":string,"cities":string[],"significance":string,"significanceReason":string,"categories":string[],"tone":string,"mustKnow":boolean,"topics":string[],"storyKey":string}]}`;
 }

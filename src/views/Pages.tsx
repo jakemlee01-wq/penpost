@@ -2,8 +2,9 @@ import { useRef, useState } from "react";
 import { Avatar } from "../components/Avatar";
 import { ChevronLeft } from "../components/Icons";
 import { AreaPicker } from "../components/AreaPicker";
-import { InterestPicker, MoodPicker, WriterPicker } from "../components/InterestPicker";
-import type { Interest, Mood } from "../lib/schema";
+import { InterestPicker, TopicChips, WriterPicker } from "../components/InterestPicker";
+import type { Interest } from "../lib/schema";
+import { MAX_AVOIDS, MAX_LIKES } from "../lib/setupParse";
 import { normalizeAreaIds } from "../lib/areas";
 import { TOPIC_LABELS, areas, writerById, writers } from "../lib/content";
 import { formatEditionDate } from "../lib/dates";
@@ -63,21 +64,30 @@ export function Settings({ reader }: { reader: Reader }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<string[]>(state.prefs.areas);
   const [interests, setInterests] = useState<Interest[]>(state.prefs.interests);
-  const [mood, setMood] = useState<Mood>(state.prefs.mood);
+  const [likes, setLikes] = useState<string[]>(state.prefs.likes);
+  const [avoids, setAvoids] = useState<string[]>(state.prefs.avoids);
   const [favorites, setFavorites] = useState<string[]>(state.prefs.favoriteWriters);
   const sig = (i: Interest[]) => i.map((x) => `${x.category}:${x.scope}`).sort().join();
+  const same = (a: string[], b: string[]) => [...a].sort().join() === [...b].sort().join();
   const changed =
     draft.join() !== state.prefs.areas.join() ||
     sig(interests) !== sig(state.prefs.interests) ||
-    mood !== state.prefs.mood ||
-    [...favorites].sort().join() !== [...state.prefs.favoriteWriters].sort().join();
+    !same(likes, state.prefs.likes) ||
+    !same(avoids, state.prefs.avoids) ||
+    !same(favorites, state.prefs.favoriteWriters);
   const taste = tasteFromFeedback(Object.values(state.feedback));
   const votes = Object.values(state.feedback).filter((f) => f.vote);
 
   const save = () => {
-    if (!draft.length) return setMsg("Keep at least one place.");
     if (!interests.length) return setMsg("Turn on at least one section.");
-    reader.setPrefs({ areas: draft, interests, mood, favoriteWriters: favorites });
+    reader.setPrefs({
+      areas: draft,
+      interests,
+      likes: likes.filter((l) => !avoids.includes(l)),
+      avoids,
+      favoriteWriters: favorites,
+      setup: state.prefs.setup ?? { text: "", source: "manual", at: new Date().toISOString() },
+    });
     setMsg("Saved. Today's edition now follows these settings.");
   };
   const touch = () => setMsg("");
@@ -97,7 +107,8 @@ export function Settings({ reader }: { reader: Reader }) {
       reader.importState(next);
       setDraft(next.prefs.areas);
       setInterests(next.prefs.interests);
-      setMood(next.prefs.mood);
+      setLikes(next.prefs.likes);
+      setAvoids(next.prefs.avoids);
       setFavorites(next.prefs.favoriteWriters);
       setMsg("Imported.");
     } catch {
@@ -114,14 +125,28 @@ export function Settings({ reader }: { reader: Reader }) {
     <div className="screen">
       <Bar title="Settings" />
       <main className="page">
-        <h1>Your places</h1>
-        <p className="muted">Local stories follow these places. Statewide and national stories follow your interests below.</p>
+        <h1>Your edition</h1>
+        <h2>What you told us</h2>
+        {state.prefs.setup?.text ? <p className="setup-said">"{state.prefs.setup.text}"</p> : null}
+        <p className="muted">
+          {state.prefs.setup?.source === "starter"
+            ? "We couldn't pick out what you like from your answer, so you started with Minnesota business news."
+            : "Your edition was built from your own words. Say it again any time, or fine-tune the details below."}
+        </p>
+        <a className="pill-link" href={href.setup()}>Redo setup in your own words</a>
+
+        <h2>Your places</h2>
+        <p className="muted">Local stories follow these places. With no places, you get statewide and national news.</p>
         <AreaPicker value={draft} onChange={(ids) => { setDraft(ids); touch(); }} />
 
-        <h2>Your interests</h2>
+        <h2>Your sections</h2>
         <InterestPicker value={interests} onChange={(v) => { setInterests(v); touch(); }} />
-        <h2>How the day should feel</h2>
-        <MoodPicker value={mood} onChange={(m) => { setMood(m); touch(); }} />
+        <h2>More of</h2>
+        <p className="muted">Specific things to favor. A small nudge within your edition.</p>
+        <TopicChips value={likes} onChange={(v) => { setLikes(v); touch(); }} label="More of" placeholder="e.g. value investing" max={MAX_LIKES} />
+        <h2>Less of</h2>
+        <p className="muted">Things you'd rather skip. These move stories down, never out, so big news still reaches you.</p>
+        <TopicChips value={avoids} onChange={(v) => { setAvoids(v); touch(); }} label="Less of" placeholder="e.g. soccer" max={MAX_AVOIDS} />
         <h2>Writers you like</h2>
         <WriterPicker value={favorites} onChange={(v) => { setFavorites(v); touch(); }} />
 
@@ -158,7 +183,7 @@ export function Settings({ reader }: { reader: Reader }) {
         <div className="btn-row">
           <button className="pill-btn ghost" onClick={exportData}>Export</button>
           <button className="pill-btn ghost" onClick={() => fileRef.current?.click()}>Import</button>
-          <button className="pill-btn ghost danger" onClick={() => { reader.resetAll(); setDraft([]); setInterests([]); setMsg("Everything reset. You'll pick your places again on the next visit."); }}>
+          <button className="pill-btn ghost danger" onClick={() => { reader.resetAll(); setDraft([]); setInterests([]); setLikes([]); setAvoids([]); setMsg("Everything reset. You'll set up again on the next visit."); }}>
             Reset everything
           </button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && importData(e.target.files[0])} />
@@ -202,15 +227,16 @@ export function About() {
         </p>
         <h2>How your edition is put together</h2>
         <p>
-          Your edition follows the places and sections you pick. Local stories come from your places; statewide and national stories come
-          from the sections you chose at that scope. The mood setting only changes which stories you get, never how a story is written, and
-          big news for your places always gets through. On a quiet day the edition is shorter. Your optional thumbs gently reorder future
-          editions on this device. Swiping past a story is never counted as a vote.
+          You tell Penpost what you want in your own words, and it turns that into places, sections and specific interests. Local
+          stories come from your places; statewide and national stories come from your sections. Editions lean lighter: a heavy story
+          gets in only when it's big news. Things you say you don't care about move down, never out, so big news for your places always
+          gets through. On a quiet day the edition is shorter. Your optional thumbs gently reorder future editions on this device.
+          Swiping past a story is never counted as a vote. You can fine-tune everything in Settings.
         </p>
         <h2>This is an early version</h2>
         <p>
-          Penpost is new and still being shaped. Story pictures are illustrations, not news photos. If something looks wrong, it gets
-          corrected and the article says so.
+          Penpost is new and still being shaped. Story photos are licensed photos; generic ones are labeled "Stock photo" so they never
+          read as the actual event. If something looks wrong, it gets corrected and the article says so.
         </p>
       </main>
     </div>

@@ -137,15 +137,26 @@ export type Feedback = {
 };
 
 export type Interest = { category: CategoryId; scope: Scope };
-/** 0 = lighter (skip heavy stories unless must-know), 1 = balanced, 2 = everything */
-export type Mood = 0 | 1 | 2;
+
+export type SetupRecord = {
+  /** What the reader typed or said at setup, kept so they can redo it from Settings. */
+  text: string;
+  /** ai = parsed by the Worker, basic = parsed in the browser, starter = nothing usable, manual = set in Settings */
+  source: "ai" | "basic" | "starter" | "manual";
+  at: string;
+};
 
 export type ReaderPreferences = {
-  /** Picked areas, e.g. "region:twin-cities", "county:lac-qui-parle", "town:dawson". Empty until the reader chooses. */
+  /** Picked areas, e.g. "region:twin-cities", "county:lac-qui-parle", "town:dawson". Empty = statewide and national only. */
   areas: string[];
-  /** Topics with how wide to look. Empty until the reader chooses. */
+  /** Sections with how wide to look. */
   interests: Interest[];
-  mood: Mood;
-  /** Writers the reader likes; a small nudge, never a filter. */
+  /** Free-form things to favor ("value investing", "berkshire hathaway"). A small nudge. */
+  likes: string[];
+  /** Explicit dislikes ("soccer"). A small down-weight, never a filter. */
+  avoids: string[];
+  /** Writers the reader likes; a small nudge, never a filter. Settings only. */
   favoriteWriters: string[];
+  /** Present once the reader has finished setup. */
+  setup: SetupRecord | null;
 };

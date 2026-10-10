@@ -1,4 +1,5 @@
-import type { Feedback, Interest, Mood, Scope, Story, Town } from "./schema";
+import type { Feedback, Interest, Scope, Story, Town } from "./schema";
+import { phraseMatches } from "./setupParse";
 
 /**
  * Edition assembly, kept deliberately simple and readable.
@@ -10,10 +11,12 @@ import type { Feedback, Interest, Mood, Scope, Story, Town } from "./schema";
  *             Scopes nest: "My places" < "Minnesota" < "National". Minnesota sports covers
  *             local and statewide sports; national economy covers local, state and national.
  *    Must-know stories (big news for the reader's places, or statewide must-knows) skip the
- *    section check and the mood dial, so nothing important gets filtered out.
- * 2. Mood. "Lighter" drops heavy stories unless must-know. "Balanced" gently prefers lighter ones.
- * 3. Score = geography tier + small capped nudges (votes, favorite writers, mood). Nudges can
- *    reorder stories within a tier but never move one across tiers.
+ *    section and tone checks, so nothing important gets filtered out.
+ *    A reader with no places gets statewide and national stories only.
+ * 2. Tone. Editions lean lighter for everyone: a heavy story gets in only when it's must-know.
+ * 3. Score = geography tier + small capped nudges (likes and dislikes from setup, votes,
+ *    favorite writers, a lift for light stories). Nudges can reorder stories within a tier but
+ *    never move one across tiers. Dislikes are a nudge only, never a filter.
  * 4. Coverage: must-know stories go in first, then each section the reader turned on gets
  *    its best story (if it has one), then remaining slots go by score. So five slots can't
  *    all go to one section when the reader asked for several.
@@ -34,6 +37,12 @@ export const TASTE_UNIT_CAP = 3;
 export const TOPIC_POINTS_PER_UNIT = 2;
 export const WRITER_POINTS_PER_UNIT = 1;
 export const FAVORITE_WRITER_POINTS = 3;
+/** Free-form likes from setup: per matching phrase, capped. */
+export const LIKE_POINTS = 3;
+export const MAX_LIKE_POINTS = 6;
+/** Explicit dislikes from setup: a down-weight inside the tier. Never removes a story. */
+export const AVOID_POINTS = 6;
+export const LIGHT_TONE_POINTS = 2;
 /** Total of all nudges stays under the smallest gap between tiers (10). */
 export const MAX_NUDGE = 9;
 /** Kept for the taste-only cap used in Settings and tests. */
@@ -44,7 +53,8 @@ const SCOPE_RANK: Record<Scope, number> = { local: 0, minnesota: 1, national: 2 
 export type ReaderProfile = {
   towns: string[];
   interests: Interest[];
-  mood: Mood;
+  likes: string[];
+  avoids: string[];
   favoriteWriters: string[];
 };
 
@@ -90,16 +100,17 @@ export function sectionFit(story: Story, interests: Interest[]): boolean {
 }
 
 /**
- * Place AND section, with the must-know floor and the mood dial.
+ * Place AND section, with the must-know floor and the lighter-tone rule.
  * Without a profile's interests (older callers), only place is checked.
+ * Likes and dislikes are deliberately absent here: they only nudge the score.
  */
-export function eligibility(story: Story, readerTowns: string[], towns: Town[], profile?: Pick<ReaderProfile, "interests" | "mood">): Eligibility {
+export function eligibility(story: Story, readerTowns: string[], towns: Town[], profile?: Pick<ReaderProfile, "interests">): Eligibility {
   const place = placeFit(story, readerTowns, towns);
   if (!place.eligible || !profile) return place;
   const mustKnow = story.mustKnow && story.significance !== "national";
   if (mustKnow) return { ...place, reason: `${place.reason}, must-know` };
   if (!sectionFit(story, profile.interests)) return { eligible: false, base: 0, reason: "not one of your interests" };
-  if (profile.mood === 0 && story.tone === "heavy") return { eligible: false, base: 0, reason: "heavy story, lighter mood" };
+  if (story.tone === "heavy") return { eligible: false, base: 0, reason: "heavy story, not must-know" };
   return place;
 }
 
@@ -125,15 +136,20 @@ export function tasteAdjustment(story: Story, taste: Taste): number {
   return clamp(topicAvg * TOPIC_POINTS_PER_UNIT + writerUnits * WRITER_POINTS_PER_UNIT, -MAX_TASTE_ADJUSTMENT, MAX_TASTE_ADJUSTMENT);
 }
 
-export function moodAdjustment(story: Story, mood: Mood): number {
-  if (mood === 2) return 0;
-  if (mood === 1) return story.tone === "light" ? 2 : story.tone === "heavy" ? -3 : 0;
-  return story.tone === "light" ? 4 : 0;
+export function toneAdjustment(story: Story): number {
+  return story.tone === "light" ? LIGHT_TONE_POINTS : 0;
+}
+
+/** Likes add a little, dislikes take away a little. Neither can remove a story or cross a tier. */
+export function preferenceAdjustment(story: Story, likes: string[], avoids: string[]): number {
+  const liked = likes.filter((l) => phraseMatches(l, story)).length;
+  const avoided = avoids.some((a) => phraseMatches(a, story));
+  return Math.min(MAX_LIKE_POINTS, liked * LIKE_POINTS) - (avoided ? AVOID_POINTS : 0);
 }
 
 export type Scored = { story: Story; score: number; base: number; nudge: number; reason: string };
 
-const DEFAULT_PROFILE_EXTRAS = { interests: [] as Interest[], mood: 2 as Mood, favoriteWriters: [] as string[] };
+const DEFAULT_PROFILE_EXTRAS = { interests: [] as Interest[], likes: [] as string[], avoids: [] as string[], favoriteWriters: [] as string[] };
 
 export function scoreStories(stories: Story[], profile: ReaderProfile | string[], towns: Town[], taste: Taste): Scored[] {
   // Accept a bare town list for place-only ranking (used by older tests and tools).
@@ -145,7 +161,11 @@ export function scoreStories(stories: Story[], profile: ReaderProfile | string[]
     const e = eligibility(story, p.towns, towns, checkSections ? p : undefined);
     if (!e.eligible) continue;
     const favorite = p.favoriteWriters.includes(story.writerId) ? FAVORITE_WRITER_POINTS : 0;
-    const nudge = clamp(tasteAdjustment(story, taste) + favorite + moodAdjustment(story, p.mood), -MAX_NUDGE, MAX_NUDGE);
+    const nudge = clamp(
+      tasteAdjustment(story, taste) + favorite + (checkSections ? toneAdjustment(story) + preferenceAdjustment(story, p.likes, p.avoids) : 0),
+      -MAX_NUDGE,
+      MAX_NUDGE,
+    );
     out.push({ story, score: e.base + nudge, base: e.base, nudge, reason: e.reason });
   }
   return out.sort(

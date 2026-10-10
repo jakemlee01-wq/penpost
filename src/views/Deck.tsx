@@ -112,6 +112,14 @@ export function Deck({ reader }: { reader: Reader }) {
     <div className="screen deck-screen">
       <TopBar dateLabel={dateLabel} sub={edition.label} />
       <ProgressSegments total={total} index={deck.index} seen={seenFlags} />
+      {reader.state.notice ? (
+        <p className="setup-notice" role="status">
+          <span>{reader.state.notice}</span>
+          <button className="notice-x" onClick={reader.dismissNotice} aria-label="Dismiss">
+            ×
+          </button>
+        </p>
+      ) : null}
       <main className="deck">
         <article
           key={story.id}

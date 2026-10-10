@@ -7,7 +7,8 @@ export type Route =
   | { name: "writer"; id: string }
   | { name: "settings" }
   | { name: "about" }
-  | { name: "today" };
+  | { name: "today" }
+  | { name: "setup" };
 
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, "") || "/";
@@ -17,6 +18,7 @@ export function parseHash(hash: string): Route {
   if (parts[0] === "settings") return { name: "settings" };
   if (parts[0] === "about") return { name: "about" };
   if (parts[0] === "today") return { name: "today" };
+  if (parts[0] === "setup") return { name: "setup" };
   return { name: "deck" };
 }
 
@@ -27,6 +29,7 @@ export const href = {
   settings: () => "#/settings",
   about: () => "#/about",
   today: () => "#/today",
+  setup: () => "#/setup",
 };
 
 // In-memory history of hashes visited in this session, so "back" can

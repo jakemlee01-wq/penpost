@@ -1,8 +1,8 @@
 # Penpost
 
-Minnesota business, in 10 minutes. A phone-first daily: one story card at a time, about eight stories, then a real ending. Written by five disclosed AI writers (Emma, Jack, Grace, Luke, Ben).
+Your places and interests, rooted in Minnesota. A phone-first daily: one story card at a time, up to five stories, then a real ending. Written by five disclosed AI writers (Emma, Jack, Grace, Luke, Ben).
 
-Readers set up on the first visit: places (any mix of regions, counties and towns), sections with a scope each (Local, Minnesota, National), a mood dial, and optional favorite writers. Editions are capped at five stories, with at least one per chosen section when there's news. The browser remembers the picks, so no account is needed. The current edition (Oct. 9, 2026) is real Minnesota business news written from public sources. A daily job can draft new editions with Gemini for review.
+Readers set up on one screen by saying what they want in their own words (typed, or spoken through the mic button). Penpost turns that into places, sections, specific likes and dislikes. Personalization is meant to be experienced, not configured: the reader lands straight on an edition, and the granular controls live in Settings. Editions are capped at five stories, with at least one per chosen section when there's news. The browser remembers the picks, so no account is needed. The current edition (Oct. 9, 2026) is real Minnesota business news written from public sources. A daily job can draft new editions with Gemini for review.
 
 ## Run it
 
@@ -27,6 +27,8 @@ content/areas.json        regions, counties and towns readers can pick (towns ro
 pipeline/                 daily drafting job: sources.json, feeds, prompts, model adapters, run.ts
 tests/fixtures/stories/   fictional demo stories used only by the ranking tests
 src/lib/ranking.ts        edition assembly: geography first, small capped taste nudges, writer variety
+src/lib/setupParse.ts     first-run setup: Worker prompt, sanitizer, in-browser parser, defaults
+worker/                   Cloudflare Worker that reads setup answers with a second Gemini key
 src/lib/storage.ts        on-device state: towns, votes, deck position
 src/views/                Deck, Article, Writer profile, Complete, Settings, About, Today
 src/components/           ProgressSegments, TopBar, Avatar, Illustration, Icons
@@ -40,15 +42,44 @@ docs/PENPOST_BRIEF.md     the product brief this build follows
 
 `content/areas.json` lists 8 regions, 20 counties and 38 towns. A pick expands to towns: "Twin Cities metro" covers every listed town in the seven metro counties, "Lac qui Parle County" covers Dawson and Madison. To add a town, add it under its county. The app asks new visitors to pick on their first visit and stores the picks in that browser. Older saves that stored plain town IDs are upgraded automatically.
 
-## Interests, mood and writers
+## First-run setup
+
+One screen: a text box, a mic button (the browser's own speech-to-text; hidden where unsupported), an example answer, and "Show my edition".
+
+The answer is parsed into the existing preference model (`src/lib/setupParse.ts`):
+
+- **Places**: matched to `areas.json`. "Twin Cities" is the metro region; "Minnesota" alone is not a place. No place mentioned means no areas, which gives statewide and national news. Setup never blocks on places.
+- **Sections**: mapped to the 10 sections, each with a scope. "Nationally I like the economy" becomes Economy at National.
+- **Likes**: niche interests kept as free-form phrases ("value investing", "berkshire hathaway", "ai tools"). They nudge matching stories up, matched against story topic tags, headline and preview.
+- **Dislikes**: explicit "don't care about soccer" becomes an `avoids` phrase. It moves matching stories down, never out, so a must-know story always gets through.
+
+Who parses it, in order:
+
+1. The **setup Worker** (`worker/`), a Cloudflare Worker holding a second Gemini key. The site can't keep a key secret, so it posts the answer there. The Worker only accepts requests from penpost.co (and localhost), stores nothing, and runs the same sanitizer as the site so only real area IDs and sections come back.
+2. If the Worker isn't configured or fails, a **keyword parser in the browser** (`localParse`). Less smart, but setup always works.
+3. If neither finds a section, the **starter default** (Minnesota business), disclosed on the deck.
+
+After submit the deck shows one line: "Built from what you told us. We'll keep learning as you read." (or the starter-default version). Settings shows what the reader said, a "Redo setup in your own words" link (`#/setup`), and the granular controls: places, sections, More of, Less of, favorite writers.
+
+**Deploying the Worker** (one time, free Cloudflare account):
+
+```bash
+npx wrangler login
+npx wrangler deploy --config worker/wrangler.toml
+npx wrangler secret put GEMINI_API_KEY --config worker/wrangler.toml   # the second key, not the drafting key
+```
+
+Then in GitHub, repo Settings, Secrets and variables, Actions, **Variables**: add `PENPOST_PARSE_URL` = the Worker URL plus `/parse` (for example `https://penpost-setup.<your-subdomain>.workers.dev/parse`) and push or re-run the deploy. Set a spending cap on that Gemini key in Google AI Studio. Optional rate limiting is sketched in `worker/wrangler.toml`.
+
+## Interests, tone and writers
 
 Sections live in `content/interests.json`. Every story has `categories` (1 or 2 sections), `tone` (light, neutral, heavy) and `mustKnow`.
 
 - A local or regional story needs a place match AND a section the reader turned on at any scope.
 - A statewide story needs a section at Minnesota or National scope; a national story needs National.
-- Must-know stories skip the section and mood checks, so big news for a reader's places always gets through.
-- Mood only selects stories. Lighter drops heavy stories (except must-know); Balanced nudges lighter ones up a little.
-- Favorite writers get a small nudge. All nudges together stay under the gap between geography tiers.
+- Editions lean lighter for everyone: heavy stories (closings, layoffs) get in only when marked must-know. There is no mood setting.
+- Must-know stories skip the section and tone checks, so big news for a reader's places always gets through.
+- Likes (+3 each, up to +6), a dislike (-6), favorite writers (+3, Settings only), votes and a small lift for light stories are all nudges. Together they're capped at 9, under the 10-point gap between geography tiers.
 - Political stories are written neutrally. There is no political lean setting by design.
 
 ## Photos
@@ -114,14 +145,14 @@ Before it can run:
 2. Repo Settings, Pages, Source: "GitHub Actions".
 3. Push to `main` and check the Actions tab for the Pages URL.
 
-**penpost.co** is currently served by the "Pen Post old" Replit deployment. Pointing it here means a DNS change at Namecheap plus removing the domain from Replit. Do that only when you decide to retire that deployment. A GitHub Pages site is public; a hidden URL is not access control.
+**penpost.co** points here (Namecheap DNS: four GitHub A records and a `www` CNAME). A GitHub Pages site is public; a hidden URL is not access control.
 
 ## Status
 
-Done: first-visit place picker (regions, counties, towns); real Oct. 9 edition; daily drafting job with review step; deck, article, writer profiles, completion, settings, about, today list; geography rules; votes with undo; persistence across refresh; storage-blocked fallback; reduced motion; keyboard and button navigation; content validation; 62 unit tests; screenshot flow checks at 320px and 390px.
+Done: one-screen free-text setup with voice input and the setup Worker; real Oct. 9 edition; daily drafting job with review step; deck, article, writer profiles, completion, settings, about, today list; geography rules; votes with undo; persistence across refresh; storage-blocked fallback; reduced motion; keyboard and button navigation; content validation; 86 unit tests; screenshot flow checks at 320px and 390px.
 
 Local only: votes, towns, deck position.
 
-Placeholder: story images are owned illustrations; avatars are cutouts of the JPEG references.
+Placeholder: avatars are cutouts of the JPEG references. Illustrations show only when a photo can't load.
 
 Needs later work: first real runs of the daily job and prompt tuning, a reviewed decision on full-text access per source, a manual or page-reader path for Dawson-area news, transparent avatar exports, archive, optional email sign-in for cross-device settings.

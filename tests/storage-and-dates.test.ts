@@ -49,11 +49,22 @@ describe("storage", () => {
     expect(loadState().hintSeen).toBe(true);
     spy.mockRestore();
   });
-  it("drops invalid interests, moods and writers from saved data", () => {
-    const st = sanitize({ prefs: { areas: ["town:dawson"], interests: [{ category: "sports", scope: "minnesota" }, { category: "astrology", scope: "national" }], mood: 7, favoriteWriters: ["jack", "zed"] } });
+  it("drops invalid interests, writers and old mood settings from saved data", () => {
+    const st = sanitize({
+      prefs: { areas: ["town:dawson"], interests: [{ category: "sports", scope: "minnesota" }, { category: "astrology", scope: "national" }], mood: 0, favoriteWriters: ["jack", "zed"] },
+    });
     expect(st.prefs.interests).toEqual([{ category: "sports", scope: "minnesota" }]);
-    expect(st.prefs.mood).toBe(1);
+    expect("mood" in st.prefs).toBe(false);
     expect(st.prefs.favoriteWriters).toEqual(["jack"]);
+  });
+  it("treats saves from the old two-step setup as already set up", () => {
+    expect(sanitize({ prefs: { areas: ["town:dawson"], interests: [{ category: "business", scope: "minnesota" }] } }).prefs.setup?.source).toBe("manual");
+    expect(sanitize({ prefs: { areas: ["town:dawson"] } }).prefs.setup).toBeNull();
+  });
+  it("cleans likes and dislikes, and a phrase can't be both", () => {
+    const st = sanitize({ prefs: { likes: ["Value Investing", "soccer", 7, "x"], avoids: ["Soccer", "<b>crime</b>"] } });
+    expect(st.prefs.likes).toEqual(["value investing"]);
+    expect(st.prefs.avoids).toEqual(["soccer", "crime"]);
   });
   it("upgrades older saves that stored plain town IDs", () => {
     expect(sanitize({ prefs: { towns: ["minneapolis", "dawson"] } }).prefs.areas).toEqual(["minneapolis", "dawson"]);

@@ -50,8 +50,8 @@ button { font: inherit; color: inherit; }
 }
 .brand {
   font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.01em;
+  font-size: 20px;
+  letter-spacing: -0.02em;
   color: var(--accent-ink);
   text-decoration: none;
 }
@@ -149,6 +149,10 @@ button { font: inherit; color: inherit; }
   padding: 4px 10px;
   border-radius: 999px;
 }
+.chip.quiet { left: auto; right: 12px; font-size: 11px; font-weight: 600; color: var(--ink-2); padding: 3px 9px; }
+img.card-img.photo, img.article-img.photo { object-fit: cover; }
+img.card-img.photo { pointer-events: none; -webkit-user-drag: none; user-select: none; }
+.article-figure figcaption a { color: var(--ink-2); }
 .chip.inline { position: static; margin-left: 8px; background: var(--warm); vertical-align: middle; }
 .card-panel {
   flex: 0 1 auto;

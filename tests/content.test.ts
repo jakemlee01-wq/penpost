@@ -54,3 +54,18 @@ describe("real edition", () => {
     }
   });
 });
+
+describe("photos", () => {
+  it("every real story has a licensed photo with credit, license page and a download or hotlink", async () => {
+    const { parseStoryFile } = await import("../src/lib/parse");
+    const dir = join(root, "content/stories");
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".md"))) {
+      const p = parseStoryFile(readFileSync(join(dir, f), "utf8"), f).image?.photo;
+      expect(p, f).toBeTruthy();
+      expect(p!.credit, f).toMatch(/\//);
+      expect(p!.pageUrl, f).toMatch(/^https:\/\//);
+      expect(Boolean(p!.downloadUrl || p!.hotlinkUrl), f).toBe(true);
+      if (p!.kind === "stock") expect(p!.caption, f).toMatch(/^Stock photo/);
+    }
+  });
+});

@@ -22,6 +22,7 @@ import { parseStoryFile } from "../src/lib/parse";
 import { CATEGORY_IDS, WriterSchema, type Writer } from "../src/lib/schema";
 import { fetchSource, filterCandidates, type Candidate, type Source } from "./feeds";
 import { createModel, parseJson, type Call, type Model } from "./model";
+import { findStockPhoto } from "./photos";
 import { CHECK_SYSTEM, FACTS_SYSTEM, checkPrompt, factsPrompt, triagePrompt, triageSystem, writerPrompt, writerSystem, type Facts } from "./prompts";
 
 const TriageSchema = z.object({
@@ -47,6 +48,7 @@ const DraftSchema = z.object({
   bodyMarkdown: z.string().min(200),
   scene: z.enum(["cafe", "office", "van", "mainstreet", "farm", "factory", "industrial", "road"]).catch("mainstreet"),
   imageAlt: z.string().min(5),
+  photoQuery: z.string().default(""),
 });
 const CheckSchema = z.object({ unsupported: z.array(z.string()).default([]), styleIssues: z.array(z.string()).default([]) });
 
@@ -59,6 +61,8 @@ export type RunOptions = {
   maxStories?: number;
   model?: Model;
   log?: (msg: string) => void;
+  unsplashKey?: string;
+  fetchImpl?: typeof fetch;
 };
 
 export type RunResult = { written: { file: string; status: string; writer: string; flags: string[] }[]; skipped: string[]; summaryPath: string };
@@ -200,7 +204,12 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
           mustKnow: t.mustKnow && t.significance !== "national",
           significance: t.significance,
           significanceReason: t.significanceReason || t.reason || "Triaged by the daily job.",
-          image: { scene: draft.scene, alt: tidy(draft.imageAlt), credit: "Penpost illustration", rightsNote: "Owned illustration. No photo from the source was used.", illustrative: true },
+          image: await (async () => {
+            const found = await findStockPhoto(draft.photoQuery, opts.unsplashKey ?? process.env.UNSPLASH_ACCESS_KEY, opts.fetchImpl).catch(() => null);
+            return found
+              ? { photo: found.photo, scene: draft.scene, alt: found.alt, credit: found.photo.credit, rightsNote: "Unsplash License. Hotlinked per Unsplash API guidelines.", illustrative: false }
+              : { scene: draft.scene, alt: tidy(draft.imageAlt), credit: "Penpost illustration", rightsNote: "Owned illustration. No photo from the source was used.", illustrative: true };
+          })(),
           status,
           isDemo: false,
           sources: [{ url: c.link, publisher: c.sourceName, title: c.title, publishedAt: c.publishedAt.slice(0, 10), accessedAt: date }],

@@ -104,3 +104,35 @@ describe("pipeline", () => {
     expect(slugify("Land O'Lakes bets on milk")).toBe("land-olakes-bets-on-milk");
   });
 });
+
+describe("stock photos", () => {
+  it("picks the first free Unsplash result, credits it, and pings the download endpoint", async () => {
+    const { findStockPhoto } = await import("../pipeline/photos");
+    const calls: string[] = [];
+    const fake = (async (url: string) => {
+      calls.push(url);
+      if (url.includes("/search/photos")) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              { plus: true, urls: { regular: "https://images.example/plus" }, links: { html: "https://unsplash.com/p/1", download_location: "https://api.unsplash.com/d/1" }, user: { name: "Paid" } },
+              { alt_description: "a grain elevator at sunset", urls: { regular: "https://images.example/free" }, links: { html: "https://unsplash.com/p/2", download_location: "https://api.unsplash.com/d/2" }, user: { name: "Free Person" } },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      return new Response("{}", { status: 200 });
+    }) as unknown as typeof fetch;
+    const found = await findStockPhoto("grain elevator", "KEY", fake);
+    expect(found?.photo.kind).toBe("stock");
+    expect(found?.photo.caption).toMatch(/^Stock photo:/);
+    expect(found?.photo.credit).toBe("Free Person / Unsplash");
+    expect(found?.photo.hotlinkUrl).toBe("https://images.example/free");
+    expect(calls.some((c) => c.startsWith("https://api.unsplash.com/d/2"))).toBe(true);
+  });
+  it("does nothing without a key", async () => {
+    const { findStockPhoto } = await import("../pipeline/photos");
+    expect(await findStockPhoto("anything", undefined)).toBeNull();
+  });
+});

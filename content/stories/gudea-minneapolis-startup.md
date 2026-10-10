@@ -6,18 +6,47 @@
   "preview": "Gudea spots coordinated campaigns and false stories about companies before they spread. It moved here from Maryland and says it raised nearly $7 million.",
   "writerId": "grace",
   "publishedAt": "2026-10-09T06:00:00-05:00",
-  "cities": ["minneapolis"],
-  "topics": ["startups", "venture-capital", "technology"],
-  "categories": ["business", "technology"],
+  "cities": [
+    "minneapolis"
+  ],
+  "topics": [
+    "startups",
+    "venture-capital",
+    "technology"
+  ],
+  "categories": [
+    "business",
+    "technology"
+  ],
   "tone": "light",
   "mustKnow": false,
   "significance": "local",
   "significanceReason": "Venture-backed startup based in Minneapolis.",
-  "image": { "scene": "office", "alt": "Illustration of a bright office with tall windows overlooking a city skyline", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "office",
+    "alt": "High-rise buildings in downtown Minneapolis on a summer day",
+    "credit": "Steijn Leijzer / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "place",
+      "caption": "Downtown Minneapolis",
+      "credit": "Steijn Leijzer / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/photo-of-high-rise-buildings-during-daytime-bF6W6qcEVG0",
+      "downloadUrl": "https://unsplash.com/photos/bF6W6qcEVG0/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://tcbmag.com/startup-snapshot-gudea/", "publisher": "Twin Cities Business", "title": "Startup Snapshot: Gudea", "publishedAt": "2026-10-08", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://tcbmag.com/startup-snapshot-gudea/",
+      "publisher": "Twin Cities Business",
+      "title": "Startup Snapshot: Gudea",
+      "publishedAt": "2026-10-08",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

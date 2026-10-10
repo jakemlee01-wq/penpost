@@ -6,18 +6,47 @@
   "preview": "The Arden Hills co-op is reopening space at its California plant to make ultra-filtered milk for other brands. Farmer-owners could see the payoff starting in 2027.",
   "writerId": "jack",
   "publishedAt": "2026-10-09T06:00:00-05:00",
-  "cities": ["arden-hills"],
-  "topics": ["agriculture", "expansions", "cooperatives"],
-  "categories": ["business", "agriculture"],
+  "cities": [
+    "arden-hills"
+  ],
+  "topics": [
+    "agriculture",
+    "expansions",
+    "cooperatives"
+  ],
+  "categories": [
+    "business",
+    "agriculture"
+  ],
   "tone": "neutral",
   "mustKnow": false,
   "significance": "regional",
   "significanceReason": "Strategy change at a Twin Cities-based farmer cooperative; the investment itself is in California.",
-  "image": { "scene": "factory", "alt": "Illustration of a large food processing plant with trees and blue sky", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "factory",
+    "alt": "A herd of dairy cattle grazing in a green pasture",
+    "credit": "Leon Ephraïm / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: dairy cattle in a pasture",
+      "credit": "Leon Ephraïm / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/herd-of-dairy-cattles-on-field-AxoNnnH1Y98",
+      "downloadUrl": "https://unsplash.com/photos/AxoNnnH1Y98/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://tcbmag.com/land-olakes-bulks-up-its-protein-capacity/", "publisher": "Twin Cities Business", "title": "Land O'Lakes Bulks Up Its Protein Capacity", "publishedAt": "2026-10-09", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://tcbmag.com/land-olakes-bulks-up-its-protein-capacity/",
+      "publisher": "Twin Cities Business",
+      "title": "Land O'Lakes Bulks Up Its Protein Capacity",
+      "publishedAt": "2026-10-09",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

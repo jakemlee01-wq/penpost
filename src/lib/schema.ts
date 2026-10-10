@@ -19,7 +19,25 @@ export const SourceSchema = z.object({
   accessedAt: isoDate,
 });
 
+/**
+ * A real photo for the story. Order of preference: the company's own media photo,
+ * a public or openly licensed photo of the real place, then a generic stock photo.
+ * kind "stock" is always captioned "Stock photo" so it never implies it shows the event.
+ */
+export const StoryPhotoSchema = z.object({
+  kind: z.enum(["press", "place", "stock"]),
+  caption: z.string().min(3), // what the photo shows, e.g. "U.S. Bank Stadium, Minneapolis"
+  credit: z.string().min(3), // e.g. "Joe Caper / Unsplash"
+  license: z.string().min(3), // e.g. "Unsplash License"
+  pageUrl: z.string().url(), // where the license and credit can be checked
+  downloadUrl: z.string().url().optional(), // fetched into the site at build time
+  hotlinkUrl: z.string().url().optional(), // used directly when the source requires hotlinking
+});
+export type StoryPhoto = z.infer<typeof StoryPhotoSchema>;
+
 export const StoryImageSchema = z.object({
+  photo: StoryPhotoSchema.optional(),
+  // Illustration used when no photo is available (or until it's downloaded).
   scene: z.enum(["cafe", "office", "van", "mainstreet", "farm", "factory", "industrial", "road"]),
   alt: z.string().min(10),
   credit: z.string().min(1),

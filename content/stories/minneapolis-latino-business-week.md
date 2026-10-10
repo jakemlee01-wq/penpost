@@ -6,18 +6,46 @@
   "preview": "Shops on Lake Street, Central and Nicollet are inviting customers back, with a market Saturday and a celebration at Mercado Central on Sunday.",
   "writerId": "jack",
   "publishedAt": "2026-10-09T06:00:00-05:00",
-  "cities": ["minneapolis"],
-  "topics": ["small-business", "community"],
-  "categories": ["business", "culture"],
+  "cities": [
+    "minneapolis"
+  ],
+  "topics": [
+    "small-business",
+    "community"
+  ],
+  "categories": [
+    "business",
+    "culture"
+  ],
   "tone": "light",
   "mustKnow": false,
   "significance": "local",
   "significanceReason": "City-backed event for Minneapolis businesses happening this weekend.",
-  "image": { "scene": "mainstreet", "alt": "Illustration of a row of colorful small shops on a sunny city street", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "mainstreet",
+    "alt": "People walking on a sidewalk past shops at St. Anthony Main in Minneapolis",
+    "credit": "weston m / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "place",
+      "caption": "St. Anthony Main, Minneapolis",
+      "credit": "weston m / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/people-walking-on-sidewalk-near-city-buildings-during-daytime-69euBwm16J0",
+      "downloadUrl": "https://unsplash.com/photos/69euBwm16J0/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.mprnews.org/story/2026/10/06/minneapolis-shops-invite-customers-for-latino-business-week-amid-ice-surge", "publisher": "MPR News", "title": "Minneapolis shops invite customers for Latino Business Week as many recover from ICE surge", "publishedAt": "2026-10-06", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.mprnews.org/story/2026/10/06/minneapolis-shops-invite-customers-for-latino-business-week-amid-ice-surge",
+      "publisher": "MPR News",
+      "title": "Minneapolis shops invite customers for Latino Business Week as many recover from ICE surge",
+      "publishedAt": "2026-10-06",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

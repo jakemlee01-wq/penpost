@@ -69,8 +69,9 @@ Instructions: ${w.styleInstructions}
 Known blind spots to guard against: ${w.potentialBias.join(" ")}
 Example of the voice (style only, not a fact): "${w.exampleVoice}"
 
-Return JSON: {"headline":string,"preview":string,"bodyMarkdown":string,"scene":"cafe"|"office"|"van"|"mainstreet"|"farm"|"factory"|"industrial"|"road","imageAlt":string}
-bodyMarkdown is plain paragraphs separated by blank lines. imageAlt describes a simple sunny illustration of the scene in under 15 words.`;
+Return JSON: {"headline":string,"preview":string,"bodyMarkdown":string,"scene":"cafe"|"office"|"van"|"mainstreet"|"farm"|"factory"|"industrial"|"road","imageAlt":string,"photoQuery":string}
+bodyMarkdown is plain paragraphs separated by blank lines. imageAlt describes a simple sunny illustration of the scene in under 15 words.
+photoQuery is 2 to 4 plain words for a generic stock photo search that fits the story without depicting specific people or the actual event (for example "grain elevator", "hockey game", "now hiring sign").`;
 }
 
 export function writerPrompt(c: Candidate, facts: Facts): string {

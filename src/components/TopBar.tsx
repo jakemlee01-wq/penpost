@@ -17,7 +17,7 @@ export function TopBar({ dateLabel, sub }: { dateLabel: string; sub?: string }) 
 
   return (
     <header className="topbar">
-      <a className="brand" href={href.deck()}>Penpost</a>
+      <a className="brand" href={href.deck()} aria-label="penpost, today's paper">penpost</a>
       <span className="topbar-date">
         {dateLabel}
         {sub ? <span className="topbar-sub"> · {sub}</span> : null}
@@ -29,7 +29,7 @@ export function TopBar({ dateLabel, sub }: { dateLabel: string; sub?: string }) 
         <div className="sheet-backdrop" onClick={() => setOpen(false)}>
           <nav className="sheet" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-head">
-              <span className="sheet-title">Penpost</span>
+              <span className="sheet-title">penpost</span>
               <button ref={closeRef} className="icon-btn" aria-label="Close menu" onClick={() => setOpen(false)}>
                 <Close />
               </button>

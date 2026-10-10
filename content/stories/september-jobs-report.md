@@ -7,18 +7,49 @@
   "writerId": "emma",
   "publishedAt": "2026-10-09T06:00:00-05:00",
   "cities": [],
-  "topics": ["jobs", "economy"],
-  "categories": ["economy"],
+  "topics": [
+    "jobs",
+    "economy"
+  ],
+  "categories": [
+    "economy"
+  ],
   "tone": "neutral",
   "mustKnow": false,
   "significance": "national",
   "significanceReason": "Monthly U.S. employment report.",
-  "image": { "scene": "office", "alt": "Illustration of a bright office with tall windows overlooking a city skyline", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "office",
+    "alt": "A now hiring sign hanging in a store window",
+    "credit": "Nathan Sack / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: a \"now hiring\" sign",
+      "credit": "Nathan Sack / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-now-hiring-sign-hangs-in-a-store-window-UQ716eQauSw",
+      "downloadUrl": "https://unsplash.com/photos/UQ716eQauSw/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://finance.yahoo.com/economy/article/septembers-jobs-report-shows-the-us-added-just-29000-jobs-and-unemployment-ticked-up-195320409.html", "publisher": "Yahoo Finance", "title": "September's jobs report misses: US added just 29,000 jobs, unemployment ticked up", "publishedAt": "2026-10-02", "accessedAt": "2026-10-09" },
-    { "url": "https://www.stlouisfed.org/on-the-economy/2026/oct/flash-report-unemployment-rises-slightly-job-growth-slows-september", "publisher": "Federal Reserve Bank of St. Louis", "title": "Flash Report: Unemployment Rises Slightly, Job Growth Slows in September", "publishedAt": "2026-10-02", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://finance.yahoo.com/economy/article/septembers-jobs-report-shows-the-us-added-just-29000-jobs-and-unemployment-ticked-up-195320409.html",
+      "publisher": "Yahoo Finance",
+      "title": "September's jobs report misses: US added just 29,000 jobs, unemployment ticked up",
+      "publishedAt": "2026-10-02",
+      "accessedAt": "2026-10-09"
+    },
+    {
+      "url": "https://www.stlouisfed.org/on-the-economy/2026/oct/flash-report-unemployment-rises-slightly-job-growth-slows-september",
+      "publisher": "Federal Reserve Bank of St. Louis",
+      "title": "Flash Report: Unemployment Rises Slightly, Job Growth Slows in September",
+      "publishedAt": "2026-10-02",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

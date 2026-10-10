@@ -1,11 +1,29 @@
 import { useMemo } from "react";
 import { Avatar } from "../components/Avatar";
-import { Illustration } from "../components/Illustration";
+import { StoryImage, imageCaption } from "../components/StoryImage";
 import { ChevronLeft, ExternalLink } from "../components/Icons";
 import { storyBySlug, townNames, writerById } from "../lib/content";
 import { formatSourceDate } from "../lib/dates";
 import { renderMarkdown } from "../lib/markdown";
 import { goBack, href } from "../lib/router";
+
+function ImageCaption({ story }: { story: Parameters<typeof imageCaption>[0] }) {
+  const c = imageCaption(story);
+  if (!c) return null;
+  return (
+    <figcaption>
+      {c.text}
+      {c.credit ? (
+        <>
+          {" · "}
+          <a href={c.link} target="_blank" rel="noopener noreferrer">
+            {c.credit}
+          </a>
+        </>
+      ) : null}
+    </figcaption>
+  );
+}
 
 export function Article({ slug }: { slug: string }) {
   const story = storyBySlug.get(slug);
@@ -34,8 +52,8 @@ export function Article({ slug }: { slug: string }) {
       <main className="article">
         {story.image ? (
           <figure className="article-figure">
-            <Illustration scene={story.image.scene} alt={story.image.alt} className="article-img" />
-            <figcaption>{story.image.illustrative && !/illustration/i.test(story.image.credit) ? `Illustration: ${story.image.credit}` : story.image.credit}</figcaption>
+            <StoryImage story={story} className="article-img" variant="article" />
+            <ImageCaption story={story} />
           </figure>
         ) : null}
         <p className="article-kicker">

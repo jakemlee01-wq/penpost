@@ -7,18 +7,50 @@
   "writerId": "emma",
   "publishedAt": "2026-10-09T06:00:00-05:00",
   "cities": [],
-  "topics": ["manufacturing", "health-care"],
-  "categories": ["business", "health"],
+  "topics": [
+    "manufacturing",
+    "health-care"
+  ],
+  "categories": [
+    "business",
+    "health"
+  ],
   "tone": "light",
   "mustKnow": false,
   "significance": "statewide",
   "significanceReason": "Statewide manufacturing contest run by the Minnesota Chamber of Commerce.",
-  "image": { "scene": "factory", "alt": "Illustration of a clean modern manufacturing building with trees", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "factory",
+    "alt": "Surgeons in blue scrubs performing surgery in a bright operating room",
+    "credit": "National Cancer Institute / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: a surgical team in an operating room",
+      "credit": "National Cancer Institute / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/surgeons-performing-surgery-in-operating-room-KrsoedfRAf4",
+      "downloadUrl": "https://unsplash.com/photos/KrsoedfRAf4/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.fox9.com/news/bair-hugger-warming-system-wins-2026-coolest-thing-made-minnesota", "publisher": "FOX 9", "title": "Bair Hugger Warming System wins 2026 'Coolest Thing Made in Minnesota'", "publishedAt": "2026-10-07", "accessedAt": "2026-10-09" },
-    { "url": "https://www.mprnews.org/story/2026/10/04/coolest-things-made-in-minnesota-finalists-include-teardrop-trailer-all-terrain-wheelchair", "publisher": "MPR News", "title": "These 4 products voted coolest things made in Minnesota", "publishedAt": "2026-10-04", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.fox9.com/news/bair-hugger-warming-system-wins-2026-coolest-thing-made-minnesota",
+      "publisher": "FOX 9",
+      "title": "Bair Hugger Warming System wins 2026 'Coolest Thing Made in Minnesota'",
+      "publishedAt": "2026-10-07",
+      "accessedAt": "2026-10-09"
+    },
+    {
+      "url": "https://www.mprnews.org/story/2026/10/04/coolest-things-made-in-minnesota-finalists-include-teardrop-trailer-all-terrain-wheelchair",
+      "publisher": "MPR News",
+      "title": "These 4 products voted coolest things made in Minnesota",
+      "publishedAt": "2026-10-04",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

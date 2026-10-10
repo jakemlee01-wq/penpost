@@ -6,18 +6,48 @@
   "preview": "A St. Cloud bank is seeking about $6.6 million from the market's founder. A judge will consider putting an outside manager in charge in November.",
   "writerId": "ben",
   "publishedAt": "2026-10-09T06:00:00-05:00",
-  "cities": ["st-paul", "maplewood"],
-  "topics": ["small-business", "real-estate", "community"],
-  "categories": ["business", "real-estate"],
+  "cities": [
+    "st-paul",
+    "maplewood"
+  ],
+  "topics": [
+    "small-business",
+    "real-estate",
+    "community"
+  ],
+  "categories": [
+    "business",
+    "real-estate"
+  ],
   "tone": "heavy",
   "mustKnow": false,
   "significance": "local",
   "significanceReason": "Foreclosure case affecting a long-running St. Paul marketplace and its vendors.",
-  "image": { "scene": "mainstreet", "alt": "Illustration of a large market building with small storefronts on a sunny street", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "mainstreet",
+    "alt": "The St. Paul skyline on a clear day",
+    "credit": "weston m / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "place",
+      "caption": "St. Paul skyline (not HmongTown Marketplace)",
+      "credit": "weston m / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/high-rise-buildings-Nm14J6P6NaU",
+      "downloadUrl": "https://unsplash.com/photos/Nm14J6P6NaU/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.mprnews.org/story/2026/10/07/hmongtown-marketplace-faces-foreclosure-leaving-st-paul-vendors-uncertain", "publisher": "MPR News (reporting by Sahan Journal)", "title": "St. Paul's HmongTown Marketplace faces foreclosure, leaving longtime vendors uncertain", "publishedAt": "2026-10-07", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.mprnews.org/story/2026/10/07/hmongtown-marketplace-faces-foreclosure-leaving-st-paul-vendors-uncertain",
+      "publisher": "MPR News (reporting by Sahan Journal)",
+      "title": "St. Paul's HmongTown Marketplace faces foreclosure, leaving longtime vendors uncertain",
+      "publishedAt": "2026-10-07",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

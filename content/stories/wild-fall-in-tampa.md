@@ -7,17 +7,42 @@
   "writerId": "luke",
   "publishedAt": "2026-10-09T06:00:00-05:00",
   "cities": [],
-  "topics": ["wild", "hockey"],
-  "categories": ["sports"],
+  "topics": [
+    "wild",
+    "hockey"
+  ],
+  "categories": [
+    "sports"
+  ],
   "tone": "neutral",
   "mustKnow": false,
   "significance": "statewide",
   "significanceReason": "Minnesota's NHL team.",
-  "image": { "scene": "industrial", "alt": "Illustration of a building beside a lake and pine trees on a clear day", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "industrial",
+    "alt": "Ice hockey players on the ice during a game",
+    "credit": "Logan Weaver / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: an ice hockey game",
+      "credit": "Logan Weaver / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/ice-hockey-players-on-ice-hockey-stadium-GXQP77GIsIU",
+      "downloadUrl": "https://unsplash.com/photos/GXQP77GIsIU/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.nhl.com/wild/news/minnesota-wild-tampa-bay-lightning-game-recap-october-8-2026-x7240", "publisher": "NHL.com", "title": "Game Recap: MIN 2 TBL 3", "publishedAt": "2026-10-09", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.nhl.com/wild/news/minnesota-wild-tampa-bay-lightning-game-recap-october-8-2026-x7240",
+      "publisher": "NHL.com",
+      "title": "Game Recap: MIN 2 TBL 3",
+      "publishedAt": "2026-10-09",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

@@ -35,6 +35,8 @@ jobs:
         env:
           PENPOST_PROVIDER: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Optional: free key from unsplash.com/developers for stock photos.
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           # Set these as repository variables to change models without editing code.
           PENPOST_TRIAGE_MODEL: ${{ vars.PENPOST_TRIAGE_MODEL }}
           PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}

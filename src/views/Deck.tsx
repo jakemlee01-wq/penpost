@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
-import { Illustration } from "../components/Illustration";
+import { StoryImage, isStockShown } from "../components/StoryImage";
 import { ChevronLeft, ChevronRight, ThumbDown, ThumbUp } from "../components/Icons";
 import { ProgressSegments } from "../components/ProgressSegments";
 import { TopBar } from "../components/TopBar";
@@ -125,8 +125,8 @@ export function Deck({ reader }: { reader: Reader }) {
           aria-label={`Story ${deck.index + 1} of ${total}`}
         >
           <div className="card-media">
-            {story.image ? <Illustration scene={story.image.scene} alt={story.image.alt} className="card-img" fit="meet" /> : <div className="card-img placeholder" />}
-            {story.isDemo ? <span className="chip">Demo story</span> : null}
+            <StoryImage story={story} className="card-img" variant="card" />
+            {story.isDemo ? <span className="chip">Demo story</span> : isStockShown(story) ? <span className="chip quiet">Stock photo</span> : null}
             {!reader.state.hintSeen && deck.index === 0 ? (
               <p className="hint" role="note">Swipe for the next story</p>
             ) : null}

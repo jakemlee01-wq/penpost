@@ -7,17 +7,44 @@
   "writerId": "luke",
   "publishedAt": "2026-10-09T06:00:00-05:00",
   "cities": [],
-  "topics": ["agriculture", "trade", "policy"],
-  "categories": ["agriculture", "economy"],
+  "topics": [
+    "agriculture",
+    "trade",
+    "policy"
+  ],
+  "categories": [
+    "agriculture",
+    "economy"
+  ],
   "tone": "neutral",
   "mustKnow": false,
   "significance": "statewide",
   "significanceReason": "Trade conditions affecting Minnesota's largest agricultural export markets.",
-  "image": { "scene": "farm", "alt": "Illustration of grain bins beside golden fields under a wide blue sky", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "farm",
+    "alt": "A group of young pigs in a farm pen",
+    "credit": "Zoe Richardson / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: young pigs in a pen",
+      "credit": "Zoe Richardson / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-group-of-pigs-in-a-pen-vMjrs3C50d8",
+      "downloadUrl": "https://unsplash.com/photos/vMjrs3C50d8/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.mprnews.org/episode/2026/10/05/minnesota-agriculture-commissioner-looks-to-strengthen-north-american-trade", "publisher": "MPR News", "title": "State agriculture commissioner looks to strengthen North American trade amid tensions", "publishedAt": "2026-10-05", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.mprnews.org/episode/2026/10/05/minnesota-agriculture-commissioner-looks-to-strengthen-north-american-trade",
+      "publisher": "MPR News",
+      "title": "State agriculture commissioner looks to strengthen North American trade amid tensions",
+      "publishedAt": "2026-10-05",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

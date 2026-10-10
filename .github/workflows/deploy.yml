@@ -24,6 +24,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Download licensed story photos
+        run: npm run photos
       - run: npm run build   # validates content, typechecks, builds dist/
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'

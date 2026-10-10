@@ -20,7 +20,7 @@ export function Onboarding({ reader }: { reader: Reader }) {
   return (
     <div className="screen onboarding">
       <header className="topbar">
-        <span className="brand">Penpost</span>
+        <span className="brand">penpost</span>
         <span className="topbar-date">Step {step} of 2</span>
       </header>
 

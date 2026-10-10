@@ -7,6 +7,7 @@ import { EditionManifestSchema, WriterSchema, type CategoryId, type Scope, type 
 
 const storyFiles = import.meta.glob("../../content/stories/*.md", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const editionFiles = import.meta.glob("../../content/editions/*.json", { import: "default", eager: true }) as Record<string, unknown>;
+const photoFiles = import.meta.glob("../assets/photos/*.{jpg,jpeg,png,webp}", { import: "default", eager: true }) as Record<string, string>;
 const avatarFiles = import.meta.glob("../assets/avatars/*.{png,jpg,webp}", { import: "default", eager: true }) as Record<string, string>;
 
 export const writers: Writer[] = WriterSchema.array().parse(writersJson);
@@ -27,6 +28,13 @@ export const storyById = new Map(stories.map((s) => [s.id, s]));
 export const storyBySlug = new Map(stories.map((s) => [s.slug, s]));
 export const writerById = new Map<string, Writer>(writers.map((w) => [w.id, w]));
 export const townById = new Map(towns.map((t) => [t.id, t]));
+
+/** Local copy of the story's licensed photo (downloaded at build), else its hotlink, else null. */
+export function photoUrl(story: Story): string | null {
+  const local = Object.entries(photoFiles).find(([p]) => /\/([^/]+)\.(jpe?g|png|webp)$/.exec(p)?.[1] === story.id);
+  if (local) return local[1];
+  return story.image?.photo?.hotlinkUrl ?? null;
+}
 
 export function avatarUrl(writer: Writer): string {
   const hit = Object.entries(avatarFiles).find(([p]) => p.endsWith(`/${writer.avatar}`));

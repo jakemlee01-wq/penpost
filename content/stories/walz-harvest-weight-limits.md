@@ -7,18 +7,51 @@
   "writerId": "emma",
   "publishedAt": "2026-10-09T06:00:00-05:00",
   "cities": [],
-  "topics": ["agriculture", "policy", "logistics"],
-  "categories": ["agriculture", "economy"],
+  "topics": [
+    "agriculture",
+    "policy",
+    "logistics"
+  ],
+  "categories": [
+    "agriculture",
+    "economy"
+  ],
   "tone": "neutral",
   "mustKnow": false,
   "significance": "statewide",
   "significanceReason": "Statewide executive order affecting farm and timber hauling during harvest.",
-  "image": { "scene": "road", "alt": "Illustration of a truck on a two-lane highway through golden farm fields", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "road",
+    "alt": "A combine driving through a corn field during harvest",
+    "credit": "Hannah Shedrow / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: a combine harvesting corn",
+      "credit": "Hannah Shedrow / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-combine-truck-driving-through-a-corn-field-2Crf9T9TKOY",
+      "downloadUrl": "https://unsplash.com/photos/2Crf9T9TKOY/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.mncorn.org/2026/10/02/walz-executive-order-increases-truck-weight-limits-during-harvest", "publisher": "Minnesota Corn Growers Association", "title": "Walz executive order increases truck weight limits during harvest", "publishedAt": "2026-10-02", "accessedAt": "2026-10-09" },
-    { "url": "https://www.cbsnews.com/minnesota/news/minnesota-governor-tim-walz-diesel-fuel-executive-order-farmers-harvest/", "publisher": "CBS Minnesota", "title": "Gov. Tim Walz issues diesel fuel executive order amid Minnesota's harvest season", "publishedAt": "2026-10-02", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.mncorn.org/2026/10/02/walz-executive-order-increases-truck-weight-limits-during-harvest",
+      "publisher": "Minnesota Corn Growers Association",
+      "title": "Walz executive order increases truck weight limits during harvest",
+      "publishedAt": "2026-10-02",
+      "accessedAt": "2026-10-09"
+    },
+    {
+      "url": "https://www.cbsnews.com/minnesota/news/minnesota-governor-tim-walz-diesel-fuel-executive-order-farmers-harvest/",
+      "publisher": "CBS Minnesota",
+      "title": "Gov. Tim Walz issues diesel fuel executive order amid Minnesota's harvest season",
+      "publishedAt": "2026-10-02",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

@@ -51,6 +51,17 @@ Sections live in `content/interests.json`. Every story has `categories` (1 or 2 
 - Favorite writers get a small nudge. All nudges together stay under the gap between geography tiers.
 - Political stories are written neutrally. There is no political lean setting by design.
 
+## Photos
+
+Every story carries a licensed photo in `image.photo` (kind, caption, credit, license, the photo's page, and a download or hotlink URL). Order of preference:
+
+1. **press**: the company's own media photo, cleared for editorial use (added by hand after a rights check).
+2. **place**: an openly licensed photo of the real place (for example U.S. Bank Stadium).
+3. **stock**: a generic photo. Always captioned "Stock photo" and labeled on the card, so it never reads as the actual event.
+4. The illustration, when nothing fits or a download fails.
+
+`npm run photos` downloads `downloadUrl` photos into `src/assets/photos/<story id>.jpg`; the deploy workflow runs it before every build. The private preview can't load outside images, so it shows illustrations until the site is on GitHub. The daily job adds stock photos through the Unsplash API when `UNSPLASH_ACCESS_KEY` is set (free key; API photos are hotlinked and credited as Unsplash requires). No AI-generated photos, by design.
+
 ## Editing content
 
 Add a story: copy any file in `content/stories/`, change the header and body, then add its `id` to the day's file in `content/editions/`. `npm run validate` checks the schema, writer and town IDs, duplicates, em dashes, "Why it matters" labels, demo labeling, and length (180 to 250 words is the target).
@@ -83,7 +94,7 @@ The handoff supplied 1024px **opaque JPEGs with a checkerboard painted in**. Thi
 4. **Review**: the job opens a pull request with a summary table. Merge to publish; close to skip. The site keeps the last approved edition.
 
 Setup:
-1. Repo Settings, Secrets and variables, Actions: add secret `GEMINI_API_KEY`.
+1. Repo Settings, Secrets and variables, Actions: add secret `GEMINI_API_KEY` (the drafting key; keep a separate key for the onboarding reader later). Optional: `UNSPLASH_ACCESS_KEY` for stock photos.
 2. Optional repository variables: `PENPOST_TRIAGE_MODEL`, `PENPOST_WRITER_MODEL` (defaults are `gemini-2.5-flash` and `gemini-2.5-pro`; check Google's current model list), `PENPOST_MAX_CALLS` (default 40, a hard stop per run).
 3. Repo Settings, Actions, General: allow GitHub Actions to create pull requests.
 4. Run it once by hand from the Actions tab and read the pull request.
@@ -107,7 +118,7 @@ Before it can run:
 
 ## Status
 
-Done: first-visit place picker (regions, counties, towns); real Oct. 9 edition; daily drafting job with review step; deck, article, writer profiles, completion, settings, about, today list; geography rules; votes with undo; persistence across refresh; storage-blocked fallback; reduced motion; keyboard and button navigation; content validation; 59 unit tests; screenshot flow checks at 320px and 390px.
+Done: first-visit place picker (regions, counties, towns); real Oct. 9 edition; daily drafting job with review step; deck, article, writer profiles, completion, settings, about, today list; geography rules; votes with undo; persistence across refresh; storage-blocked fallback; reduced motion; keyboard and button navigation; content validation; 62 unit tests; screenshot flow checks at 320px and 390px.
 
 Local only: votes, towns, deck position.
 

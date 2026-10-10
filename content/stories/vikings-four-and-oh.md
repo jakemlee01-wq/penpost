@@ -7,17 +7,42 @@
   "writerId": "grace",
   "publishedAt": "2026-10-09T06:00:00-05:00",
   "cities": [],
-  "topics": ["vikings", "football"],
-  "categories": ["sports"],
+  "topics": [
+    "vikings",
+    "football"
+  ],
+  "categories": [
+    "sports"
+  ],
   "tone": "light",
   "mustKnow": false,
   "significance": "statewide",
   "significanceReason": "Minnesota's NFL team.",
-  "image": { "scene": "road", "alt": "Illustration of a sunny open road through rolling fields", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "road",
+    "alt": "U.S. Bank Stadium and the Minneapolis skyline under a bright blue sky",
+    "credit": "Joe Caper / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "place",
+      "caption": "U.S. Bank Stadium, Minneapolis",
+      "credit": "Joe Caper / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/us-bank-stadium-and-minneapolis-skyline-puIe_uu-Cq0",
+      "downloadUrl": "https://unsplash.com/photos/puIe_uu-Cq0/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.fox9.com/live-blog/sports/live-updates-minnesota-vikings-vs-miami-dolphins", "publisher": "FOX 9", "title": "Vikings beat Dolphins 15-10, win 4th straight to start season", "publishedAt": "2026-10-04", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.fox9.com/live-blog/sports/live-updates-minnesota-vikings-vs-miami-dolphins",
+      "publisher": "FOX 9",
+      "title": "Vikings beat Dolphins 15-10, win 4th straight to start season",
+      "publishedAt": "2026-10-04",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

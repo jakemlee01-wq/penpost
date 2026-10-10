@@ -6,18 +6,46 @@
   "preview": "Revol Greens had planned to close its greenhouse and lay off about 100 workers this month. A possible deal could keep it running.",
   "writerId": "ben",
   "publishedAt": "2026-10-09T06:00:00-05:00",
-  "cities": ["owatonna"],
-  "topics": ["agriculture", "jobs"],
-  "categories": ["business", "agriculture"],
+  "cities": [
+    "owatonna"
+  ],
+  "topics": [
+    "agriculture",
+    "jobs"
+  ],
+  "categories": [
+    "business",
+    "agriculture"
+  ],
   "tone": "heavy",
   "mustKnow": false,
   "significance": "regional",
   "significanceReason": "Possible loss of about 100 jobs at a southern Minnesota employer.",
-  "image": { "scene": "farm", "alt": "Illustration of farm buildings beside golden fields under a wide blue sky", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "farm",
+    "alt": "Rows of lettuce plants growing in a greenhouse",
+    "credit": "MRC Témiscamingue / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: lettuce growing in a greenhouse",
+      "credit": "MRC Témiscamingue / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-row-of-lettuce-plants-in-a-greenhouse-pEp11yWqpL0",
+      "downloadUrl": "https://unsplash.com/photos/pEp11yWqpL0/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.mprnews.org/story/2026/10/02/revol-greens-may-remain-open-as-minnesota-lettuce-grower-postpones-closure", "publisher": "MPR News", "title": "Minnesota lettuce grower Revol Greens may remain open as it postpones planned closure, layoffs", "publishedAt": "2026-10-02", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.mprnews.org/story/2026/10/02/revol-greens-may-remain-open-as-minnesota-lettuce-grower-postpones-closure",
+      "publisher": "MPR News",
+      "title": "Minnesota lettuce grower Revol Greens may remain open as it postpones planned closure, layoffs",
+      "publishedAt": "2026-10-02",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

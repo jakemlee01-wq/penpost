@@ -6,18 +6,46 @@
   "preview": "Roofs, siding, windows and doors no longer need plan review. The city says many of those permits will now take a day or two instead of weeks.",
   "writerId": "luke",
   "publishedAt": "2026-10-09T06:00:00-05:00",
-  "cities": ["minneapolis"],
-  "topics": ["small-business", "policy"],
-  "categories": ["business", "real-estate"],
+  "cities": [
+    "minneapolis"
+  ],
+  "topics": [
+    "small-business",
+    "policy"
+  ],
+  "categories": [
+    "business",
+    "real-estate"
+  ],
   "tone": "neutral",
   "mustKnow": false,
   "significance": "local",
   "significanceReason": "City permitting change that affects contractors and homeowners in Minneapolis.",
-  "image": { "scene": "van", "alt": "Illustration of a contractor's van parked outside a row of city houses on a clear day", "credit": "Penpost illustration", "rightsNote": "Owned illustration. No photo from the source was used.", "illustrative": true },
+  "image": {
+    "scene": "van",
+    "alt": "A person removing shingles from a residential roof",
+    "credit": "Zohair Mirza / Unsplash",
+    "rightsNote": "Free to use under the Unsplash License (unsplash.com/license). Verified on the photo page 2026-10-10.",
+    "illustrative": false,
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: replacing shingles on a house roof",
+      "credit": "Zohair Mirza / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/person-removing-shingles-from-roof-GXITWKvgm-k",
+      "downloadUrl": "https://unsplash.com/photos/GXITWKvgm-k/download?force=true&w=1400"
+    }
+  },
   "status": "published",
   "isDemo": false,
   "sources": [
-    { "url": "https://www.minneapolismn.gov/news/2026/october/minneapolis-construction-permit-process-changes/", "publisher": "City of Minneapolis", "title": "Minneapolis announces construction permit process change, expediting development timelines for businesses and residents", "publishedAt": "2026-10-02", "accessedAt": "2026-10-09" }
+    {
+      "url": "https://www.minneapolismn.gov/news/2026/october/minneapolis-construction-permit-process-changes/",
+      "publisher": "City of Minneapolis",
+      "title": "Minneapolis announces construction permit process change, expediting development timelines for businesses and residents",
+      "publishedAt": "2026-10-02",
+      "accessedAt": "2026-10-09"
+    }
   ]
 }
 ---

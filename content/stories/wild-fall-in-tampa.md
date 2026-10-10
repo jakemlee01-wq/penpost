@@ -30,7 +30,8 @@
       "credit": "Logan Weaver / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/ice-hockey-players-on-ice-hockey-stadium-GXQP77GIsIU",
-      "downloadUrl": "https://unsplash.com/photos/GXQP77GIsIU/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/GXQP77GIsIU/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1580748141549-71748dbe0bdc?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

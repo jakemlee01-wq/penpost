@@ -31,7 +31,8 @@
       "credit": "National Cancer Institute / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/surgeons-performing-surgery-in-operating-room-KrsoedfRAf4",
-      "downloadUrl": "https://unsplash.com/photos/KrsoedfRAf4/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/KrsoedfRAf4/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1579684453423-f84349ef60b0?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

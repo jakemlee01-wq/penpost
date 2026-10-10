@@ -34,7 +34,8 @@
       "credit": "Steijn Leijzer / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/photo-of-high-rise-buildings-during-daytime-bF6W6qcEVG0",
-      "downloadUrl": "https://unsplash.com/photos/bF6W6qcEVG0/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/bF6W6qcEVG0/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1528991191763-275f9418709f?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

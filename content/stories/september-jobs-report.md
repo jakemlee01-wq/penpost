@@ -30,7 +30,8 @@
       "credit": "Nathan Sack / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/a-now-hiring-sign-hangs-in-a-store-window-UQ716eQauSw",
-      "downloadUrl": "https://unsplash.com/photos/UQ716eQauSw/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/UQ716eQauSw/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1753104429187-64c23ec2adaa?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

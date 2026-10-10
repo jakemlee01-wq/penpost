@@ -32,7 +32,8 @@
       "credit": "Zoe Richardson / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/a-group-of-pigs-in-a-pen-vMjrs3C50d8",
-      "downloadUrl": "https://unsplash.com/photos/vMjrs3C50d8/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/vMjrs3C50d8/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1651592279311-120424784c06?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

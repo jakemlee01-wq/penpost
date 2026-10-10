@@ -33,7 +33,8 @@
       "credit": "Zohair Mirza / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/person-removing-shingles-from-roof-GXITWKvgm-k",
-      "downloadUrl": "https://unsplash.com/photos/GXITWKvgm-k/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/GXITWKvgm-k/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1633759593085-1eaeb724fc88?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

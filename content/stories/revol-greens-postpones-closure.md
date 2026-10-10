@@ -33,7 +33,8 @@
       "credit": "MRC Témiscamingue / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/a-row-of-lettuce-plants-in-a-greenhouse-pEp11yWqpL0",
-      "downloadUrl": "https://unsplash.com/photos/pEp11yWqpL0/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/pEp11yWqpL0/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1646082270983-7c0636e13c66?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

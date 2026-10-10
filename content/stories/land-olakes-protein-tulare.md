@@ -34,7 +34,8 @@
       "credit": "Leon Ephraïm / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/herd-of-dairy-cattles-on-field-AxoNnnH1Y98",
-      "downloadUrl": "https://unsplash.com/photos/AxoNnnH1Y98/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/AxoNnnH1Y98/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1440428099904-c6d459a7e7b5?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

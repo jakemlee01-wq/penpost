@@ -6,3 +6,4 @@ screenshots/
 .env
 .env.*
 pipeline/out/
+public/photo-check.json

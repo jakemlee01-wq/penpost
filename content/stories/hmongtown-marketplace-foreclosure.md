@@ -35,7 +35,8 @@
       "credit": "weston m / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/high-rise-buildings-Nm14J6P6NaU",
-      "downloadUrl": "https://unsplash.com/photos/Nm14J6P6NaU/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/Nm14J6P6NaU/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1574807629929-fdd3f46fa0f5?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

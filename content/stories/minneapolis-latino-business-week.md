@@ -33,7 +33,8 @@
       "credit": "weston m / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/people-walking-on-sidewalk-near-city-buildings-during-daytime-69euBwm16J0",
-      "downloadUrl": "https://unsplash.com/photos/69euBwm16J0/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/69euBwm16J0/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1585168121124-bc4c43c0251b?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

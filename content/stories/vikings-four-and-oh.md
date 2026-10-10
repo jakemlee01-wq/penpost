@@ -30,7 +30,8 @@
       "credit": "Joe Caper / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/us-bank-stadium-and-minneapolis-skyline-puIe_uu-Cq0",
-      "downloadUrl": "https://unsplash.com/photos/puIe_uu-Cq0/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/puIe_uu-Cq0/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1790792926894-aae6ea340b79?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

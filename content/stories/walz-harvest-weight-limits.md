@@ -32,7 +32,8 @@
       "credit": "Hannah Shedrow / Unsplash",
       "license": "Unsplash License",
       "pageUrl": "https://unsplash.com/photos/a-combine-truck-driving-through-a-corn-field-2Crf9T9TKOY",
-      "downloadUrl": "https://unsplash.com/photos/2Crf9T9TKOY/download?force=true&w=1400"
+      "downloadUrl": "https://unsplash.com/photos/2Crf9T9TKOY/download?force=true&w=1400",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1700241739138-4ec27c548035?auto=format&fit=crop&w=1200&q=70"
     }
   },
   "status": "published",

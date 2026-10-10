@@ -482,3 +482,50 @@ img.card-img.photo { pointer-events: none; -webkit-user-drag: none; user-select:
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* One-screen setup */
+.setup h1 { margin-top: 8px; }
+.setup-box {
+  position: relative; margin: 14px 0 6px; border-radius: 20px; background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line); transition: box-shadow 0.15s ease;
+}
+.setup-box:focus-within { box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.setup-box.listening { box-shadow: inset 0 0 0 2px var(--accent); }
+.setup-input {
+  display: block; width: 100%; min-height: 132px; resize: vertical; border: 0; background: transparent;
+  padding: 16px 16px 8px; font: inherit; font-size: 17px; line-height: 1.5; color: var(--ink); border-radius: 20px;
+}
+.setup-input:focus { outline: none; }
+.setup-input::placeholder { color: #9aa5b1; }
+.mic-btn {
+  display: inline-flex; align-items: center; gap: 6px; margin: 0 10px 10px; min-height: 44px; padding: 0 16px;
+  border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+}
+.mic-btn svg { width: 20px; height: 20px; }
+.mic-btn.on { background: var(--accent-ink); color: #fff; }
+.mic-btn:disabled { opacity: 0.5; cursor: default; }
+.setup-example { margin: 18px 0 14px; padding: 14px 16px; border-radius: 18px; background: var(--warm); }
+.setup-example figcaption { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 6px; }
+.setup-example blockquote { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink); }
+.setup-notice {
+  display: flex; align-items: flex-start; gap: 8px; margin: 8px 16px 0; padding: 8px 6px 8px 14px; border-radius: 14px;
+  background: var(--accent-soft); color: var(--ink); font-size: 14px; line-height: 1.4;
+}
+.setup-notice span { flex: 1; padding-top: 4px; }
+.notice-x { flex: none; width: 32px; height: 32px; border: 0; border-radius: 999px; background: none; color: var(--ink-2); font-size: 20px; cursor: pointer; }
+.notice-x:hover { background: rgba(255, 255, 255, 0.6); }
+
+/* Settings: free-form topics */
+.topic-chips { margin: 8px 0 4px; }
+.topic-chips .chips { list-style: none; padding: 0; margin: 0 0 10px; }
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.chip-add { display: flex; gap: 8px; }
+.chip-add input {
+  flex: 1; min-width: 0; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 0;
+  box-shadow: inset 0 0 0 1.5px var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 16px;
+}
+.chip-add input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.setup-said { margin: 6px 0 10px; padding: 10px 14px; border-radius: 14px; background: var(--warm); font-size: 14px; line-height: 1.5; }

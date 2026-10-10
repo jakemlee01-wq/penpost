@@ -3,6 +3,7 @@ import { editions, expand, labelFor, stories, storyById, towns } from "./content
 import { chicagoDate, pickEdition } from "./dates";
 import { assembleStoryIds } from "./ranking";
 import type { Edition, Story, Vote } from "./schema";
+import type { SetupResult } from "./setupParse";
 import { applyVote, deckKey, defaultState, loadState, saveState, type DeckState, type LocalState } from "./storage";
 
 export type Reader = ReturnType<typeof useReader>;
@@ -21,13 +22,13 @@ export function useReader() {
   }, []);
 
   // Picked areas (regions, counties, towns) expand to the towns they cover.
+  // No areas is allowed: the reader gets statewide and national news.
   const readerTowns = useMemo(() => expand(state.prefs.areas), [state.prefs.areas]);
-  const needsAreas = readerTowns.length === 0;
-  const needsInterests = state.prefs.interests.length === 0;
-  const needsSetup = needsAreas || needsInterests;
+  const needsSetup = !state.prefs.setup || state.prefs.interests.length === 0;
+  const { interests, likes, avoids, favoriteWriters } = state.prefs;
   const profile = useMemo(
-    () => ({ towns: readerTowns, interests: state.prefs.interests, mood: state.prefs.mood, favoriteWriters: state.prefs.favoriteWriters }),
-    [readerTowns, state.prefs.interests, state.prefs.mood, state.prefs.favoriteWriters],
+    () => ({ towns: readerTowns, interests, likes, avoids, favoriteWriters }),
+    [readerTowns, interests, likes, avoids, favoriteWriters],
   );
   const key = manifest && !needsSetup ? deckKey(manifest.id, readerTowns, state.prefs) : "";
 
@@ -61,7 +62,7 @@ export function useReader() {
       ? {
           id: manifest.id,
           date: manifest.date,
-          label: labelFor(state.prefs.areas),
+          label: state.prefs.areas.length ? labelFor(state.prefs.areas) : "Minnesota",
           storyIds: deck.storyIds,
           estimatedTotalReadMinutes: Math.round(deckStories.reduce((n, s) => n + s.estimatedReadMinutes, 0)),
           isDemo: manifest.isDemo,
@@ -109,15 +110,25 @@ export function useReader() {
     edition,
     deck,
     deckStories,
-    next: () => deck && goTo(deck.index + 1),
+    next: () => {
+      if (!deck) return;
+      if (state.notice) commit((s) => ({ ...s, notice: null }));
+      goTo(deck.index + 1);
+    },
     prev: () => deck && goTo(deck.index - 1),
     goTo,
     vote,
     voteFor: (storyId: string) => state.feedback[storyId]?.vote ?? null,
     markHintSeen: () => commit((s) => (s.hintSeen ? s : { ...s, hintSeen: true })),
-    needsAreas,
-    needsInterests,
     needsSetup,
+    /** Save what the setup screen parsed, show the honest line, and start a fresh deck. */
+    completeSetup: (text: string, result: SetupResult) =>
+      commit((s) => ({
+        ...s,
+        prefs: { ...s.prefs, ...result.prefs, setup: { text, source: result.source, at: new Date().toISOString() } },
+        notice: result.notice,
+      })),
+    dismissNotice: () => commit((s) => ({ ...s, notice: null })),
     readerTowns,
     setAreas: (ids: string[]) => commit((s) => ({ ...s, prefs: { ...s.prefs, areas: ids } })),
     setPrefs: (patch: Partial<LocalState["prefs"]>) => commit((s) => ({ ...s, prefs: { ...s.prefs, ...patch } })),

@@ -1,4 +1,5 @@
-import { CATEGORY_IDS, SCOPES, WRITER_IDS, type Feedback, type Interest, type Mood, type ReaderPreferences, type Vote } from "./schema";
+import { CATEGORY_IDS, SCOPES, WRITER_IDS, type Feedback, type Interest, type ReaderPreferences, type SetupRecord, type Vote } from "./schema";
+import { MAX_AVOIDS, MAX_LIKES, cleanPhrase } from "./setupParse";
 
 /**
  * Everything the reader does is stored on this device only, under one key.
@@ -21,15 +22,18 @@ export type LocalState = {
   feedback: Record<string, Feedback>;
   decks: Record<string, DeckState>;
   hintSeen: boolean;
+  /** One honest line shown on the deck right after setup, until dismissed or the reader moves on. */
+  notice: string | null;
 };
 
 export function defaultState(): LocalState {
   return {
     version: 1,
-    prefs: { areas: [], interests: [], mood: 1, favoriteWriters: [] },
+    prefs: { areas: [], interests: [], likes: [], avoids: [], favoriteWriters: [], setup: null },
     feedback: {},
     decks: {},
     hintSeen: false,
+    notice: null,
   };
 }
 
@@ -66,20 +70,45 @@ export function sanitize(value: unknown, normalizeAreas: (ids: unknown) => strin
   if (!value || typeof value !== "object") return base;
   const v = value as Partial<LocalState> & { prefs?: { towns?: unknown } };
   const rawAreas = Array.isArray(v.prefs?.areas) ? v.prefs!.areas : v.prefs?.towns;
+  const areas = normalizeAreas(rawAreas);
+  const interests = sanitizeInterests(v.prefs?.interests);
+  const avoids = phrases(v.prefs?.avoids, MAX_AVOIDS);
   return {
     version: 1,
     prefs: {
-      areas: normalizeAreas(rawAreas),
-      interests: sanitizeInterests(v.prefs?.interests),
-      mood: ([0, 1, 2] as const).includes(v.prefs?.mood as Mood) ? (v.prefs!.mood as Mood) : 1,
+      areas,
+      interests,
+      likes: phrases(v.prefs?.likes, MAX_LIKES).filter((l) => !avoids.includes(l)),
+      avoids,
       favoriteWriters: Array.isArray(v.prefs?.favoriteWriters)
         ? v.prefs!.favoriteWriters.filter((w): w is string => (WRITER_IDS as readonly string[]).includes(w as string))
         : [],
+      // Saves from the old two-step setup count as set up, so returning readers aren't asked again.
+      setup: sanitizeSetup(v.prefs?.setup) ?? (interests.length ? { text: "", source: "manual", at: "" } : null),
     },
     feedback: v.feedback && typeof v.feedback === "object" ? v.feedback : {},
     decks: v.decks && typeof v.decks === "object" ? v.decks : {},
     hintSeen: Boolean(v.hintSeen),
+    notice: typeof v.notice === "string" && v.notice.length < 300 ? v.notice : null,
   };
+}
+
+function phrases(raw: unknown, max: number): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const x of raw) {
+    const p = cleanPhrase(x);
+    if (p && !out.includes(p) && out.length < max) out.push(p);
+  }
+  return out;
+}
+
+function sanitizeSetup(raw: unknown): SetupRecord | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Partial<SetupRecord>;
+  const source = (["ai", "basic", "starter", "manual"] as const).find((x) => x === r.source);
+  if (!source) return null;
+  return { text: typeof r.text === "string" ? r.text.slice(0, 1200) : "", source, at: typeof r.at === "string" ? r.at : "" };
 }
 
 function sanitizeInterests(raw: unknown): Interest[] {
@@ -131,9 +160,14 @@ export function _resetMemory() {
 }
 
 /** A deck is frozen per edition and per reader setup; changing any setting builds a new one. */
-export function deckKey(editionId: string, townIds: string[], prefs?: Pick<ReaderPreferences, "interests" | "mood" | "favoriteWriters">): string {
+export function deckKey(
+  editionId: string,
+  townIds: string[],
+  prefs?: Pick<ReaderPreferences, "interests" | "likes" | "avoids" | "favoriteWriters">,
+): string {
+  const sorted = (xs: string[]) => [...xs].sort().join(",");
   const extra = prefs
-    ? `|${prefs.interests.map((i) => `${i.category}:${i.scope}`).sort().join(",")}|m${prefs.mood}|${[...prefs.favoriteWriters].sort().join(",")}`
+    ? `|${sorted(prefs.interests.map((i) => `${i.category}:${i.scope}`))}|+${sorted(prefs.likes)}|-${sorted(prefs.avoids)}|${sorted(prefs.favoriteWriters)}`
     : "";
   return `${editionId}|${[...townIds].sort().join(",")}${extra}`;
 }

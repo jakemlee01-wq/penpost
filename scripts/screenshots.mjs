@@ -23,23 +23,31 @@ for (const [w, h] of [[320, 568], [390, 844]]) {
     await p.screenshot({ path: `${out}/${w}-${name}.png` });
   };
 
+  // A fake speech recognizer so the mic path can be exercised without a real microphone.
+  await p.addInitScript(() => {
+    window.SpeechRecognition = window.webkitSpeechRecognition = class {
+      start() {
+        setTimeout(() => this.onresult?.({ results: [[{ transcript: "I live in the Twin Cities and grew up near Dawson." }]] }), 50);
+        setTimeout(() => this.onend?.(), 120);
+      }
+      stop() { this.onend?.(); }
+    };
+  });
   await p.goto(url + "#/");
-  // First visit: pick places
-  await shot("0-onboarding");
-  await p.getByRole("button", { name: "Twin Cities metro" }).click();
-  await p.getByPlaceholder("Search a town, county or region").fill("daw");
-  await p.getByRole("button", { name: "Dawson", exact: true }).click();
-  await p.getByPlaceholder("Search a town, county or region").fill("");
-  await shot("0b-onboarding-picked");
-  await p.getByRole("button", { name: "Next: your interests" }).click();
-  // Business (Minnesota) is pre-set. Add Minnesota sports and national economy.
-  await p.getByRole("radiogroup", { name: "Sports" }).getByRole("radio", { name: "Minnesota" }).click();
-  await p.getByRole("radiogroup", { name: "Economy" }).getByRole("radio", { name: "National" }).click();
-  await p.getByRole("button", { name: /^Jack/ }).click();
-  await shot("0c-interests");
-  await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await shot("0d-interests-bottom");
+  // First visit: one screen, one answer.
+  await shot("0-setup");
+  if ((await p.locator("textarea").count()) !== 1) problems.push("setup should have exactly one text box");
+  if ((await p.locator("main input, main select, [role=radiogroup]").count()) !== 0) problems.push("setup has extra controls");
+  await p.locator("textarea").fill("I follow entrepreneurship, VC and private equity in Minnesota, and nationally I like to keep a sense of how the economy is doing. I'm into value investing and follow Warren Buffett and Berkshire Hathaway. I like technology, especially new AI tools I can actually try. I'm a big fan of Minnesota basketball and football, but I don't really care about soccer.");
+  await p.getByRole("button", { name: "Speak your answer" }).click();
+  await p.waitForTimeout(250);
+  const said = await p.locator("textarea").inputValue();
+  if (!said.endsWith("grew up near Dawson.")) problems.push("voice input did not reach the text box");
+  await shot("0b-setup-filled");
   await p.getByRole("button", { name: "Show my edition" }).click();
+  await p.waitForSelector(".counter");
+  const notice = await p.textContent(".setup-notice span");
+  if (notice !== "Built from what you told us. We'll keep learning as you read.") problems.push(`notice wrong: ${notice}`);
   await shot("1-deck");
   const label = await p.textContent(".topbar-date");
   if (!label.includes("Twin Cities metro + Dawson")) problems.push(`edition label wrong: ${label}`);
@@ -83,6 +91,11 @@ for (const [w, h] of [[320, 568], [390, 844]]) {
   await shot("7-complete");
   await p.goto(url + "#/settings");
   await shot("8-settings");
+  await p.evaluate(() => window.scrollTo(0, document.querySelector("h2:nth-of-type(4)")?.getBoundingClientRect().top + window.scrollY - 40));
+  await shot("8b-settings-likes");
+  await p.goto(url + "#/setup");
+  await shot("8c-redo-setup");
+  if (!(await p.locator("textarea").inputValue()).includes("Dawson")) problems.push("redo setup lost the earlier answer");
   await p.goto(url + "#/about");
   await shot("9-about");
   await p.goto(url + "#/today");

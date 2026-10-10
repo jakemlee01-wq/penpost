@@ -28,3 +28,9 @@ export const Close = ({ className }: P) => (
 export const ExternalLink = ({ className }: P) => (
   <svg {...base} width={14} height={14} className={className}><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
 );
+export const Mic = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" />
+  </svg>
+);

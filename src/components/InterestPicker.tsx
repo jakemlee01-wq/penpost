@@ -1,6 +1,7 @@
 import { Avatar } from "./Avatar";
 import { interestCatalog, writers } from "../lib/content";
-import type { CategoryId, Interest, Mood, Scope } from "../lib/schema";
+import type { CategoryId, Interest, Scope } from "../lib/schema";
+import { cleanPhrase } from "../lib/setupParse";
 
 type Choice = Scope | "off";
 const CHOICES: { id: Choice; label: string }[] = [
@@ -46,24 +47,48 @@ export function InterestPicker({ value, onChange }: { value: Interest[]; onChang
   );
 }
 
-const MOODS: { id: Mood; label: string; note: string }[] = [
-  { id: 0, label: "Lighter", note: "Skip heavy stories like closings and layoffs." },
-  { id: 1, label: "Balanced", note: "Everything, with lighter stories nudged up a little." },
-  { id: 2, label: "Everything", note: "No preference. Stories ranked on place and interest only." },
-];
-
-export function MoodPicker({ value, onChange }: { value: Mood; onChange: (m: Mood) => void }) {
-  const note = MOODS.find((m) => m.id === value)?.note;
+/** Free-form topics as removable chips, plus a box to add one. Used for likes and dislikes in Settings. */
+export function TopicChips({
+  value,
+  onChange,
+  label,
+  placeholder,
+  max,
+}: {
+  value: string[];
+  onChange: (next: string[]) => void;
+  label: string;
+  placeholder: string;
+  max: number;
+}) {
+  const add = (raw: string) => {
+    const p = cleanPhrase(raw);
+    if (p && !value.includes(p) && value.length < max) onChange([...value, p]);
+  };
   return (
-    <div className="mood">
-      <div className="segctl wide" role="radiogroup" aria-label="Mood">
-        {MOODS.map((m) => (
-          <button key={m.id} role="radio" aria-checked={value === m.id} className={`seg-btn${value === m.id ? " on" : ""}`} onClick={() => onChange(m.id)}>
-            {m.label}
-          </button>
+    <div className="topic-chips">
+      <ul className="chips" aria-label={label}>
+        {value.map((t) => (
+          <li key={t}>
+            <button className="chip-btn" onClick={() => onChange(value.filter((x) => x !== t))} aria-label={`Remove ${t}`}>
+              {t} <span aria-hidden="true">×</span>
+            </button>
+          </li>
         ))}
-      </div>
-      <p className="fineprint">{note} Big news for your places always gets through, whatever you pick.</p>
+        {value.length === 0 ? <li className="fineprint">None yet.</li> : null}
+      </ul>
+      <form
+        className="chip-add"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const input = e.currentTarget.elements.namedItem("topic") as HTMLInputElement;
+          add(input.value);
+          input.value = "";
+        }}
+      >
+        <input name="topic" type="text" placeholder={placeholder} aria-label={`Add to ${label.toLowerCase()}`} maxLength={40} />
+        <button className="pill-btn ghost" type="submit">Add</button>
+      </form>
     </div>
   );
 }

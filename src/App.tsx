@@ -15,6 +15,8 @@ export function App() {
   if (reader.needsSetup && (route.name === "deck" || route.name === "today")) return <Onboarding reader={reader} />;
 
   switch (route.name) {
+    case "setup":
+      return <Onboarding reader={reader} redo />;
     case "story":
       return <Article slug={route.slug} />;
     case "writer":

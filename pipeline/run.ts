@@ -198,7 +198,7 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
           writerId: writer.id,
           publishedAt: `${date}T06:00:00-05:00`,
           cities: t.cities,
-          topics: t.topics.slice(0, 3).map(slugify).filter(Boolean),
+          topics: t.topics.slice(0, 5).map(slugify).filter(Boolean),
           categories: [...new Set(t.categories)].slice(0, 2),
           tone: t.tone,
           mustKnow: t.mustKnow && t.significance !== "national",

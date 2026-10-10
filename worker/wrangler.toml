@@ -6,8 +6,8 @@ main = "src/index.ts"
 compatibility_date = "2025-09-01"
 
 [vars]
-ALLOWED_ORIGINS = "https://penpost.co,https://www.penpost.co,https://jakemlee01-wq.github.io,http://localhost:5173"
-GEMINI_MODEL = "gemini-2.5-flash"
+ALLOWED_ORIGINS = "https://penpost.co,https://www.penpost.co,http://penpost.co,http://www.penpost.co,https://jakemlee01-wq.github.io,http://localhost:5173"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 # Optional: limit each visitor to 10 setup parses a minute.
 # Check Cloudflare's current rate limiting docs before enabling.

@@ -25,7 +25,10 @@ export interface Env {
 
 const areas = AreasSchema.parse(areasJson);
 const SYSTEM = parseSystemPrompt(areas);
-const DEFAULT_ORIGINS = "https://penpost.co,https://www.penpost.co,https://jakemlee01-wq.github.io,http://localhost:5173";
+/** Current models per Google's list (Oct 2026). GEMINI_MODEL, if set, is tried first. */
+const FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.8-flash"];
+const DEFAULT_ORIGINS =
+  "https://penpost.co,https://www.penpost.co,http://penpost.co,http://www.penpost.co,https://jakemlee01-wq.github.io,http://localhost:5173";
 
 function cors(origin: string): Record<string, string> {
   return {
@@ -69,24 +72,47 @@ export async function handle(req: Request, env: Env, fetchImpl: typeof fetch = f
   if (text.length > MAX_SETUP_CHARS * 2) return json({ error: "text is too long" }, 413, headers);
   if (!env.GEMINI_API_KEY) return json({ error: "parser not configured" }, 503, headers);
 
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+  // Model names change; try the configured one first, then current fallbacks.
+  const models = [...new Set([env.GEMINI_MODEL, ...FALLBACK_MODELS].filter((m): m is string => Boolean(m)))];
+  let lastError = "";
+  for (const model of models) {
+    try {
+      const res = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM }] },
+          contents: [{ role: "user", parts: [{ text: parseUserPrompt(text) }] }],
+          generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 2048 },
+        }),
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        lastError = `${model}: ${res.status} ${googleMessage(detail)}`;
+        console.warn(`setup parse: ${lastError}`);
+        // Only a missing model is worth trying the next name for.
+        if (res.status === 404) continue;
+        return json({ error: "model error", detail: lastError }, 502, headers);
+      }
+      const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      const out = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+      const parsed = JSON.parse(out.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, ""));
+      return json(sanitizeParsed(parsed, areas), 200, headers);
+    } catch (e) {
+      lastError = `${model}: ${(e as Error).message}`;
+      console.warn(`setup parse: ${lastError}`);
+      return json({ error: "could not read the model reply", detail: lastError }, 502, headers);
+    }
+  }
+  return json({ error: "model error", detail: lastError }, 502, headers);
+}
+
+/** Google's error text, short. It never contains the key. */
+function googleMessage(body: string): string {
   try {
-    const res = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM }] },
-        contents: [{ role: "user", parts: [{ text: parseUserPrompt(text) }] }],
-        generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 0 } },
-      }),
-    });
-    if (!res.ok) return json({ error: `model error ${res.status}` }, 502, headers);
-    const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-    const out = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-    const parsed = JSON.parse(out.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, ""));
-    return json(sanitizeParsed(parsed, areas), 200, headers);
+    return String((JSON.parse(body) as { error?: { message?: string } }).error?.message ?? "").slice(0, 200);
   } catch {
-    return json({ error: "could not read the model reply" }, 502, headers);
+    return body.slice(0, 200);
   }
 }
 

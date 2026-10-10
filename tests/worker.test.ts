@@ -41,6 +41,18 @@ describe("setup Worker", () => {
   it("reports a model failure so the site can fall back", async () => {
     expect((await handle(req({ text: "startups" }), env, gemini({}, 500))).status).toBe(502);
   });
+  it("tries the next model when one isn't found", async () => {
+    const tried: string[] = [];
+    const flaky = (async (url: string) => {
+      tried.push(url);
+      if (tried.length === 1) return new Response(JSON.stringify({ error: { message: "model not found" } }), { status: 404 });
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"interests":[{"category":"sports","scope":"minnesota"}]}' }] } }] }));
+    }) as unknown as typeof fetch;
+    const res = await handle(req({ text: "sports" }), { ...env, GEMINI_MODEL: "old-model" }, flaky);
+    expect(res.status).toBe(200);
+    expect(tried[0]).toContain("old-model");
+    expect(tried[1]).toContain("gemini-3.5-flash-lite");
+  });
   it("needs its key", async () => {
     expect((await handle(req({ text: "startups" }), { GEMINI_API_KEY: "" }, gemini({}))).status).toBe(503);
   });

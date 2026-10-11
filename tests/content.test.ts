@@ -19,7 +19,7 @@ describe("writers", () => {
   it("labels every writer as AI and gives them the same full coverage", () => {
     for (const w of writers) {
       expect(w.isAI).toBe(true);
-      expect(w.bio).toMatch(/designed editorial persona/);
+      expect(w.bio).toMatch(/^\w+ is an AI writer persona with .+ lens\.$/);
       expect(w.beats).toEqual(["all"]);
       expect(w.potentialBias.length).toBeGreaterThan(0);
     }

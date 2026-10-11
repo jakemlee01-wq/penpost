@@ -3,7 +3,7 @@ import { useReader } from "./lib/useReader";
 import { Article } from "./views/Article";
 import { Deck } from "./views/Deck";
 import { Onboarding } from "./views/Onboarding";
-import { About, Settings, Today } from "./views/Pages";
+import { About, Account, Paper, Papers, Settings, Today } from "./views/Pages";
 import { WriterProfile } from "./views/Writer";
 
 export function App() {
@@ -25,6 +25,12 @@ export function App() {
       return <Settings reader={reader} />;
     case "about":
       return <About />;
+    case "papers":
+      return <Papers reader={reader} />;
+    case "paper":
+      return <Paper reader={reader} id={route.id} />;
+    case "account":
+      return <Account />;
     case "today":
       return <Today reader={reader} />;
     default:

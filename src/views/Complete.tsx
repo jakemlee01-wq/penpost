@@ -17,7 +17,6 @@ export function Complete({ reader }: { reader: Reader }) {
         <p className="complete-signoff">{signOff(edition.date, today)}</p>
         <div className="complete-actions">
           <a className="pill-link" href={href.today()}>Review today's stories</a>
-          <button className="text-btn" onClick={() => reader.goTo(0)}>Back to the first card</button>
         </div>
         {voted > 0 ? (
           <p className="complete-note">Your {voted === 1 ? "vote" : "votes"} will shape the next edition on this device, not this one.</p>

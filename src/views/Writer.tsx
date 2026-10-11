@@ -39,7 +39,6 @@ export function WriterProfile({ id }: { id: string }) {
         <section>
           <h2>About this writer</h2>
           <p>{writer.bio}</p>
-          <p>{writer.personality}</p>
         </section>
         <section>
           <h2>Tone and style</h2>
@@ -57,10 +56,9 @@ export function WriterProfile({ id }: { id: string }) {
           <h2>Strengths</h2>
           <ul className="plain-list">{writer.strengths.map((s) => <li key={s}>{s}</li>)}</ul>
         </section>
-        <section>
-          <h2>Potential bias and blind spots</h2>
-          <ul className="plain-list">{writer.potentialBias.map((s) => <li key={s}>{s}</li>)}</ul>
-        </section>
+        <p className="blind-spots">
+          <strong>Blind spots:</strong> {blindSpots(writer.potentialBias)}
+        </p>
         <section>
           <h2>Recent stories</h2>
           {recent.length ? (
@@ -81,4 +79,9 @@ export function WriterProfile({ id }: { id: string }) {
       </main>
     </div>
   );
+}
+
+/** "May overvalue X." + "May connect Y." -> "may overvalue X; may connect Y." */
+function blindSpots(items: string[]): string {
+  return items.map((s, i) => (i === 0 ? s : s.charAt(0).toLowerCase() + s.slice(1)).replace(/\.$/, "")).join("; ") + ".";
 }

@@ -198,15 +198,35 @@ export function About() {
     <div className="screen">
       <Bar title="About" />
       <main className="page">
-        <h1>About Penpost</h1>
-        <p>Your places and your interests, in about five short stories. A new edition every weekday, and then it stops.</p>
-
-        <h2>Written by AI</h2>
-        <p>
-          Every Penpost story is written by one of five AI writers. They are designed editorial personas with distinct voices, not real
-          reporters. None of them conducts interviews or has firsthand knowledge. Every story links to its sources, and a human editor
-          reviews each real edition before it is published.
+        <h1>About</h1>
+        <p className="about-lead">
+          Penpost is a short daily paper built around the places and things you care about. Tell it where you live and what you follow,
+          and each weekday it hands you about five stories, then it stops.
         </p>
+        <p>
+          It exists because good news about your own town, your industry and your niche interests is scattered across dozens of sites,
+          and most news apps are built to keep you scrolling. Penpost does the gathering for you and gives you an ending: about ten
+          minutes, and you're caught up.
+        </p>
+        <p className="disclosure">Every story is written by an AI writer persona and links to its sources.</p>
+
+        <h2>How your paper is put together</h2>
+        <p>
+          You tell Penpost what you want in your own words, and it turns that into places, sections and specific interests. Local
+          stories come from your places; statewide and national stories come from your sections. Papers lean lighter: a heavy story
+          gets in only when it's big news. Things you say you don't care about move down, never out, so big news for your places always
+          gets through. On a quiet day the paper is shorter. Your optional thumbs gently reorder future papers on this device. Swiping
+          past a story is never counted as a vote. You can fine-tune everything in Settings.
+        </p>
+
+        <h2>How stories are sourced</h2>
+        <p>
+          Writers work from company announcements, public records, and other reporting, then write a fresh account. A company's claim is
+          reported as a claim. When a story relies on another outlet's reporting, it says so. Source names, links, and dates appear at
+          the end of each article. Photos are licensed; generic ones are labeled "Stock photo" so they never read as the actual event.
+        </p>
+
+        <h2>The writers</h2>
         <ul className="writer-grid">
           {writers.map((w) => (
             <li key={w.id}>
@@ -219,25 +239,97 @@ export function About() {
           ))}
         </ul>
 
-        <h2>How stories are sourced</h2>
+        <h2>About the AI writers</h2>
         <p>
-          Writers work from company announcements, public records, and other reporting, then write a fresh account. A company's claim is
-          reported as a claim. When a story relies on another outlet's reporting, it says so. Source names, links, and dates appear at
-          the end of each article.
+          Penpost's five writers are designed editorial personas written by AI. They are not real people: none of them has a hometown,
+          an employment history, credentials, or personal experiences, and none conducts interviews or has firsthand knowledge of events.
+          Each has a distinct voice and a stated lens, and each profile lists that writer's likely blind spots. Every writer covers every
+          beat; a writer's lens shapes how a story is told, never which stories they get. Each story is checked against its source facts
+          before publishing, and if something is wrong it gets corrected and the article says so.
         </p>
-        <h2>How your edition is put together</h2>
+        <p className="fineprint">Penpost is an early version and still being shaped.</p>
+      </main>
+    </div>
+  );
+}
+
+export function Papers({ reader }: { reader: Reader }) {
+  const list = reader.pastEditions;
+  return (
+    <div className="screen">
+      <Bar title="Past papers" />
+      <main className="page">
+        <h1>Past papers</h1>
+        <p className="muted">Every weekday paper, picked for your places and interests.</p>
+        {list.length ? (
+          <ul className="paper-list">
+            {list.map((e) => {
+              const n = reader.storiesFor(e.id).length;
+              return (
+                <li key={e.id}>
+                  <a href={href.paper(e.id)}>
+                    <span className="paper-date">{formatEditionDate(e.date, "long")}</span>
+                    <span className="paper-meta">
+                      {n} {n === 1 ? "story" : "stories"}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p>No papers yet.</p>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export function Paper({ reader, id }: { reader: Reader; id: string }) {
+  const edition = reader.pastEditions.find((e) => e.id === id);
+  const list = edition ? reader.storiesFor(edition.id) : [];
+  return (
+    <div className="screen">
+      <Bar title="Past papers" />
+      <main className="page">
+        <h1>{edition ? formatEditionDate(edition.date, "long") : "Paper not found"}</h1>
+        <ol className="story-list numbered">
+          {list.map((s, i) => {
+            const w = writerById.get(s.writerId)!;
+            return (
+              <li key={s.id}>
+                <a href={href.story(s.slug)}>
+                  <span className="story-list-n">{i + 1}</span>
+                  <span>
+                    <span className="story-list-h">{s.headline}</span>
+                    <span className="story-list-m">
+                      {w.name} · {s.estimatedReadMinutes} min
+                    </span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+        {edition && !list.length ? <p>No stories in this paper for your places and interests.</p> : null}
+      </main>
+    </div>
+  );
+}
+
+export function Account() {
+  return (
+    <div className="screen">
+      <Bar title="Account" />
+      <main className="page">
+        <h1>Create an account or log in</h1>
         <p>
-          You tell Penpost what you want in your own words, and it turns that into places, sections and specific interests. Local
-          stories come from your places; statewide and national stories come from your sections. Editions lean lighter: a heavy story
-          gets in only when it's big news. Things you say you don't care about move down, never out, so big news for your places always
-          gets through. On a quiet day the edition is shorter. Your optional thumbs gently reorder future editions on this device.
-          Swiping past a story is never counted as a vote. You can fine-tune everything in Settings.
+          Accounts are coming soon. They'll let you keep your places and settings across your phone and computer.
         </p>
-        <h2>This is an early version</h2>
-        <p>
-          Penpost is new and still being shaped. Story photos are licensed photos; generic ones are labeled "Stock photo" so they never
-          read as the actual event. If something looks wrong, it gets corrected and the article says so.
+        <p className="muted">
+          For now Penpost works without one: your places, settings and votes are saved on this device.
         </p>
+        <a className="pill-link" href={href.settings()}>Your places and settings</a>
       </main>
     </div>
   );

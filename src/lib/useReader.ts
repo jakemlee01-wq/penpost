@@ -142,6 +142,21 @@ export function useReader() {
     clearFeedback: () => commit((s) => ({ ...s, feedback: {} })),
     resetAll: () => commit(() => defaultState()),
     importState: (next: LocalState) => commit(() => next),
+    /** Every published edition up to today, newest first. */
+    pastEditions: editions.filter((e) => e.date <= today).sort((a, b) => b.date.localeCompare(a.date)),
+    /** This reader's stories for any edition: the frozen deck if they read it, otherwise picked the same way. */
+    storiesFor: (editionId: string): Story[] => {
+      const m = editions.find((e) => e.id === editionId);
+      if (!m) return [];
+      const frozen = Object.entries(state.decks).find(([k]) => k.startsWith(`${editionId}|`))?.[1];
+      const ids = frozen?.storyIds ?? assembleStoryIds(
+        m.candidateStoryIds.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s)),
+        profile,
+        towns,
+        Object.values(state.feedback),
+      );
+      return ids.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s));
+    },
     allStories: stories,
   };
 }

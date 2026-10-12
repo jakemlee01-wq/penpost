@@ -22,7 +22,7 @@ concurrency:
 jobs:
   draft:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,6 +41,7 @@ jobs:
           PENPOST_TRIAGE_MODEL: ${{ vars.PENPOST_TRIAGE_MODEL }}
           PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}
           PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '40' }}
+          PENPOST_FALLBACK_MODEL: ${{ vars.PENPOST_FALLBACK_MODEL }}
         run: npx tsx pipeline/run.ts ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
 
       - name: Validate content

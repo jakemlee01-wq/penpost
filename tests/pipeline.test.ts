@@ -156,3 +156,36 @@ describe("createModel env handling", () => {
     expect(urls[1]).toContain("/models/gemini-3.8-flash:generateContent");
   });
 });
+
+describe("Gemini rate limits", () => {
+  it("switches the writer to the fallback model when its daily quota is used up, and stays there", async () => {
+    const urls: string[] = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      urls.push(String(url));
+      if (String(url).includes("gemini-3.8-flash:")) {
+        return new Response(JSON.stringify({ error: { code: 429, details: [{ violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }] }] } }), { status: 429 });
+      }
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "ok" }] } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    try {
+      const model = createModel({ PENPOST_PROVIDER: "gemini", GEMINI_API_KEY: "k" });
+      expect(await model.complete({ tier: "writer", system: "s", prompt: "p" })).toBe("ok");
+      expect(await model.complete({ tier: "writer", system: "s", prompt: "p" })).toBe("ok");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    expect(urls.map((u) => u.match(/models\/([^:]+)/)![1])).toEqual(["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.5-flash-lite"]);
+  });
+
+  it("does not hide other client errors behind a fallback", async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response("bad key", { status: 403 })) as unknown as typeof fetch;
+    try {
+      const model = createModel({ PENPOST_PROVIDER: "gemini", GEMINI_API_KEY: "k" });
+      await expect(model.complete({ tier: "writer", system: "s", prompt: "p" })).rejects.toThrow("HTTP 403");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});

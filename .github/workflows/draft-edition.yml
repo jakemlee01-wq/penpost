@@ -1,14 +1,14 @@
 name: Draft daily edition
 
-# Weekday mornings. Cron runs in UTC: 10:20 UTC is 5:20 a.m. Central in summer
-# and 4:20 a.m. in winter.
+# Weekday mornings. Cron runs in UTC: 09:00 UTC is 4:00 a.m. Central in summer
+# and 3:00 a.m. in winter, so the edition is live before the 5:00 a.m. check.
 #
 # The job researches every region and interest with Gemini + Google Search, writes stories in the
 # Penpost writers' voices, holds any story the checker can't match to its sources, and publishes
 # the rest straight to main. There is no review step.
 on:
   schedule:
-    - cron: "20 10 * * 1-5"
+    - cron: "0 9 * * 1-5"
   workflow_dispatch:
     inputs:
       date:

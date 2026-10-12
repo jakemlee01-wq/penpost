@@ -196,6 +196,7 @@ export async function runAgent(opts: AgentOptions) {
   let searchCalls = 0;
   let activeSearchModel = searchModel;
   const byTopic: Event[][] = [];
+  const research: string[] = [];
   for (const topic of topics) {
     const prompt = `Today is ${today}. Topic: ${topic.label}.${avoid}`;
     try {
@@ -211,22 +212,28 @@ export async function runAgent(opts: AgentOptions) {
         r = await searchCall(key, activeSearchModel, system, prompt, fetchImpl);
       }
       const json = r.text.slice(r.text.indexOf("{"), r.text.lastIndexOf("}") + 1);
-      const parsed = ResearchSchema.parse(parseJson(json || "{}"));
+      if (!json) {
+        byTopic.push([]);
+        research.push(`${topic.id} [${activeSearchModel}]: no JSON in reply (${r.text.replace(/\s+/g, " ").slice(0, 120)})`);
+        continue;
+      }
+      const parsed = ResearchSchema.parse(parseJson(json));
       const sources = await Promise.all(r.sources.slice(0, 10).map(async (s) => ({ title: s.title, url: await resolveUrl(s.url, fetchImpl) })));
       const events = parsed.items
         .filter((i) => i.facts.length >= 4)
         .map((i) => ({ ...i, cities: i.cities.filter((c) => townIds.has(c)), topic, sources: matchSources(sources, i.sourceNames) }))
         .filter((i) => i.sources.length > 0);
       byTopic.push(events);
-      log(`research ${topic.id}: ${events.length} events, ${sources.length} sources`);
+      research.push(`${topic.id} [${activeSearchModel}]: ${parsed.items.length} found, ${parsed.items.filter((i) => i.facts.length >= 4).length} with 4+ facts, ${sources.length} web sources, ${events.length} kept`);
     } catch (e) {
       byTopic.push([]);
-      log(`research ${topic.id}: failed (${(e as Error).message.slice(0, 160)})`);
+      research.push(`${topic.id} [${activeSearchModel}]: failed (${(e as Error).message.replace(/\s+/g, " ").slice(0, 160)})`);
     }
   }
 
   // 2. Pick, leaving headroom for stories the checker holds.
   const queue = pickEvents(byTopic, Math.ceil(maxStories * 1.3));
+  for (const r of research) log(`research ${r}`);
   log(`${queue.length} events picked from ${byTopic.flat().length}`);
 
   // 3. Write and check
@@ -308,6 +315,7 @@ export async function runAgent(opts: AgentOptions) {
     console.log(`::notice title=Draft result::${esc(summary)}`);
     const lines = written.map((w) => `${w.status === "draft" ? "HELD" : "ok"} [${w.topic}] ${w.file.replace("content/stories/", "")}`).concat(skipped.map((s) => `failed: ${s}`));
     if (lines.length) console.log(`::notice title=Stories::${esc(lines.slice(0, 60).join("\n"))}`);
+    console.log(`::notice title=Research::${esc(research.join("\n"))}`);
   }
   return { written, skipped, published };
 }

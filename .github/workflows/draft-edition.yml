@@ -17,6 +17,10 @@ on:
       max_stories:
         description: "Most stories to publish (default 30)."
         required: false
+      dry_run:
+        description: "Research and write, but don't publish."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -64,7 +68,7 @@ jobs:
           cat pipeline/out/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to main
-        if: steps.summary.outputs.changes == 'true'
+        if: steps.summary.outputs.changes == 'true' && github.ref == 'refs/heads/main' && !inputs.dry_run
         run: |
           git config user.name "penpost-bot"
           git config user.email "penpost-bot@users.noreply.github.com"
@@ -75,7 +79,7 @@ jobs:
 
       # Pushes made with the workflow token don't trigger other workflows, so start the deploy directly.
       - name: Deploy the site
-        if: steps.summary.outputs.changes == 'true'
+        if: steps.summary.outputs.changes == 'true' && github.ref == 'refs/heads/main' && !inputs.dry_run
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy.yml --ref main

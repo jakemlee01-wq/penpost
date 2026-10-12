@@ -132,12 +132,12 @@ function retryAfterSeconds(res: Response, body: string): number | undefined {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function fetchWithRetry(url: string, init: RequestInit, tries = 5): Promise<Response> {
+export async function fetchWithRetry(url: string, init: RequestInit, tries = 5, fetchImpl: typeof fetch = fetch): Promise<Response> {
   let last: Error = new Error("no attempt made");
   for (let i = 0; i < tries; i++) {
     let res: Response;
     try {
-      res = await fetch(url, init);
+      res = await fetchImpl(url, init);
     } catch (e) {
       last = e instanceof Error ? e : new Error(String(e));
       await sleep(1500 * (i + 1));

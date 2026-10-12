@@ -21,15 +21,21 @@ const base = (over: Partial<ReaderProfile> = {}): ReaderProfile => ({
 });
 
 describe("interests and scope", () => {
-  it("Twin Cities business at Minnesota scope: local business in, sports and national economy out", () => {
+  it("Twin Cities business at Minnesota scope: local business first, sports and national economy only as fill after it", () => {
     const ids = assembleStoryIds(pool, base(), towns, [], 20);
     expect(ids).toContain("2026-10-09-gudea");
-    expect(ids).not.toContain("2026-10-09-vikings-4-0");
-    expect(ids).not.toContain("2026-10-09-september-jobs");
+    expect(ids.indexOf("2026-10-09-gudea")).toBeLessThan(ids.indexOf("2026-10-09-vikings-4-0"));
+    const p = base();
+    expect(eligibility(byId("2026-10-09-vikings-4-0"), p.towns, towns, p).eligible).toBe(false);
+    expect(eligibility(byId("2026-10-09-september-jobs"), p.towns, towns, p).eligible).toBe(false);
   });
-  it("Minnesota sports brings in the Vikings and Wild", () => {
+  it("Minnesota sports brings in the Vikings and Wild ahead of everything else", () => {
     const ids = assembleStoryIds(pool, base({ interests: [{ category: "sports", scope: "minnesota" }] }), towns, [], 20);
-    expect(ids.sort()).toEqual(["2026-10-09-vikings-4-0", "2026-10-09-wild-tampa"]);
+    expect(ids.slice(0, 2).sort()).toEqual(["2026-10-09-vikings-4-0", "2026-10-09-wild-tampa"]);
+  });
+  it("a reader whose interests match nothing still gets a full edition from their places", () => {
+    const ids = assembleStoryIds(pool, base({ interests: [{ category: "culture", scope: "local" }] }), towns, [], 5);
+    expect(ids.length).toBe(Math.min(5, pool.filter((s) => s.status !== "draft").length));
   });
   it("economy at Minnesota scope excludes the national jobs report; national scope includes it", () => {
     const mn = base({ interests: [{ category: "economy", scope: "minnesota" }] });

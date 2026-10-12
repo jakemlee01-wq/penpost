@@ -25,33 +25,33 @@ const facts = [
 ];
 
 /** Fake Gemini search endpoint: one event per topic, keyed by the topic text. */
-function fakeSearch(): typeof fetch {
+function eventFor(topic: string) {
+  return {
+    headline: `Story about ${topic}`,
+    what: `Something happened in ${topic}`,
+    storyKey: topic.slice(0, 40),
+    cities: ["willmar", "not-a-town"],
+    significance: "local",
+    categories: ["business"],
+    tone: "light",
+    mustKnow: false,
+    topics: ["jobs", "expansions"],
+    newsworthiness: 4,
+    facts,
+    sourceNames: ["West Central Tribune"],
+  };
+}
+
+/** Fake Gemini search endpoint: plain notes naming the topic, with grounding sources unless `grounded` is false. */
+function fakeSearch(grounded = true, calls: string[] = []): typeof fetch {
   return (async (_url: string, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body ?? "{}"));
-    const topic: string = body.contents[0].parts[0].text.match(/Topic: ([^.]+)\./)?.[1] ?? "x";
-    const item = {
-      headline: `Story about ${topic}`,
-      what: `Something happened in ${topic}`,
-      storyKey: topic.slice(0, 30),
-      cities: ["willmar", "not-a-town"],
-      significance: "local",
-      categories: ["business"],
-      tone: "light",
-      mustKnow: false,
-      topics: ["jobs", "expansions"],
-      newsworthiness: 4,
-      facts,
-      sourceNames: ["West Central Tribune"],
-    };
+    const prompt: string = body.contents[0].parts[0].text;
+    calls.push(prompt);
+    const topic: string = prompt.match(/this topic: ([^.]+)\./)?.[1] ?? "x";
+    const chunks = grounded ? [{ web: { uri: "https://www.wctrib.com/news/acme", title: "wctrib.com" } }, { web: { uri: "https://example-blog.net/x", title: "example-blog.net" } }] : [];
     return new Response(
-      JSON.stringify({
-        candidates: [
-          {
-            content: { parts: [{ text: "```json\n" + JSON.stringify({ items: [item] }) + "\n```" }] },
-            groundingMetadata: { groundingChunks: [{ web: { uri: "https://www.wctrib.com/news/acme", title: "wctrib.com" } }, { web: { uri: "https://example-blog.net/x", title: "example-blog.net" } }] },
-          },
-        ],
-      }),
+      JSON.stringify({ candidates: [{ content: { parts: [{ text: `NOTES topic=${topic}` }] }, groundingMetadata: { groundingChunks: chunks } }] }),
       { status: 200 },
     );
   }) as unknown as typeof fetch;
@@ -59,7 +59,9 @@ function fakeSearch(): typeof fetch {
 
 function writerResponder(unsupported: string[] = []) {
   return (call: Call) =>
-    call.system.startsWith("You fact-check")
+    call.system.startsWith("You turn a news researcher")
+      ? JSON.stringify({ items: [eventFor(call.prompt.match(/topic=([^\n]+)/)?.[1] ?? "x")] })
+      : call.system.startsWith("You fact-check")
       ? JSON.stringify({ unsupported, styleIssues: [] })
       : JSON.stringify({
           headline: "Acme adds 120 jobs in Willmar",
@@ -115,5 +117,20 @@ describe("runAgent end to end (fake Gemini)", () => {
     const res = await runAgent({ root, date: "2026-10-13", maxStories: 2, model, key: "k", fetchImpl: fakeSearch(), log: () => {} });
     expect(res.published).toBe(0);
     expect(res.written.every((w) => w.status === "draft")).toBe(true);
+  });
+
+  it("retries once when Gemini answers without searching, then drops the topic", async () => {
+    const root = makeRoot();
+    const calls: string[] = [];
+    const model = createModel({ PENPOST_PROVIDER: "mock", PENPOST_MAX_CALLS: "200" }, writerResponder());
+    process.env.PENPOST_TOPICS = "local-twin-cities";
+    try {
+      const res = await runAgent({ root, date: "2026-10-13", maxStories: 5, model, key: "k", fetchImpl: fakeSearch(false, calls), log: () => {} });
+      expect(res.published).toBe(0);
+    } finally {
+      delete process.env.PENPOST_TOPICS;
+    }
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toContain("at least two Google searches");
   });
 });

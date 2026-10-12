@@ -17,6 +17,9 @@ on:
       max_stories:
         description: "Most stories to publish (default 30)."
         required: false
+      topics:
+        description: "Only these topic IDs, comma separated (e.g. local-twin-cities,mn-sports). Blank for all."
+        required: false
       dry_run:
         description: "Research and write, but don't publish."
         type: boolean
@@ -53,6 +56,7 @@ jobs:
           PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}
           PENPOST_FALLBACK_MODEL: ${{ vars.PENPOST_FALLBACK_MODEL }}
           PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '200' }}
+          PENPOST_TOPICS: ${{ inputs.topics }}
         run: >-
           npx tsx pipeline/agent.ts
           ${{ inputs.date && format('--date {0}', inputs.date) || '' }}

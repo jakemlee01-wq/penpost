@@ -21,7 +21,7 @@
     "economy"
   ],
   "tone": "heavy",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "regional",
   "significanceReason": "The closure affects over 4,000 active car-sharing members across Minneapolis and St. Paul.",
   "image": {

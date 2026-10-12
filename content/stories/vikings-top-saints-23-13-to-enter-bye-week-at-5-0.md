@@ -20,7 +20,7 @@
   ],
   "tone": "light",
   "mustKnow": false,
-  "significance": "national",
+  "significance": "statewide",
   "significanceReason": "The Minnesota Vikings are a national sports team with a statewide and national following.",
   "image": {
     "scene": "mainstreet",

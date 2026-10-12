@@ -19,8 +19,8 @@
     "food",
     "business"
   ],
-  "tone": "neutral",
-  "mustKnow": true,
+  "tone": "heavy",
+  "mustKnow": false,
   "significance": "local",
   "significanceReason": "A long-standing local restaurant closing in Eagan.",
   "image": {

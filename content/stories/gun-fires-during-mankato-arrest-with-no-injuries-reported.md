@@ -20,7 +20,7 @@
     "politics"
   ],
   "tone": "heavy",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "local",
   "significanceReason": "The incident occurred in downtown Mankato and involved local law enforcement.",
   "image": {

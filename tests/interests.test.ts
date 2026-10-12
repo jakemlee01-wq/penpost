@@ -107,3 +107,11 @@ describe("coverage", () => {
     expect(byId(ids[0]).significance).toBe("local");
   });
 });
+
+describe("lighter editions", () => {
+  it("never puts more than one heavy story in a reader's five, and only a must-know one", () => {
+    const heavy = pool.map((s) => ({ ...s, tone: "heavy" as const, mustKnow: true }));
+    const ids = assembleStoryIds(heavy, base(), towns, [], 5);
+    expect(ids.length).toBe(1);
+  });
+});

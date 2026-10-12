@@ -19,7 +19,7 @@
     "culture"
   ],
   "tone": "heavy",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "local",
   "significanceReason": "A major commercial building fire and firefighter injury incident localized in South Minneapolis.",
   "image": {

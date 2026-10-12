@@ -44,7 +44,7 @@ export const LIKE_POINTS = 3;
 export const MAX_LIKE_POINTS = 6;
 /** Explicit dislikes from setup: a down-weight inside the tier. Never removes a story. */
 export const AVOID_POINTS = 6;
-export const LIGHT_TONE_POINTS = 2;
+export const LIGHT_TONE_POINTS = 4;
 /** Total of all nudges stays under the smallest gap between tiers (10). */
 export const MAX_NUDGE = 9;
 /** Kept for the taste-only cap used in Settings and tests. */
@@ -190,10 +190,14 @@ export function varyWriters(scored: Scored[]): Scored[] {
 /** Pick up to `max`: must-knows, then one per interest section, then best remaining. Returned in score order. */
 export function selectWithCoverage(scored: Scored[], interests: Interest[], max: number): Scored[] {
   const picked: Scored[] = [];
+  // Editions lean lighter: at most one heavy story per reader, and only when it is must-know.
   const take = (s: Scored | undefined) => {
-    if (s && picked.length < max && !picked.includes(s)) picked.push(s);
+    if (!s || picked.length >= max || picked.includes(s)) return;
+    if (s.story.tone === "heavy" && picked.some((p) => p.story.tone === "heavy")) return;
+    picked.push(s);
   };
-  for (const s of scored) if (s.story.mustKnow) take(s);
+  const firstMustKnow = scored.find((s) => s.story.mustKnow);
+  take(firstMustKnow);
   for (const i of interests) take(scored.find((s) => !picked.includes(s) && s.story.categories.includes(i.category)));
   for (const s of scored) take(s);
   return scored.filter((s) => picked.includes(s));
@@ -214,7 +218,7 @@ export function assembleStoryIds(
     // Fill: best remaining stories by place alone, still skipping heavy stories that aren't must-know.
     const chosen = new Set(picked.map((s) => s.story.id));
     const fill = scoreStories(stories, profile.towns, towns, taste)
-      .filter((s) => !chosen.has(s.story.id) && (s.story.tone !== "heavy" || s.story.mustKnow))
+      .filter((s) => !chosen.has(s.story.id) && s.story.tone !== "heavy")
       .map((s) => ({ ...s, score: s.score - FILL_PENALTY, reason: `${s.reason}, fill` }));
     picked.push(...fill.slice(0, max - picked.length));
   }

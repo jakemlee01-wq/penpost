@@ -20,7 +20,7 @@
   ],
   "tone": "heavy",
   "mustKnow": false,
-  "significance": "national",
+  "significance": "statewide",
   "significanceReason": "Involves a member of Congress and federal law enforcement agencies with national political implications.",
   "image": {
     "scene": "office",
@@ -35,14 +35,14 @@
     {
       "url": "https://www.washingtonpost.com/nation/2026/10/12/federal-agents-search-rep-ilhan-omars-dc-home/",
       "publisher": "washingtonpost.com",
-      "title": "Federal Agents Search Rep. Ilhan Omar’s Home as Supporters Organize Minneapolis Rally",
+      "title": "Federal Agents Search Rep. Ilhan Omar\u2019s Home as Supporters Organize Minneapolis Rally",
       "publishedAt": "2026-10-12",
       "accessedAt": "2026-10-12"
     },
     {
       "url": "https://www.cbsnews.com/news/ilhan-omar-immigration-raid-washington-dc/",
       "publisher": "cbsnews.com",
-      "title": "Federal Agents Search Rep. Ilhan Omar’s Home as Supporters Organize Minneapolis Rally",
+      "title": "Federal Agents Search Rep. Ilhan Omar\u2019s Home as Supporters Organize Minneapolis Rally",
       "publishedAt": "2026-10-12",
       "accessedAt": "2026-10-12"
     }

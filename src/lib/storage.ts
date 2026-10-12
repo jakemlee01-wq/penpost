@@ -16,6 +16,8 @@ export type DeckState = {
   frozenAt: string;
   /** How many candidate stories the edition had when this deck was built. */
   poolSize?: number;
+  /** Fingerprint of the edition's stories (ids, tone, must-know) when this deck was built. */
+  poolSig?: string;
 };
 
 export type LocalState = {

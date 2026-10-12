@@ -18,7 +18,7 @@
     "politics"
   ],
   "tone": "heavy",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "statewide",
   "significanceReason": "The economic study and immigration enforcement operations impact the entire state of Minnesota.",
   "image": {

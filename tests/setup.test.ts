@@ -17,7 +17,9 @@ const root = join(__dirname, "..");
 const areas = AreasSchema.parse(JSON.parse(readFileSync(join(root, "content", "areas.json"), "utf8")));
 const towns = townsWithRegion(areas);
 const dir = join(root, "content", "stories");
-const pool: Story[] = readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => parseStoryFile(readFileSync(join(dir, f), "utf8"), f));
+const pool: Story[] = readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => parseStoryFile(readFileSync(join(dir, f), "utf8"), f))
+  // Pin to the fixed Oct 9 sample stories so daily editions can't change what these tests check.
+  .filter((s) => s.id.startsWith("2026-10-09-"));
 const byId = (id: string) => pool.find((s) => s.id === id)!;
 const profile = (over: Partial<ReaderProfile> = {}): ReaderProfile => ({
   towns: expandAreas(["region:twin-cities"], areas),

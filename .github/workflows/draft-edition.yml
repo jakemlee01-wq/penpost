@@ -17,6 +17,13 @@ on:
       max_stories:
         description: "Most stories to publish (default 30)."
         required: false
+      topics:
+        description: "Only these topic IDs, comma separated (e.g. local-twin-cities,mn-sports). Blank for all."
+        required: false
+      dry_run:
+        description: "Research and write, but don't publish."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,7 +36,7 @@ concurrency:
 jobs:
   draft:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,7 +55,8 @@ jobs:
           PENPOST_TRIAGE_MODEL: ${{ vars.PENPOST_TRIAGE_MODEL }}
           PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}
           PENPOST_FALLBACK_MODEL: ${{ vars.PENPOST_FALLBACK_MODEL }}
-          PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '200' }}
+          PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '300' }}
+          PENPOST_TOPICS: ${{ inputs.topics }}
         run: >-
           npx tsx pipeline/agent.ts
           ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
@@ -64,7 +72,7 @@ jobs:
           cat pipeline/out/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to main
-        if: steps.summary.outputs.changes == 'true'
+        if: steps.summary.outputs.changes == 'true' && github.ref == 'refs/heads/main' && !inputs.dry_run
         run: |
           git config user.name "penpost-bot"
           git config user.email "penpost-bot@users.noreply.github.com"
@@ -75,7 +83,7 @@ jobs:
 
       # Pushes made with the workflow token don't trigger other workflows, so start the deploy directly.
       - name: Deploy the site
-        if: steps.summary.outputs.changes == 'true'
+        if: steps.summary.outputs.changes == 'true' && github.ref == 'refs/heads/main' && !inputs.dry_run
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy.yml --ref main

@@ -37,17 +37,17 @@ export function useReader() {
   const deck: DeckState | null = useMemo(() => {
     if (!manifest || needsSetup) return null;
     const existing = state.decks[key];
-    if (existing && existing.storyIds.every((id) => storyById.has(id))) return existing;
     const pool = manifest.candidateStoryIds.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s));
+    if (existing && keepDeck(existing, pool.length) && existing.storyIds.every((id) => storyById.has(id))) return existing;
     const storyIds = assembleStoryIds(pool, profile, towns, Object.values(state.feedback));
-    return { storyIds, index: 0, seen: [], frozenAt: new Date().toISOString() };
+    return { storyIds, index: 0, seen: [], frozenAt: new Date().toISOString(), poolSize: pool.length };
   }, [manifest, needsSetup, key, state.decks, profile, state.feedback]);
 
   // Persist a freshly assembled deck right away so a vote can't reshuffle it.
   useEffect(() => {
-    if (!deck || !key || state.decks[key]) return;
+    if (!deck || !key || state.decks[key] === deck) return;
     commit((s) => {
-      if (s.decks[key]) return s;
+      if (s.decks[key] === deck) return s;
       // Keep only decks for the current edition; older ones are no longer reachable.
       const editionPrefix = key.split("|")[0] + "|";
       const kept = Object.fromEntries(Object.entries(s.decks).filter(([k]) => k.startsWith(editionPrefix)));
@@ -159,4 +159,16 @@ export function useReader() {
     },
     allStories: stories,
   };
+}
+
+/**
+ * A frozen deck is kept so stories never reshuffle under the reader's thumb. It is rebuilt when it is
+ * empty, or when the edition gained stories after it was built and the reader hasn't started it yet.
+ */
+export function keepDeck(deck: DeckState, poolSize: number): boolean {
+  if (!deck.storyIds.length) return false; // never keep an empty deck
+  const started = deck.index > 0 || deck.seen.length > 0;
+  if (started) return true; // never reshuffle once the reader is swiping
+  if (deck.poolSize === undefined) return deck.storyIds.length >= 5; // decks saved before this fix: keep only full ones
+  return deck.poolSize >= poolSize; // rebuild if the edition gained stories since
 }

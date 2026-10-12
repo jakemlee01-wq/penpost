@@ -14,6 +14,8 @@ export type DeckState = {
   index: number; // current card; storyIds.length means the completion screen
   seen: string[]; // stories the reader has moved through (not "read")
   frozenAt: string;
+  /** How many candidate stories the edition had when this deck was built. */
+  poolSize?: number;
 };
 
 export type LocalState = {

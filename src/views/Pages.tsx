@@ -244,8 +244,9 @@ export function About() {
           Penpost's five writers are designed editorial personas written by AI. They are not real people: none of them has a hometown,
           an employment history, credentials, or personal experiences, and none conducts interviews or has firsthand knowledge of events.
           Each has a distinct voice and a stated lens, and each profile lists that writer's likely blind spots. Every writer covers every
-          beat; a writer's lens shapes how a story is told, never which stories they get. Each story is checked against its source facts
-          before publishing, and if something is wrong it gets corrected and the article says so.
+          beat; a writer's lens shapes how a story is told, never which stories they get. Before publishing, an automated checker compares
+          each story with the facts its sources report and holds anything it can't match. There is no human editor yet, so mistakes can
+          still slip through.
         </p>
         <p className="fineprint">Penpost is an early version and still being shaped.</p>
       </main>

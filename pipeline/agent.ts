@@ -260,13 +260,32 @@ export async function runAgent(opts: AgentOptions) {
       const reply = await model.complete({
         tier: "writer",
         system: writerSystem(writer),
-        prompt: `Write today's story from this fact record. It was gathered from: ${ev.sourceNames.join(", ") || "several sources"}. Name the outlet when a fact comes from another outlet's reporting.\n${JSON.stringify(facts, null, 2)}`,
+        prompt: `Write today's story from this fact record. It was gathered from: ${ev.sourceNames.join(", ") || "several sources"}. Name the outlet when a fact comes from another outlet's reporting.
+Every sentence must carry a fact from the record. No general commentary, lessons, predictions or "what comes next" sentences unless the record states them. A shorter story is better than filler.
+${JSON.stringify(facts, null, 2)}`,
         json: true,
         temperature: 0.6,
       });
       const draft = DraftSchema.parse(parseJson(reply));
-      const body = tidy(draft.bodyMarkdown);
-      const check = CheckSchema.parse(parseJson(await model.complete({ tier: "triage", system: CHECK_SYSTEM, prompt: checkPrompt(facts, body), json: true, temperature: 0 })));
+      let body = tidy(draft.bodyMarkdown);
+      const runCheck = async (b: string) =>
+        CheckSchema.parse(parseJson(await model.complete({ tier: "triage", system: CHECK_SYSTEM, prompt: checkPrompt(facts, b), json: true, temperature: 0 })));
+      let check = await runCheck(body);
+      if (check.unsupported.length) {
+        // One revision: cut or fix only the flagged sentences, then check again.
+        const revised = await model.complete({
+          tier: "writer",
+          system: writerSystem(writer),
+          prompt: `A fact-checker flagged these statements in your story as not supported by the fact record:\n${check.unsupported.map((u) => `- ${u}`).join("\n")}\nRemove them, or rewrite them so they state only what the record supports. Change nothing else. Keep the same headline and preview.\nFact record:\n${JSON.stringify(facts, null, 2)}\nStory:\n${body}\nReturn JSON in the same format as before.`,
+          json: true,
+          temperature: 0.2,
+        });
+        const fixed = DraftSchema.safeParse(parseJson(revised));
+        if (fixed.success) {
+          body = tidy(fixed.data.bodyMarkdown);
+          check = await runCheck(body);
+        }
+      }
       const flags = [...check.unsupported.map((u) => `Unsupported: ${u}`), ...check.styleIssues.map((s) => `Style: ${s}`)];
       const status = check.unsupported.length ? "draft" : "published";
 

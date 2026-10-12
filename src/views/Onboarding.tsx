@@ -87,7 +87,7 @@ export function Onboarding({ reader, redo = false }: { reader: Reader; redo?: bo
           {parserConfigured
             ? "Penpost sends your answer once to an AI model to set up your edition and doesn't keep it on a server."
             : "Your answer is read in your browser."}{" "}
-          Your settings stay on this device. Stories are written by AI writers and reviewed before publishing.{" "}
+          Your settings stay on this device. Stories are written by AI writers and checked automatically against their sources.{" "}
           <a href={href.about()}>How Penpost works</a>
         </p>
       </main>

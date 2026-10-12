@@ -56,11 +56,17 @@ describe("real edition", () => {
 });
 
 describe("photos", () => {
-  it("every real story has a licensed photo with credit, license page and a download or hotlink", async () => {
+  it("every real story has a licensed photo with credit, license page and a download or hotlink, unless it uses an owned illustration", async () => {
     const { parseStoryFile } = await import("../src/lib/parse");
     const dir = join(root, "content/stories");
     for (const f of readdirSync(dir).filter((x) => x.endsWith(".md"))) {
-      const p = parseStoryFile(readFileSync(join(dir, f), "utf8"), f).image?.photo;
+      const image = parseStoryFile(readFileSync(join(dir, f), "utf8"), f).image;
+      const p = image?.photo;
+      // The daily job falls back to an owned illustration when no licensed photo is found.
+      if (!p && image?.illustrative) {
+        expect(image.scene, f).toBeTruthy();
+        continue;
+      }
       expect(p, f).toBeTruthy();
       expect(p!.credit, f).toMatch(/\//);
       expect(p!.pageUrl, f).toMatch(/^https:\/\//);

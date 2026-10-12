@@ -263,7 +263,7 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
   writeFileSync(join(outDir, "has-changes"), written.length ? "true" : "false");
   log(`done: ${written.length} written, ${skipped.length} skipped, ${u.calls} model calls`);
   // In GitHub Actions, also surface the outcome as annotations so it is readable without the raw log.
-  if (process.env.GITHUB_ACTIONS === "true") {
+  if (process.env.GITHUB_ACTIONS === "true" && !process.env.VITEST) {
     const esc = (t: string) => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
     console.log(`::notice title=Draft result::${esc(`${written.length} written, ${skipped.length} skipped, ${u.calls} model calls`)}`);
     if (skipped.length) console.log(`::notice title=Skipped stories::${esc(skipped.slice(0, 40).join("\n"))}`);

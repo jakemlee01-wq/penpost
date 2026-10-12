@@ -324,7 +324,7 @@ export async function runAgent(opts: AgentOptions) {
   if (process.env.GITHUB_ACTIONS === "true" && !process.env.VITEST) {
     const esc = (t: string) => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
     console.log(`::notice title=Draft result::${esc(summary)}`);
-    const lines = written.map((w) => `${w.status === "draft" ? "HELD" : "ok"} [${w.topic}] ${w.file.replace("content/stories/", "")}`).concat(skipped.map((s) => `failed: ${s}`));
+    const lines = written.map((w) => `${w.status === "draft" ? "HELD" : "ok"} [${w.topic}] ${w.file.replace("content/stories/", "")}${w.status === "draft" ? ` :: ${w.flags.filter((f) => f.startsWith("Unsupported")).join(" | ").slice(0, 400)}` : ""}`).concat(skipped.map((s) => `failed: ${s}`));
     if (lines.length) console.log(`::notice title=Stories::${esc(lines.slice(0, 60).join("\n"))}`);
     console.log(`::notice title=Research::${esc(research.join("\n"))}`);
   }

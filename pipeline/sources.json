@@ -1,5 +1,5 @@
 {
-  "_readme": "Feeds the daily job reads. enabled=false sources are skipped. fullTextAllowed controls whether the job may read the article body (from the feed or the page) to extract facts; leave it false until you've reviewed that publisher's terms. With it false, the job only uses the headline and the feed's short summary, and skips stories it can't support.",
+  "_readme": "Feeds the daily job reads. enabled=false sources are skipped. fullTextAllowed controls whether the job may read the article body (from the feed or the page) to extract facts; leave it false until you've reviewed that publisher's terms. With it false, the job only uses the headline and the feed's short summary, and skips stories it can't support. Primary sources (kind=primary: government and company newsrooms) publish releases meant for reuse, so fullTextAllowed=true; when their feed has no body, the job reads the release page itself.",
   "sources": [
     {
       "id": "mpr-business",
@@ -83,6 +83,51 @@
       "fullTextAllowed": false,
       "kind": "news",
       "verified": null
+    },
+    {
+      "id": "mn-governor",
+      "name": "Office of Governor Walz",
+      "url": "https://mn.gov/governor/rest/rss/Newsroom?id=1055-35332&detailPage=/governor/newsroom/press-releases/index.jsp",
+      "enabled": true,
+      "fullTextAllowed": true,
+      "kind": "primary",
+      "verified": "2026-10-12"
+    },
+    {
+      "id": "mayo-clinic",
+      "name": "Mayo Clinic News Network",
+      "url": "https://newsnetwork.mayoclinic.org/feed/",
+      "enabled": true,
+      "fullTextAllowed": true,
+      "kind": "primary",
+      "verified": "2026-10-12"
+    },
+    {
+      "id": "best-buy",
+      "name": "Best Buy Corporate News",
+      "url": "https://corporate.bestbuy.com/feed/",
+      "enabled": true,
+      "fullTextAllowed": true,
+      "kind": "primary",
+      "verified": "2026-10-12"
+    },
+    {
+      "id": "3m",
+      "name": "3M Press Releases",
+      "url": "https://news.3m.com/press-releases?pagetemplate=rss",
+      "enabled": true,
+      "fullTextAllowed": true,
+      "kind": "primary",
+      "verified": "2026-10-12"
+    },
+    {
+      "id": "medtronic",
+      "name": "Medtronic Press Releases",
+      "url": "https://news.medtronic.com/press-releases?pagetemplate=rss",
+      "enabled": true,
+      "fullTextAllowed": true,
+      "kind": "primary",
+      "verified": "2026-10-12"
     }
   ],
   "excluded": [

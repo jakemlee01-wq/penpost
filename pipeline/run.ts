@@ -20,7 +20,7 @@ import { AreasSchema } from "../src/lib/areas";
 import { chicagoDate } from "../src/lib/dates";
 import { parseStoryFile } from "../src/lib/parse";
 import { CATEGORY_IDS, WriterSchema, type Writer } from "../src/lib/schema";
-import { fetchSource, filterCandidates, type Candidate, type Source } from "./feeds";
+import { fetchArticleText, fetchSource, filterCandidates, type Candidate, type Source } from "./feeds";
 import { createModel, parseJson, type Call, type Model } from "./model";
 import { findStockPhoto } from "./photos";
 import { CHECK_SYSTEM, FACTS_SYSTEM, checkPrompt, factsPrompt, triagePrompt, triageSystem, writerPrompt, writerSystem, type Facts } from "./prompts";
@@ -175,6 +175,12 @@ export async function runPipeline(opts: RunOptions): Promise<RunResult> {
     for (const t of picks) {
       const c = candidates[t.i];
       try {
+        // Primary sources (agencies, company newsrooms) often put only a link in the feed. Read the release itself.
+        const src = sourcesFile.sources.find((s) => s.id === c.sourceId);
+        if (src?.fullTextAllowed && src.kind === "primary" && (c.fullText ?? "").length < 600) {
+          const page = await fetchArticleText(c.link, opts.fetchImpl ?? fetch);
+          if (page.length > (c.fullText ?? "").length) c.fullText = page;
+        }
         const facts = (await ask(model, { tier: "writer", system: FACTS_SYSTEM, prompt: factsPrompt(c), temperature: 0 }, z.any())) as Facts;
         if (!facts?.enough || !Array.isArray(facts.facts) || facts.facts.length < 3) {
           skipped.push(`${c.title} (too little in the source to write without guessing)`);

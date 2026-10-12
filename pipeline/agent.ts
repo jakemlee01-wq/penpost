@@ -177,7 +177,7 @@ export async function runAgent(opts: AgentOptions) {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const key = opts.key ?? process.env.GEMINI_API_KEY ?? "";
   const env = process.env;
-  const model = opts.model ?? createModel({ ...env, PENPOST_MAX_CALLS: env.PENPOST_MAX_CALLS || "200" });
+  const model = opts.model ?? createModel({ ...env, PENPOST_MAX_CALLS: env.PENPOST_MAX_CALLS || "300" });
   const searchModel = env.PENPOST_WRITER_MODEL || "gemini-3.8-flash";
   const searchFallback = env.PENPOST_FALLBACK_MODEL || env.PENPOST_TRIAGE_MODEL || "gemini-3.5-flash-lite";
 

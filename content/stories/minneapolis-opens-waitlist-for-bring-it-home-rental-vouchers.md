@@ -20,7 +20,7 @@
     "economy"
   ],
   "tone": "neutral",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "local",
   "significanceReason": "The program waitlist is administered by the Minneapolis Public Housing Authority.",
   "image": {

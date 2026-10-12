@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keepDeck } from "../src/lib/useReader";
+import { keepDeck, poolSignature } from "../src/lib/useReader";
 
 const deck = (over: Partial<Parameters<typeof keepDeck>[0]> = {}) => ({ storyIds: ["a", "b", "c", "d", "e"], index: 0, seen: [], frozenAt: "", ...over });
 
@@ -20,5 +20,14 @@ describe("frozen decks", () => {
   it("handles decks saved before this fix", () => {
     expect(keepDeck(deck(), 28)).toBe(true);
     expect(keepDeck(deck({ storyIds: ["a"] }), 28)).toBe(false);
+  });
+  it("rebuilds an unstarted deck when stories are re-tagged, but not once started", () => {
+    const a = poolSignature([{ id: "x", tone: "neutral", mustKnow: true }]);
+    const b = poolSignature([{ id: "x", tone: "neutral", mustKnow: false }]);
+    expect(a).not.toBe(b);
+    expect(keepDeck(deck({ poolSize: 1, poolSig: a }), 1, b)).toBe(false);
+    expect(keepDeck(deck({ poolSize: 1, poolSig: a, index: 2 }), 1, b)).toBe(true);
+    expect(keepDeck(deck({ poolSize: 1, poolSig: a }), 1, a)).toBe(true);
+    expect(keepDeck(deck({ poolSize: 28 }), 28, a)).toBe(false); // saved before fingerprints, unstarted: rebuild once
   });
 });

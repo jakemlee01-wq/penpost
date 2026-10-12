@@ -18,7 +18,7 @@
     "health"
   ],
   "tone": "heavy",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "statewide",
   "significanceReason": "The program and its replacement affect the entire state of Minnesota.",
   "image": {

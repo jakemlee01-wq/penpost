@@ -38,9 +38,10 @@ export function useReader() {
     if (!manifest || needsSetup) return null;
     const existing = state.decks[key];
     const pool = manifest.candidateStoryIds.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s));
-    if (existing && keepDeck(existing, pool.length) && existing.storyIds.every((id) => storyById.has(id))) return existing;
+    const sig = poolSignature(pool);
+    if (existing && keepDeck(existing, pool.length, sig) && existing.storyIds.every((id) => storyById.has(id))) return existing;
     const storyIds = assembleStoryIds(pool, profile, towns, Object.values(state.feedback));
-    return { storyIds, index: 0, seen: [], frozenAt: new Date().toISOString(), poolSize: pool.length };
+    return { storyIds, index: 0, seen: [], frozenAt: new Date().toISOString(), poolSize: pool.length, poolSig: sig };
   }, [manifest, needsSetup, key, state.decks, profile, state.feedback]);
 
   // Persist a freshly assembled deck right away so a vote can't reshuffle it.
@@ -165,10 +166,19 @@ export function useReader() {
  * A frozen deck is kept so stories never reshuffle under the reader's thumb. It is rebuilt when it is
  * empty, or when the edition gained stories after it was built and the reader hasn't started it yet.
  */
-export function keepDeck(deck: DeckState, poolSize: number): boolean {
+export function keepDeck(deck: DeckState, poolSize: number, poolSig?: string): boolean {
   if (!deck.storyIds.length) return false; // never keep an empty deck
   const started = deck.index > 0 || deck.seen.length > 0;
   if (started) return true; // never reshuffle once the reader is swiping
-  if (deck.poolSize === undefined) return deck.storyIds.length >= 5; // decks saved before this fix: keep only full ones
-  return deck.poolSize >= poolSize; // rebuild if the edition gained stories since
+  if (poolSig !== undefined) return deck.poolSig === poolSig; // rebuild if the edition changed (or the deck predates fingerprints)
+  if (deck.poolSize === undefined) return deck.storyIds.length >= 5; // decks saved before these fixes: keep only full ones
+  return deck.poolSize >= poolSize;
+}
+
+/** Changes whenever an edition's stories are added, removed or re-tagged. */
+export function poolSignature(pool: Pick<Story, "id" | "tone" | "mustKnow">[]): string {
+  const text = pool.map((s) => `${s.id}:${s.tone}:${s.mustKnow ? 1 : 0}`).join("|");
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
+  return `${pool.length}-${(h >>> 0).toString(36)}`;
 }

@@ -18,8 +18,8 @@
   "categories": [
     "politics"
   ],
-  "tone": "neutral",
-  "mustKnow": true,
+  "tone": "heavy",
+  "mustKnow": false,
   "significance": "local",
   "significanceReason": "The incident and sentencing occurred in Rochester and involved local law enforcement and courts.",
   "image": {

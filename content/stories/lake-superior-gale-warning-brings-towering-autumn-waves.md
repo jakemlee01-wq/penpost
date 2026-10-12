@@ -19,7 +19,7 @@
     "culture"
   ],
   "tone": "neutral",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "regional",
   "significanceReason": "The gale warning and severe weather impacted maritime traffic and coastal areas along western Lake Superior and Duluth.",
   "image": {

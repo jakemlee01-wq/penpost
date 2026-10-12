@@ -20,7 +20,7 @@
     "politics"
   ],
   "tone": "heavy",
-  "mustKnow": true,
+  "mustKnow": false,
   "significance": "regional",
   "significanceReason": "A violent crime involving suspects and victims from different Twin Cities suburbs tied to a high-profile school event.",
   "image": {

@@ -2,7 +2,7 @@ import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildTopics, matchSources, pickEvents, runAgent, type Event } from "../pipeline/agent";
+import { buildTopics, matchSources, pickEvents, runAgent, sameEvent, type Event } from "../pipeline/agent";
 import { createModel, type Call } from "../pipeline/model";
 import { parseStoryFile } from "../src/lib/parse";
 
@@ -85,6 +85,20 @@ describe("agent topics and picking", () => {
     const ev = (k: string, n: number) => ({ storyKey: k, headline: k, newsworthiness: n }) as unknown as Event;
     const picked = pickEvents([[ev("a1", 5), ev("a2", 4)], [ev("b1", 3)], [ev("a1", 5), ev("c1", 2)]], 10);
     expect(picked.map((e) => e.storyKey)).toEqual(["a1", "b1", "c1", "a2"]);
+  });
+
+  it("treats differently worded headlines about one event as the same event", () => {
+    const e = (headline: string) => ({ headline, storyKey: "" });
+    expect(sameEvent(e("Federal agents search Rep. Ilhan Omar's D.C. home"), e("Federal agents search Rep. Ilhan Omar's residence"))).toBe(true);
+    expect(sameEvent(e("Gun fires during Mankato arrest with no injuries reported"), e("Suspect arrested in Mankato after handgun fires during struggle"))).toBe(true);
+    expect(sameEvent(e("Vikings beat Saints to stay unbeaten"), e("Wild top Panthers behind Kaprizov hat trick"))).toBe(false);
+    expect(sameEvent(e("Rochester approves downtown housing plan"), e("Duluth approves downtown parking plan"))).toBe(false);
+  });
+
+  it("skips heavy stories unless they are must-know", () => {
+    const ev = (k: string, tone: string, mustKnow = false) => ({ storyKey: k, headline: k, newsworthiness: 3, tone, mustKnow }) as unknown as Event;
+    const picked = pickEvents([[ev("crash", "heavy"), ev("closing", "heavy", true), ev("opening", "light")]], 10);
+    expect(picked.map((e) => e.storyKey).sort()).toEqual(["closing", "opening"]);
   });
 
   it("matches grounding sources to the outlets an event cites", () => {

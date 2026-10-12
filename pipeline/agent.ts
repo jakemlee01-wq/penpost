@@ -249,6 +249,7 @@ export async function runAgent(opts: AgentOptions) {
 
   // 3. Write and check
   const written: { file: string; status: string; writer: string; flags: string[]; topic: string }[] = [];
+  const storyIds = new Map<string, string>();
   const skipped: string[] = [];
   const recentWriters = existing.map((s) => s.writerId as string);
   let previous: string | undefined;
@@ -314,7 +315,11 @@ ${JSON.stringify(facts, null, 2)}`,
         isDemo: false,
         sources: ev.sources.map((s) => ({ url: s.url, publisher: s.title || new URL(s.url).hostname, title: ev.headline, publishedAt: date, accessedAt: date })),
       };
-      writeFileSync(join(storyDir, `${slug}.md`), `---\n${JSON.stringify(header, null, 2)}\n---\n${body}\n`);
+      const fileText = `---\n${JSON.stringify(header, null, 2)}\n---\n${body}\n`;
+      // Validate against the site's story format before saving, so one bad story can't break the edition.
+      const parsedStory = parseStoryFile(fileText, `${slug}.md`);
+      writeFileSync(join(storyDir, `${slug}.md`), fileText);
+      storyIds.set(`content/stories/${slug}.md`, parsedStory.id);
       written.push({ file: `content/stories/${slug}.md`, status, writer: writer.name, flags, topic: ev.topic.id });
       recentWriters.push(writer.id);
       previous = writer.id;
@@ -326,7 +331,7 @@ ${JSON.stringify(facts, null, 2)}`,
 
   // 4. Edition manifest (published stories only), merged with any existing manifest for the date.
   const editionPath = join(root, "content", "editions", `${date}.json`);
-  const newIds = written.filter((w) => w.status === "published").map((w) => parseStoryFile(readFileSync(join(root, w.file), "utf8"), w.file).id);
+  const newIds = written.filter((w) => w.status === "published").map((w) => storyIds.get(w.file)!).filter(Boolean);
   if (newIds.length) {
     const prior = existsSync(editionPath) ? (JSON.parse(readFileSync(editionPath, "utf8")) as { candidateStoryIds: string[] }) : null;
     const ids = [...new Set([...(prior?.candidateStoryIds ?? []), ...newIds])];
@@ -358,6 +363,10 @@ function arg(name: string): string | undefined {
 if (import.meta.url === `file://${process.argv[1]}`) {
   runAgent({ root: resolve(import.meta.dirname, ".."), date: arg("date") || undefined, maxStories: arg("max-stories") ? Number(arg("max-stories")) : undefined }).catch((e) => {
     console.error(e);
+    if (process.env.GITHUB_ACTIONS === "true") {
+      const msg = `${(e as Error).stack ?? String(e)}`.slice(0, 1500).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+      console.log(`::error title=Draft crashed::${msg}`);
+    }
     process.exit(1);
   });
 }

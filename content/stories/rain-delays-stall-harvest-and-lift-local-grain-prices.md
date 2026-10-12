@@ -1,0 +1,52 @@
+---
+{
+  "id": "2026-10-12-rain-delays-stall-harvest-and-lift-local-grain-prices",
+  "slug": "rain-delays-stall-harvest-and-lift-local-grain-prices",
+  "headline": "Rain delays stall harvest and lift local grain prices",
+  "preview": "Wet fields across the Corn Belt have held up combines and created a short-term price bump for farmers ready to deliver grain.",
+  "writerId": "emma",
+  "publishedAt": "2026-10-12T06:00:00-05:00",
+  "cities": [
+    "st-paul"
+  ],
+  "topics": [
+    "agriculture",
+    "grain-prices",
+    "harvest",
+    "commodities"
+  ],
+  "categories": [
+    "agriculture",
+    "economy"
+  ],
+  "tone": "neutral",
+  "mustKnow": false,
+  "significance": "regional",
+  "significanceReason": "Affects regional delivery points and the Upper Midwest Corn Belt.",
+  "image": {
+    "scene": "farm",
+    "alt": "A sunny farm field with a parked combine under clear skies.",
+    "credit": "Penpost illustration",
+    "rightsNote": "Owned illustration. No photo from the source was used.",
+    "illustrative": true
+  },
+  "status": "published",
+  "isDemo": false,
+  "sources": [
+    {
+      "url": "https://m.farms.com/news/mn-farmers-get-back-on-schedule-for-harvest-247917.aspx",
+      "publisher": "farms.com",
+      "title": "Rain Delays Trigger Rare Spike in Local Cash Grain Prices",
+      "publishedAt": "2026-10-12",
+      "accessedAt": "2026-10-12"
+    }
+  ]
+}
+---
+Rain delays across the northern and western Corn Belt have brought field operations to a halt, according to reporting by RFD-TV. That sudden pause pushed local cash grain prices above standard futures prices at regional delivery points.
+
+The unexpected price bump comes down to a timing squeeze at processing facilities. RFD-TV reported that soybean processors had intentionally run down their stockpiles to bare minimum levels ahead of harvest, expecting to restock quickly with cheap incoming crops. Instead, wet weather kept combines parked and caught those plants short on supply.
+
+Economist Ed Usset told RFD-TV that the price jump represents a temporary bump in the basis, which is the difference between local cash prices and the broader futures market, driven by commercial buyers scrambling for immediate delivery. Economists also cautioned producers that this premium will likely vanish quickly once fields dry out and combines start rolling again.
+
+In Minnesota, harvest work is still in its early stages. USDA estimates reported by Farms.com showed the state's corn harvest was just 12% complete heading into the second week of October.

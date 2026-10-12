@@ -21,7 +21,9 @@ import { phraseMatches } from "./setupParse";
  *    its best story (if it has one), then remaining slots go by score. So five slots can't
  *    all go to one section when the reader asked for several.
  * 5. Final order is by score, with a light pass so the same writer isn't twice in a row.
- * 6. Up to five stories. Fewer if fewer qualify. Nothing is padded.
+ * 6. Five stories. If fewer than five fit the reader's interests, the rest are filled with the
+ *    best remaining stories for their places (statewide and national included), so no reader
+ *    gets an empty edition while the day has stories. Heavy stories still need to be must-know.
  */
 
 export const MAX_STORIES = 5;
@@ -204,7 +206,20 @@ export function assembleStoryIds(
   feedback: Feedback[],
   max = MAX_STORIES,
 ): string[] {
-  const scored = scoreStories(stories, profile, towns, tasteFromFeedback(feedback));
+  const taste = tasteFromFeedback(feedback);
+  const scored = scoreStories(stories, profile, towns, taste);
   const interests = Array.isArray(profile) ? [] : profile.interests;
-  return varyWriters(selectWithCoverage(scored, interests, max)).map((s) => s.story.id);
+  const picked = selectWithCoverage(scored, interests, max);
+  if (picked.length < max && !Array.isArray(profile)) {
+    // Fill: best remaining stories by place alone, still skipping heavy stories that aren't must-know.
+    const chosen = new Set(picked.map((s) => s.story.id));
+    const fill = scoreStories(stories, profile.towns, towns, taste)
+      .filter((s) => !chosen.has(s.story.id) && (s.story.tone !== "heavy" || s.story.mustKnow))
+      .map((s) => ({ ...s, score: s.score - FILL_PENALTY, reason: `${s.reason}, fill` }));
+    picked.push(...fill.slice(0, max - picked.length));
+  }
+  return varyWriters(picked.sort((a, b) => b.score - a.score)).map((s) => s.story.id);
 }
+
+/** Fill stories always rank below stories that matched the reader's interests. */
+export const FILL_PENALTY = 1000;

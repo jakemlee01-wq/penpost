@@ -1,7 +1,11 @@
 name: Draft daily edition
 
 # Weekday mornings. Cron runs in UTC: 10:20 UTC is 5:20 a.m. Central in summer
-# and 4:20 a.m. in winter. Adjust if you want a different time.
+# and 4:20 a.m. in winter.
+#
+# The job researches every region and interest with Gemini + Google Search, writes stories in the
+# Penpost writers' voices, holds any story the checker can't match to its sources, and publishes
+# the rest straight to main. There is no review step.
 on:
   schedule:
     - cron: "20 10 * * 1-5"
@@ -10,10 +14,13 @@ on:
       date:
         description: "Edition date (YYYY-MM-DD, America/Chicago). Leave blank for today."
         required: false
+      max_stories:
+        description: "Most stories to publish (default 30)."
+        required: false
 
 permissions:
   contents: write
-  pull-requests: write
+  actions: write
 
 concurrency:
   group: draft-edition
@@ -22,7 +29,7 @@ concurrency:
 jobs:
   draft:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,7 +38,7 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Draft stories
+      - name: Research and write stories
         env:
           PENPOST_PROVIDER: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -40,33 +47,35 @@ jobs:
           # Set these as repository variables to change models without editing code.
           PENPOST_TRIAGE_MODEL: ${{ vars.PENPOST_TRIAGE_MODEL }}
           PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}
-          PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '40' }}
           PENPOST_FALLBACK_MODEL: ${{ vars.PENPOST_FALLBACK_MODEL }}
-        run: npx tsx pipeline/run.ts ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+          PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '200' }}
+        run: >-
+          npx tsx pipeline/agent.ts
+          ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+          ${{ inputs.max_stories && format('--max-stories {0}', inputs.max_stories) || '' }}
 
       - name: Validate content
         run: npm run validate
 
-      - name: Read summary
+      - name: Summary
         id: summary
         run: |
           echo "changes=$(cat pipeline/out/has-changes)" >> "$GITHUB_OUTPUT"
-          {
-            echo 'body<<PENPOST_EOF'
-            cat pipeline/out/summary.md
-            echo 'PENPOST_EOF'
-          } >> "$GITHUB_OUTPUT"
           cat pipeline/out/summary.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Open pull request for review
+      - name: Publish to main
         if: steps.summary.outputs.changes == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          branch: edition/${{ github.run_id }}
-          title: "Proposed edition: ${{ inputs.date || 'today' }}"
-          commit-message: "Draft edition"
-          add-paths: |
-            content/stories/*.md
-            content/editions/*.json
-          body: ${{ steps.summary.outputs.body }}
-          delete-branch: true
+        run: |
+          git config user.name "penpost-bot"
+          git config user.email "penpost-bot@users.noreply.github.com"
+          git add content/stories content/editions
+          git commit -m "Edition $(TZ=America/Chicago date +%F)"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      # Pushes made with the workflow token don't trigger other workflows, so start the deploy directly.
+      - name: Deploy the site
+        if: steps.summary.outputs.changes == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main

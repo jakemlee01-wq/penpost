@@ -54,7 +54,7 @@ export function Deck({ reader }: { reader: Reader }) {
         <TopBar dateLabel={dateLabel} sub={edition.label} />
         <main className="empty">
           <h1>A quiet day</h1>
-          <p>There's no business news for {edition.label} in this edition that clears the bar. Rather than pad it, Penpost stops here.</p>
+          <p>There are no stories for {edition.label} in this edition yet. Check back after the next morning edition.</p>
           <a className="pill-link" href={href.settings()}>Change your places</a>
         </main>
       </div>

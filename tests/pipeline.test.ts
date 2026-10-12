@@ -189,3 +189,21 @@ describe("Gemini rate limits", () => {
     }
   });
 });
+
+describe("release page text", () => {
+  it("pulls the release body and drops page chrome", async () => {
+    const { extractArticleText } = await import("../pipeline/feeds");
+    const html = `<html><body><nav><p>Home About Careers Investors and other menu links</p></nav>
+      <article><h1>Acme opens plant</h1>
+      <p>MAPLEWOOD, Minn. -- Acme Corp. said Monday it will open a 200-employee plant in Maplewood next spring.</p>
+      <p>The company expects to invest $40 million in the site, according to the release issued Monday morning.</p>
+      <script>track()</script></article>
+      <footer><p>Copyright Acme Corp. All rights reserved. Privacy policy and terms of use.</p></footer></body></html>`;
+    const text = extractArticleText(html);
+    expect(text).toContain("200-employee plant in Maplewood");
+    expect(text).toContain("$40 million");
+    expect(text).not.toContain("menu links");
+    expect(text).not.toContain("Copyright");
+    expect(text).not.toContain("track()");
+  });
+});

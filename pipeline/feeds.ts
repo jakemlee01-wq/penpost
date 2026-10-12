@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import { JSDOM } from "jsdom";
 
 export type Source = { id: string; name: string; url: string; enabled: boolean; fullTextAllowed: boolean; kind: "news" | "primary" };
 export type Candidate = {
@@ -75,4 +76,29 @@ export function filterCandidates(all: Candidate[], opts: { now: Date; maxAgeHour
     .filter((c) => !opts.knownUrls.has(c.link))
     .filter((c) => (seen.has(c.link) ? false : (seen.add(c.link), true)))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+}
+
+/**
+ * Read the main text of a release page. Only used for primary sources whose feed gives
+ * a link but no body. Returns "" if the page can't be read.
+ */
+export async function fetchArticleText(url: string, fetchImpl: typeof fetch = fetch): Promise<string> {
+  try {
+    const res = await fetchImpl(url, { headers: { "user-agent": "PenpostBot/0.1 (+https://penpost.co)" } });
+    if (!res.ok) return "";
+    return extractArticleText(await res.text());
+  } catch {
+    return "";
+  }
+}
+
+export function extractArticleText(html: string): string {
+  const doc = new JSDOM(html).window.document;
+  doc.querySelectorAll("script, style, noscript, nav, header, footer, aside, form, iframe").forEach((n) => n.remove());
+  const root = doc.querySelector("article") ?? doc.querySelector("main") ?? doc.body;
+  if (!root) return "";
+  const paras = [...root.querySelectorAll("p, li")]
+    .map((p) => (p.textContent ?? "").replace(/\s+/g, " ").trim())
+    .filter((t) => t.length > 40);
+  return paras.join("\n\n").slice(0, 12000);
 }

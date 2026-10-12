@@ -22,11 +22,12 @@ const DEFAULT_MODELS: Record<string, Record<Tier, string>> = {
 };
 
 export function createModel(env: NodeJS.ProcessEnv = process.env, mockResponder?: (call: Call) => string): Model {
-  const provider = (env.PENPOST_PROVIDER ?? "gemini").toLowerCase();
-  const maxCalls = Number(env.PENPOST_MAX_CALLS ?? 40);
+  const provider = (env.PENPOST_PROVIDER || "gemini").toLowerCase();
+  const maxCalls = Number(env.PENPOST_MAX_CALLS || 40);
   const usage: Usage = { calls: 0, inputTokens: 0, outputTokens: 0 };
   const modelFor = (tier: Tier) =>
-    (tier === "triage" ? env.PENPOST_TRIAGE_MODEL : env.PENPOST_WRITER_MODEL) ?? DEFAULT_MODELS[provider]?.[tier] ?? "";
+    // GitHub Actions passes unset repo variables as "", so treat empty as unset.
+    (tier === "triage" ? env.PENPOST_TRIAGE_MODEL : env.PENPOST_WRITER_MODEL) || DEFAULT_MODELS[provider]?.[tier] || "";
 
   async function guarded(_call: Call, run: () => Promise<string>) {
     if (usage.calls >= maxCalls) throw new Error(`Budget stop: reached PENPOST_MAX_CALLS=${maxCalls}`);

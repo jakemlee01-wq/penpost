@@ -136,3 +136,23 @@ describe("stock photos", () => {
     expect(await findStockPhoto("anything", undefined)).toBeNull();
   });
 });
+
+describe("createModel env handling", () => {
+  it("falls back to default Gemini models when repo variables are empty strings (as in GitHub Actions)", async () => {
+    const urls: string[] = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      urls.push(String(url));
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "ok" }] } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    try {
+      const model = createModel({ PENPOST_PROVIDER: "gemini", GEMINI_API_KEY: "k", PENPOST_TRIAGE_MODEL: "", PENPOST_WRITER_MODEL: "" });
+      await model.complete({ tier: "triage", system: "s", prompt: "p" });
+      await model.complete({ tier: "writer", system: "s", prompt: "p" });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    expect(urls[0]).toContain("/models/gemini-3.5-flash-lite:generateContent");
+    expect(urls[1]).toContain("/models/gemini-3.8-flash:generateContent");
+  });
+});

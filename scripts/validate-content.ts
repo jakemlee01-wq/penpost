@@ -44,7 +44,7 @@ for (const file of readdirSync(storyDir).filter((f) => f.endsWith(".md"))) {
     if (/why it matters/i.test(s.bodyMarkdown)) errors.push(`${file}: templated "Why it matters" label`);
     if (s.isDemo && !/demo/i.test(s.bodyMarkdown)) errors.push(`${file}: demo story must say so in the body`);
     if (!s.isDemo && s.sources.some((src) => /example\.(com|org)/.test(src.url))) errors.push(`${file}: real story uses a placeholder source URL`);
-    if (s.wordCount > 280) warnings.push(`${file}: ${s.wordCount} words (budget ~180-250)`);
+    if (s.wordCount > 700) warnings.push(`${file}: ${s.wordCount} words (budget ~220-660, a 1 to 3 minute read)`);
     if (s.significance !== "local" && s.wordCount < 120) warnings.push(`${file}: only ${s.wordCount} words`);
   } catch (e) {
     errors.push((e as Error).message);

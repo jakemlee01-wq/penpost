@@ -20,7 +20,7 @@ Rules every story follows:
 - No hype, no doom, no clickbait, no "Why it matters" or other section labels, no headings, no bullet lists.
 - No em dashes. Use commas, periods or parentheses.
 - Sentence-case headline under 70 characters. Preview: one or two short sentences, under 200 characters.
-- Body: 160 to 240 words. Shorter is fine if the facts are thin. Never pad.`;
+- Body: the length you are given for each story (between 220 and 660 words, a 1 to 3 minute read). Shorter is fine if the facts run out. Never pad.`;
 
 export function triageSystem(townCatalog: string): string {
   return `You sort news items for Penpost, a daily news edition built around Minnesota readers' places and interests. ${DATA_RULE}

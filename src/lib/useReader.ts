@@ -176,7 +176,7 @@ export function keepDeck(deck: DeckState, poolSize: number, poolSig?: string): b
 }
 
 /** Changes whenever an edition's stories are added, removed or re-tagged. */
-export function poolSignature(pool: Pick<Story, "id" | "tone" | "mustKnow" | "feelGood">[]): string {
+export function poolSignature(pool: (Pick<Story, "id" | "tone" | "mustKnow"> & { feelGood?: boolean })[]): string {
   const text = pool.map((s) => `${s.id}:${s.tone}:${s.mustKnow ? 1 : 0}${s.feelGood ? ":fg" : ""}`).join("|");
   let h = 0;
   for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;

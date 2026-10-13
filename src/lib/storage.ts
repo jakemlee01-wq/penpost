@@ -135,7 +135,8 @@ function sanitizeInterests(raw: unknown): Interest[] {
   for (const x of raw) {
     const i = x as Partial<Interest>;
     if ((CATEGORY_IDS as readonly string[]).includes(i?.category as string) && (SCOPES as readonly string[]).includes(i?.scope as string)) {
-      out.set(i.category!, { category: i.category!, scope: i.scope! });
+      const focus = Array.isArray(i.focus) ? i.focus.filter((f): f is string => typeof f === "string" && f.length < 60).slice(0, 8) : [];
+      out.set(i.category!, focus.length ? { category: i.category!, scope: i.scope!, focus } : { category: i.category!, scope: i.scope! });
     }
   }
   return [...out.values()];
@@ -185,7 +186,7 @@ export function deckKey(
 ): string {
   const sorted = (xs: string[]) => [...xs].sort().join(",");
   const extra = prefs
-    ? `|${sorted(prefs.interests.map((i) => `${i.category}:${i.scope}`))}|+${sorted(prefs.likes)}|-${sorted(prefs.avoids)}|${sorted(prefs.favoriteWriters)}`
+    ? `|${sorted(prefs.interests.map((i) => `${i.category}:${i.scope}${i.focus?.length ? `(${[...i.focus].sort().join("/")})` : ""}`))}|+${sorted(prefs.likes)}|-${sorted(prefs.avoids)}|${sorted(prefs.favoriteWriters)}`
     : "";
   return `${editionId}|${[...townIds].sort().join(",")}${extra}`;
 }

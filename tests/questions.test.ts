@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { AreasSchema } from "../src/lib/areas";
 import { parseStoryFile } from "../src/lib/parse";
 import { answeredToday, questionFor, type Prefs, type QuestionContext } from "../src/lib/questions";
+import { eligibility } from "../src/lib/ranking";
+import { townsWithRegion, expandAreas } from "../src/lib/areas";
 import { WriterSchema, type CategoryId } from "../src/lib/schema";
 
 const root = join(__dirname, "..", "content");
@@ -24,20 +26,36 @@ const jake: Prefs = {
     { category: "technology", scope: "minnesota" },
     { category: "sports", scope: "minnesota" },
   ],
-  likes: ["football", "basketball", "value investing"],
+  // The way the setup parser really saves them: sports inside phrases, generic and specific likes side by side.
+  likes: ["venture capital", "private equity", "value investing", "investing", "ai tools", "Minnesota basketball", "Minnesota football", "warren buffett"],
   avoids: ["soccer"],
   favoriteWriters: [],
 };
-const ctx = (prefs: Prefs): QuestionContext => ({ prefs, pool, deck: pool.slice(0, 5), areas, writers, sectionNames });
+const setupText = "I'm from Dawson Minnesota. If there's articles of Dawson Boyd high school I like hearing about it.";
+const ctx = (prefs: Prefs): QuestionContext => ({ prefs, setupText, pool, deck: pool.slice(0, 5), areas, writers, sectionNames });
 
 describe("daily question", () => {
-  it("asks about sports beyond the ones the reader named, never offering one they avoid", () => {
+  it("builds on the sports the reader named, even inside phrases, and never offers one they avoid", () => {
     const q = questionFor(ctx(jake), {}, "2026-10-13")!;
-    expect(q.prompt).toBe("Want Minnesota sports beyond football and basketball?");
-    expect(q.options.map((o) => o.label).join("|")).not.toMatch(/soccer/i);
-    const all = q.options.find((o) => o.id === "all")!.apply(jake);
-    expect(all.likes).toEqual(expect.arrayContaining(["hockey", "baseball", "golf"]));
-    expect(all.likes).not.toContain("soccer");
+    expect(q.context).toBe("You said you're a fan of Minnesota basketball and football.");
+    expect(q.options.map((o) => o.id)).not.toContain("add-soccer");
+    const all = q.options.find((o) => o.id === "all")!;
+    expect(all.label).toBe("All except soccer");
+    expect(all.apply(jake).likes).toEqual(expect.arrayContaining(["hockey", "baseball", "golf"]));
+  });
+
+  it("asks about national news on the reader's own business likes, and a focused yes only widens to those", () => {
+    const answers = { "sports-beyond:basketball,football": { option: "keep", date: "2026-10-13", note: "" } };
+    const national = { ...pool[0], id: "x-nat", significance: "national" as const, categories: ["business" as const], topics: ["retail"], headline: "Retailer opens stores", preview: "" };
+    const q = questionFor({ ...ctx(jake), pool: [...pool, national] }, answers, "2026-10-14")!;
+    expect(q.id).toBe("scope-national:business");
+    expect(q.context).toBe("You said you follow venture capital, private equity and value investing.");
+    const focused = q.options.find((o) => o.id === "focus")!.apply(jake);
+    const towns = townsWithRegion(areas);
+    const t = expandAreas(focused.areas, areas);
+    const vc = { ...national, id: "x-vc", headline: "Private equity firm buys chain" };
+    expect(eligibility(national, t, towns, focused).eligible).toBe(false);
+    expect(eligibility(vc, t, towns, focused).eligible).toBe(true);
   });
 
   it("moves on to the next question once one is answered, and asks only one a day", () => {
@@ -49,10 +67,12 @@ describe("daily question", () => {
     expect(next.id).not.toBe(first.id);
   });
 
-  it("offers a single town's county and region", () => {
+  it("offers a single town's county and region, in the reader's own words", () => {
     const p = { ...jake, interests: [{ category: "business" as const, scope: "national" as const }], likes: [] };
     const q = questionFor(ctx(p), {}, "2026-10-13")!;
     expect(q.id).toBe("home-area:dawson");
+    expect(q.context).toBe("You said you're from Dawson.");
+    expect(q.prompt).toContain("Dawson Boyd High School");
     expect(q.options.find((o) => o.id === "county")!.apply(p).areas).toContain("county:lac-qui-parle");
   });
 

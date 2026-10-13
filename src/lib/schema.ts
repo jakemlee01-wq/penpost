@@ -140,7 +140,12 @@ export type Feedback = {
   votedAt?: string;
 };
 
-export type Interest = { category: CategoryId; scope: Scope };
+export type Interest = {
+  category: CategoryId;
+  scope: Scope;
+  /** With national scope: national stories in this section only when they match one of these phrases. Minnesota stories are unaffected. */
+  focus?: string[];
+};
 
 export type SetupRecord = {
   /** What the reader typed or said at setup, kept so they can redo it from Settings. */

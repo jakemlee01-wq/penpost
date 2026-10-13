@@ -105,14 +105,28 @@ export function placeFit(story: Story, readerTowns: string[], towns: Town[]): El
 /** Sports a reader can name in setup likes. Naming any of them narrows the sports section to those. */
 export const SPORT_PHRASES = ["football", "basketball", "hockey", "baseball", "soccer", "golf", "volleyball", "wrestling", "softball", "tennis", "running", "fishing", "hunting"];
 
+/** Sports the reader named anywhere in their likes: "Minnesota basketball" names basketball. */
+export function namedSports(likes: string[]): string[] {
+  // In the reader's own order, so "basketball and football" reads back the way they said it.
+  const out: string[] = [];
+  for (const l of likes) for (const sport of SPORT_PHRASES) if (!out.includes(sport) && new RegExp(`\\b${sport}\\b`).test(l.toLowerCase())) out.push(sport);
+  return out;
+}
+
 /** Does one of the story's sections match an interest wide enough to cover it? */
 export function sectionFit(story: Story, interests: Interest[], likes: string[] = []): boolean {
   const level = storyLevel(story);
-  const namedSports = likes.filter((l) => SPORT_PHRASES.includes(l.trim().toLowerCase()));
+  const sports = namedSports(likes);
   return story.categories.some(
     (c) =>
-      interests.some((i) => i.category === c && SCOPE_RANK[i.scope] >= level) &&
-      (c !== "sports" || !namedSports.length || namedSports.some((sport) => phraseMatches(sport, story))),
+      interests.some(
+        (i) =>
+          i.category === c &&
+          SCOPE_RANK[i.scope] >= level &&
+          // A focused national interest takes national stories only when they match the focus.
+          (level < 2 || !i.focus?.length || i.focus.some((f) => phraseMatches(f, story))),
+      ) &&
+      (c !== "sports" || !sports.length || sports.some((sport) => phraseMatches(sport, story))),
   );
 }
 

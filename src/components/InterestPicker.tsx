@@ -14,9 +14,11 @@ const CHOICES: { id: Choice; label: string }[] = [
 /** One row per section; pick how wide to look, or turn it off. */
 export function InterestPicker({ value, onChange }: { value: Interest[]; onChange: (next: Interest[]) => void }) {
   const scopeOf = new Map(value.map((i) => [i.category, i.scope]));
+  const focusOf = new Map(value.map((i) => [i.category, i.focus ?? []]));
   const set = (category: CategoryId, choice: Choice) => {
     const rest = value.filter((i) => i.category !== category);
-    onChange(choice === "off" ? rest : [...rest, { category, scope: choice }]);
+    const focus = choice === "national" ? focusOf.get(category) ?? [] : [];
+    onChange(choice === "off" ? rest : [...rest, focus.length ? { category, scope: choice, focus } : { category, scope: choice }]);
   };
   return (
     <div className="interests" role="list">
@@ -40,6 +42,9 @@ export function InterestPicker({ value, onChange }: { value: Interest[]; onChang
                 </button>
               ))}
             </div>
+            {current === "national" && focusOf.get(c.id)?.length ? (
+              <p className="interest-focus">National stories only on {focusOf.get(c.id)!.join(", ")}</p>
+            ) : null}
           </div>
         );
       })}

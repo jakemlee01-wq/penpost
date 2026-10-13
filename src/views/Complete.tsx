@@ -12,7 +12,7 @@ const sectionNames = Object.fromEntries(interestCatalog.categories.map((c) => [c
 export function Complete({ reader }: { reader: Reader }) {
   const { edition, today, deckStories, pool, state } = reader;
   const question = useMemo(
-    () => questionFor({ prefs: state.prefs, pool, deck: deckStories, areas, writers, sectionNames }, state.answers, today),
+    () => questionFor({ prefs: state.prefs, setupText: state.prefs.setup?.text, pool, deck: deckStories, areas, writers, sectionNames }, state.answers, today),
     [state.prefs, pool, deckStories, state.answers, today],
   );
   if (!edition) return null;
@@ -37,8 +37,10 @@ export function Complete({ reader }: { reader: Reader }) {
       </div>
       {question ? (
         <section className="daily-q" aria-labelledby="daily-q-title">
-          <p className="daily-q-kicker">One question for tomorrow</p>
+          <p className="daily-q-kicker">One question for tomorrow's paper</p>
+          <p className="daily-q-context">{question.context}</p>
           <h2 id="daily-q-title">{question.prompt}</h2>
+          {question.example ? <p className="daily-q-example">From today's paper: {question.example}</p> : null}
           <div className="daily-q-options">
             {question.options.map((o) => (
               <button key={o.id} className="daily-q-option" onClick={() => reader.answerQuestion(question, o)}>

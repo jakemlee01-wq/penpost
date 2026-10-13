@@ -41,6 +41,8 @@ export function Deck({ reader }: { reader: Reader }) {
   const isToday = edition.date === today;
   const dateLabel = isToday ? formatEditionDate(edition.date) : `Latest: ${formatEditionDate(edition.date)}`;
   const total = deckStories.length;
+  // Header shows what the reader is about to get; their places live in settings.
+  const summary = total ? `${total} ${total === 1 ? "story" : "stories"} · ${Math.max(1, edition.estimatedTotalReadMinutes)} min` : undefined;
   const seenFlags = deck.storyIds.map((id) => deck.seen.includes(id));
 
   function advance() {
@@ -51,7 +53,7 @@ export function Deck({ reader }: { reader: Reader }) {
   if (total === 0) {
     return (
       <div className="screen">
-        <TopBar dateLabel={dateLabel} sub={edition.label} />
+        <TopBar dateLabel={dateLabel} sub={summary} />
         <main className="empty">
           <h1>A quiet day</h1>
           <p>There are no stories for {edition.label} in this edition yet. Check back after the next morning edition.</p>
@@ -64,7 +66,7 @@ export function Deck({ reader }: { reader: Reader }) {
   if (deck.index >= total) {
     return (
       <div className="screen">
-        <TopBar dateLabel={dateLabel} sub={edition.label} />
+        <TopBar dateLabel={dateLabel} sub={summary} />
         <ProgressSegments total={total} index={deck.index} seen={seenFlags} />
         <Complete reader={reader} />
       </div>
@@ -110,7 +112,7 @@ export function Deck({ reader }: { reader: Reader }) {
 
   return (
     <div className="screen deck-screen">
-      <TopBar dateLabel={dateLabel} sub={edition.label} />
+      <TopBar dateLabel={dateLabel} sub={summary} />
       <ProgressSegments total={total} index={deck.index} seen={seenFlags} />
       {reader.state.notice ? (
         <p className="setup-notice" role="status">

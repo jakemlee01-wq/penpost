@@ -49,7 +49,7 @@ describe("setup screen", () => {
     expect(html).not.toMatch(/Step \d of/);
   });
   it("shows an example answer", () => {
-    expect(renderSetup()).toContain("Berkshire Hathaway");
+    expect(renderSetup()).toContain("vintage pyrex");
   });
   it("has no mood control and no writer picks", () => {
     const html = renderSetup();
@@ -71,8 +71,19 @@ describe("setup screen", () => {
 });
 
 describe("reading the answer", () => {
-  it("turns the example into sections, niche likes and a dislike", () => {
+  it("reads the on-screen example: teams, a part of the metro, lake country and niche hobbies", () => {
     const p = localParse(SETUP_EXAMPLE, areas);
+    expect(p.areas).toEqual(expect.arrayContaining(["county:hennepin", "town:brainerd"]));
+    expect(p.areas).not.toContain("region:twin-cities");
+    expect(p.interests.map((i) => i.category)).toEqual(expect.arrayContaining(["sports", "food", "culture"]));
+    expect(p.likes).toEqual(expect.arrayContaining(["timberwolves", "minnesota wild", "schools", "state fair", "pyrex"]));
+    // "I never miss the state fair" is a like, not a dislike.
+    expect(p.avoids).toEqual([]);
+  });
+  it("turns a business-minded answer into sections, niche likes and a dislike", () => {
+    const text =
+      "I follow entrepreneurship, VC and private equity in Minnesota, and nationally I like to keep a sense of how the economy is doing. I'm into value investing and follow Warren Buffett and Berkshire Hathaway. I like technology, especially new AI tools I can actually try. I'm a big fan of Minnesota basketball and football, but I don't really care about soccer.";
+    const p = localParse(text, areas);
     expect(p.interests).toEqual(
       expect.arrayContaining([
         { category: "business", scope: "minnesota" },

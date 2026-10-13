@@ -113,6 +113,11 @@
       "region": "central"
     },
     {
+      "id": "crow-wing",
+      "name": "Crow Wing County",
+      "region": "central"
+    },
+    {
       "id": "olmsted",
       "name": "Olmsted County",
       "region": "southeast"
@@ -298,6 +303,11 @@
       "id": "st-cloud",
       "name": "St. Cloud",
       "county": "stearns"
+    },
+    {
+      "id": "brainerd",
+      "name": "Brainerd",
+      "county": "crow-wing"
     },
     {
       "id": "rochester",

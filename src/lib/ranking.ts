@@ -105,11 +105,24 @@ export function placeFit(story: Story, readerTowns: string[], towns: Town[]): El
 /** Sports a reader can name in setup likes. Naming any of them narrows the sports section to those. */
 export const SPORT_PHRASES = ["football", "basketball", "hockey", "baseball", "soccer", "golf", "volleyball", "wrestling", "softball", "tennis", "running", "fishing", "hunting"];
 
+const TEAM_SPORTS: [RegExp, string][] = [
+  [/\b(timberwolves|wolves|lynx)\b/, "basketball"],
+  [/\b(minnesota wild|frost)\b/, "hockey"],
+  [/\bvikings\b/, "football"],
+  [/\b(minnesota twins|st\.? paul saints)\b/, "baseball"],
+  [/\b(minnesota united|loons)\b/, "soccer"],
+];
+
 /** Sports the reader named anywhere in their likes: "Minnesota basketball" names basketball. */
 export function namedSports(likes: string[]): string[] {
   // In the reader's own order, so "basketball and football" reads back the way they said it.
   const out: string[] = [];
-  for (const l of likes) for (const sport of SPORT_PHRASES) if (!out.includes(sport) && new RegExp(`\\b${sport}\\b`).test(l.toLowerCase())) out.push(sport);
+  for (const l of likes) {
+    const low = l.toLowerCase();
+    for (const sport of SPORT_PHRASES) if (!out.includes(sport) && new RegExp(`\\b${sport}\\b`).test(low)) out.push(sport);
+    // A team names its sport: a Wolves fan follows basketball, a Wild fan hockey.
+    for (const [re, sport] of TEAM_SPORTS) if (!out.includes(sport) && re.test(low)) out.push(sport);
+  }
   return out;
 }
 

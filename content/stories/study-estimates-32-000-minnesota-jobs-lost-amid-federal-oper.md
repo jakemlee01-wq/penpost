@@ -22,11 +22,21 @@
   "significance": "statewide",
   "significanceReason": "The economic study and immigration enforcement operations impact the entire state of Minnesota.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: a city street filled with lots of traffic and tall buildings",
+      "credit": "isaac macdonald / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-city-street-filled-with-lots-of-traffic-and-tall-buildings-Z941si-U2pw?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1693433582807-ab93ea7c297e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8ZW1wdHklMjBzdG9yZWZyb250cyUyMGRvd250b3dufGVufDF8MHx8fDE3OTE4NTAzMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "isaac macdonald",
+      "photographerUrl": "https://unsplash.com/@isaacmacdonald?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "Sunlight falling across storefronts on a quiet Minnesota city street.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "A city street filled with lots of traffic and tall buildings",
+    "credit": "isaac macdonald / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

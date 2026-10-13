@@ -24,11 +24,21 @@
   "significance": "local",
   "significanceReason": "The real estate transaction and facility acquisition is specific to the city of Eagan.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: cable network",
+      "credit": "Taylor Vick / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/cable-network-M5tzZtFCOfs?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8c2VydmVyJTIwcmFja3MlMjBpbnNpZGUlMjBkYXRhfGVufDF8MHx8fDE3OTE4NTAzMDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Taylor Vick",
+      "photographerUrl": "https://unsplash.com/@tvick?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "industrial",
-    "alt": "A modern commercial data facility under a clear bright sky.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Cable network",
+    "credit": "Taylor Vick / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

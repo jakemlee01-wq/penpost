@@ -23,11 +23,21 @@
   "significance": "regional",
   "significanceReason": "The gale warning and severe weather impacted maritime traffic and coastal areas along western Lake Superior and Duluth.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: water waves on brown sand during daytime",
+      "credit": "Maria Baltazzi / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/water-waves-on-brown-sand-during-daytime-ukrrnDS8S6c?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1618899767668-add3c5ef4166?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8cm91Z2glMjBsYWtlJTIwd2F2ZXN8ZW58MXwwfHx8MTc5MTg1MDMxNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Maria Baltazzi",
+      "photographerUrl": "https://unsplash.com/@happy1sojourn?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "industrial",
-    "alt": "A sunny view of tall lake waves rolling toward a rocky shoreline.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Water waves on brown sand during daytime",
+    "credit": "Maria Baltazzi / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

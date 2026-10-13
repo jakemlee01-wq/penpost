@@ -21,11 +21,21 @@
   "significance": "national",
   "significanceReason": "National cultural event involving arts organizations and composers from multiple regions.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: people watching orchestra",
+      "credit": "Manuel Nägeli / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/people-watching-orchestra-p60mNTW5glI?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1519682718457-c82ce8296645?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8Y29uY2VydCUyMGhhbGwlMjBzdGFnZXxlbnwxfDB8fHwxNzkxODUwMzIwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Manuel Nägeli",
+      "photographerUrl": "https://unsplash.com/@gwundrig?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "A sunny street outside an urban brick concert hall with trees.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "People watching orchestra",
+    "credit": "Manuel Nägeli / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

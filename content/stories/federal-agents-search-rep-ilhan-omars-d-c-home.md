@@ -23,11 +23,21 @@
   "significance": "statewide",
   "significanceReason": "Involves a member of Congress and federal law enforcement agencies with national political implications.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: white concrete building under cloudy sky during daytime",
+      "credit": "Harold Mendoza / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/white-concrete-building-under-cloudy-sky-during-daytime-6xafY_AE1LM?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1581097543550-b3cbe2e6ea6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8Y2FwaXRvbCUyMGhpbGwlMjBidWlsZGluZ3N8ZW58MXwwfHx8MTc5MTg1MDMxMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Harold Mendoza",
+      "photographerUrl": "https://unsplash.com/@haroldrmendoza?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "office",
-    "alt": "A sunny government office exterior with tall stone columns.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "White concrete building under cloudy sky during daytime",
+    "credit": "Harold Mendoza / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,
@@ -35,14 +45,14 @@
     {
       "url": "https://www.washingtonpost.com/nation/2026/10/12/federal-agents-search-rep-ilhan-omars-dc-home/",
       "publisher": "washingtonpost.com",
-      "title": "Federal Agents Search Rep. Ilhan Omar\u2019s Home as Supporters Organize Minneapolis Rally",
+      "title": "Federal Agents Search Rep. Ilhan Omar’s Home as Supporters Organize Minneapolis Rally",
       "publishedAt": "2026-10-12",
       "accessedAt": "2026-10-12"
     },
     {
       "url": "https://www.cbsnews.com/news/ilhan-omar-immigration-raid-washington-dc/",
       "publisher": "cbsnews.com",
-      "title": "Federal Agents Search Rep. Ilhan Omar\u2019s Home as Supporters Organize Minneapolis Rally",
+      "title": "Federal Agents Search Rep. Ilhan Omar’s Home as Supporters Organize Minneapolis Rally",
       "publishedAt": "2026-10-12",
       "accessedAt": "2026-10-12"
     }

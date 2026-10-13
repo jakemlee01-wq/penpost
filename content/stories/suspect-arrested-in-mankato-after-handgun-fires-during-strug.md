@@ -23,11 +23,21 @@
   "significance": "local",
   "significanceReason": "The incident occurred entirely within downtown Mankato and involved local police.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: Man holding a camera on city sidewalk",
+      "credit": "Matthew Moloney / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/man-holding-a-camera-on-city-sidewalk-OtfRHZ4ZeoU?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1763059070323-4b88ebefdb91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8cG9saWNlJTIwaGFuZGN1ZmZzJTIwc2lkZXdhbGt8ZW58MXwwfHx8MTc5MTg1MDMyM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Matthew Moloney",
+      "photographerUrl": "https://unsplash.com/@mattmoloney?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "A sunny view down a quiet brick downtown commercial street.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Man holding a camera on city sidewalk",
+    "credit": "Matthew Moloney / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

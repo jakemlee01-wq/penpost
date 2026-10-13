@@ -21,11 +21,21 @@
   "significance": "national",
   "significanceReason": "This is a national sports league disciplinary action involving an NFL player.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: people watching soccer game in stadium",
+      "credit": "Krzysztof Dubiel / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/people-watching-soccer-game-in-stadium-hQBIJsBtyBw?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1629217855633-79a6925d6c47?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8ZW1wdHklMjBmb290YmFsbCUyMHN0YWRpdW18ZW58MXwwfHx8MTc5MTg1MDMxN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Krzysztof Dubiel",
+      "photographerUrl": "https://unsplash.com/@kris1902?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "office",
-    "alt": "A sunny sports stadium field viewed from the empty sideline benches.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "People watching soccer game in stadium",
+    "credit": "Krzysztof Dubiel / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

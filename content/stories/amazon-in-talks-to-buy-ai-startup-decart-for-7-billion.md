@@ -22,11 +22,21 @@
   "significance": "national",
   "significanceReason": "A major multi-billion dollar tech acquisition by Amazon impacting the national and global AI sector.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: Close-up of server cooling fans in a vibrant data center",
+      "credit": "Winston Chen / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/close-up-of-server-cooling-fans-in-a-vibrant-data-center-iZe21DzHnUg?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1782094673136-5198a372980c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8c2VydmVyJTIwcm9vbSUyMHJhY2tzfGVufDF8MHx8fDE3OTE4NTAzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Winston Chen",
+      "photographerUrl": "https://unsplash.com/@winstonchen?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "office",
-    "alt": "A sunny modern office room with clean wooden desks and big windows.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Close-up of server cooling fans in a vibrant data center",
+    "credit": "Winston Chen / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

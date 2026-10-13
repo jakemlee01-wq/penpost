@@ -24,11 +24,21 @@
   "significance": "regional",
   "significanceReason": "Affects regional delivery points and the Upper Midwest Corn Belt.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: Bicycle handlebars on a muddy path through a field",
+      "credit": "Vitaliy Naumenko / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/bicycle-handlebars-on-a-muddy-path-through-a-field-Zn_5XrYUA1g?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1766316563957-f2d3e114b2cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8bXVkZHklMjBjb3JuZmllbGR8ZW58MXwwfHx8MTc5MTg1MDMxOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Vitaliy Naumenko",
+      "photographerUrl": "https://unsplash.com/@vitaliy_naumenko?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "farm",
-    "alt": "A sunny farm field with a parked combine under clear skies.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Bicycle handlebars on a muddy path through a field",
+    "credit": "Vitaliy Naumenko / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

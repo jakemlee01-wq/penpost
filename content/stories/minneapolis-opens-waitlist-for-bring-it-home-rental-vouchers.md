@@ -24,11 +24,21 @@
   "significance": "local",
   "significanceReason": "The program waitlist is administered by the Minneapolis Public Housing Authority.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: black and white cocnrete building low-angle photography",
+      "credit": "Luke van Zyl / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/black-and-white-cocnrete-building-low-angle-photography-koH7IVuwRLw?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1515263487990-61b07816b324?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8YXBhcnRtZW50JTIwYnVpbGRpbmclMjBleHRlcmlvcnxlbnwxfDB8fHwxNzkxODUwMzE2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Luke van Zyl",
+      "photographerUrl": "https://unsplash.com/@lukevz?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "Sunny residential apartment building along a quiet neighborhood street.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Black and white cocnrete building low-angle photography",
+    "credit": "Luke van Zyl / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

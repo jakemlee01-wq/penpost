@@ -23,11 +23,21 @@
   "significance": "local",
   "significanceReason": "A major commercial building fire and firefighter injury incident localized in South Minneapolis.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: a red fire truck parked on the side of the road",
+      "credit": "John Torcasio / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-red-fire-truck-parked-on-the-side-of-the-road-Y2ZJ5XqRB1s?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1622783089891-ddf18baab338?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8ZmlyZSUyMGVuZ2luZSUyMGxhZGRlcnxlbnwxfDB8fHwxNzkxODUwMzEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "John Torcasio",
+      "photographerUrl": "https://unsplash.com/@johntorcasio?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "A bright city street corner with brick buildings under clear skies.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "A red fire truck parked on the side of the road",
+    "credit": "John Torcasio / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

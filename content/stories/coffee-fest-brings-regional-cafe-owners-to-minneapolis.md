@@ -24,11 +24,21 @@
   "significance": "regional",
   "significanceReason": "The two-day conference brings regional economic activity to downtown Minneapolis and supports growth across the Upper Midwest specialty food and beverage sector.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: black and silver coffee maker",
+      "credit": "Kevin Schmid / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/black-and-silver-coffee-maker-ftA71vetxuo?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1620807773206-49c1f2957417?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8ZXNwcmVzc28lMjBtYWNoaW5lJTIwYnJld2luZ3xlbnwxfDB8fHwxNzkxODUwMzA3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Kevin Schmid",
+      "photographerUrl": "https://unsplash.com/@lighttouchedphotography?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "cafe",
-    "alt": "A warm, sunlit cafe counter with espresso cups and bags of roasted beans.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Black and silver coffee maker",
+    "credit": "Kevin Schmid / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

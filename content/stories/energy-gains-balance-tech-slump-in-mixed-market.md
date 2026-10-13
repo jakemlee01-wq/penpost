@@ -22,11 +22,21 @@
   "significance": "national",
   "significanceReason": "National financial market movements affect the U.S. economy broadly.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: oil pump jack silhouette against red sunset",
+      "credit": "Zbynek Burival / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/oil-pump-jack-silhouette-against-red-sunset-GrmwVnVSSdU?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1516199423456-1f1e91b06f25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8b2lsJTIwcHVtcCUyMGphY2t8ZW58MXwwfHx8MTc5MTg1MDMxMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Zbynek Burival",
+      "photographerUrl": "https://unsplash.com/@zburival?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "office",
-    "alt": "A bright office workspace with trading monitors and warm sunlight through windows.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Oil pump jack silhouette against red sunset",
+    "credit": "Zbynek Burival / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

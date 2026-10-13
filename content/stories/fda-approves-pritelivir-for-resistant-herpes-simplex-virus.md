@@ -21,11 +21,21 @@
   "significance": "national",
   "significanceReason": "A nationwide federal FDA drug approval affecting clinical practice across the U.S.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: colorful pills spilling from orange bottle",
+      "credit": "Towfiqu barbhuiya / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/colorful-pills-spilling-from-orange-bottle-w8p9cQDLX7I?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1628771065518-0d82f1938462?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8cHJlc2NyaXB0aW9uJTIwbWVkaWNpbmUlMjBib3R0bGV8ZW58MXwwfHx8MTc5MTg1MDMxMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Towfiqu barbhuiya",
+      "photographerUrl": "https://unsplash.com/@towfiqu999999?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "office",
-    "alt": "Sunny medical office desk with a prescription bottle and notepad.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Colorful pills spilling from orange bottle",
+    "credit": "Towfiqu barbhuiya / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

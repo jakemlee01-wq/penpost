@@ -24,11 +24,21 @@
   "significance": "local",
   "significanceReason": "The incident occurred in downtown Mankato and involved local law enforcement.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: A police car with flashing red and blue emergency lights on a city street",
+      "credit": "Michael Förtsch / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/police-car-with-flashing-emergency-lights-y5LaV9IEC_g?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1606022831434-91293aebf25a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8cG9saWNlJTIwdGFwZSUyMGFuZCUyMHNpcmVuc3xlbnwxfDB8fHwxNzkxODUwMzE0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Michael Förtsch",
+      "photographerUrl": "https://unsplash.com/@michael_f?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "A quiet city street corner bathed in warm morning sunlight.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "A police car with flashing red and blue emergency lights on a city street",
+    "credit": "Michael Förtsch / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

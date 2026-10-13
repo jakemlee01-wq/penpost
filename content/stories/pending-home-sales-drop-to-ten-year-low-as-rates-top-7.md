@@ -22,11 +22,21 @@
   "significance": "national",
   "significanceReason": "The drop in pending home sales and rise in cancellations affects the national housing market across all major U.S. metropolitan areas.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: a house with a driveway",
+      "credit": "Point3D Commercial Imaging Ltd. / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-house-with-a-driveway-X_JXnSBKOO4?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1668911494509-14baf3b42fda?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8cmVzaWRlbnRpYWwlMjByZWFsJTIwZXN0YXRlfGVufDF8MHx8fDE3OTE4NTAzMTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Point3D Commercial Imaging Ltd.",
+      "photographerUrl": "https://unsplash.com/@3dottawa?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "A sunny street lined with quiet residential houses and green trees.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "A house with a driveway",
+    "credit": "Point3D Commercial Imaging Ltd. / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

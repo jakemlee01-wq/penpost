@@ -23,11 +23,21 @@
   "significance": "local",
   "significanceReason": "The incident and sentencing occurred in Rochester and involved local law enforcement and courts.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: Wooden gavel resting on a dark surface next to book",
+      "credit": "Sasun Bughdaryan / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/wooden-gavel-resting-on-a-dark-surface-next-to-book-FaTLrG5-ViE?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1767972463877-b64ba4283cd0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8Y291cnRyb29tJTIwZ2F2ZWx8ZW58MXwwfHx8MTc5MTg1MDMyMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Sasun Bughdaryan",
+      "photographerUrl": "https://unsplash.com/@sasun1990?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "office",
-    "alt": "A sunny courthouse plaza with brick paving and green trees under a clear sky.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Wooden gavel resting on a dark surface next to book",
+    "credit": "Sasun Bughdaryan / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

@@ -24,11 +24,21 @@
   "significance": "regional",
   "significanceReason": "A violent crime involving suspects and victims from different Twin Cities suburbs tied to a high-profile school event.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: a football field with a crowd watching",
+      "credit": "Tim Mossholder / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-football-field-with-a-crowd-watching-EbrcvGgNfmA?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1663563624897-de8972d7ce93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8aGlnaCUyMHNjaG9vbCUyMHN0YWRpdW18ZW58MXwwfHx8MTc5MTg1MDMyNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Tim Mossholder",
+      "photographerUrl": "https://unsplash.com/@timmossholder?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "road",
-    "alt": "A sunny view across an empty high school athletic field and running track.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "A football field with a crowd watching",
+    "credit": "Tim Mossholder / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

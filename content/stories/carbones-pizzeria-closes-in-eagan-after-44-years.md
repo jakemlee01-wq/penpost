@@ -24,11 +24,21 @@
   "significance": "local",
   "significanceReason": "A long-standing local restaurant closing in Eagan.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: black and white UNK UNK signage",
+      "credit": "Tim Mossholder / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/black-and-white-unk-unk-signage-Ee-DnKZYmWU?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1580361543250-301150bf6551?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8Y2xvc2VkJTIwcGl6emElMjByZXN0YXVyYW50fGVufDF8MHx8fDE3OTE4NTAzMDZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Tim Mossholder",
+      "photographerUrl": "https://unsplash.com/@timmossholder?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "A cozy pizza restaurant storefront with large sunny windows along a neighborhood sidewalk.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Black and white UNK UNK signage",
+    "credit": "Tim Mossholder / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

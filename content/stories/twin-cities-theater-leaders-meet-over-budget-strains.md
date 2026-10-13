@@ -26,11 +26,21 @@
   "significance": "regional",
   "significanceReason": "The financial challenges impact theater organizations across the Minneapolis-Saint Paul metro area.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: red cinema chair",
+      "credit": "Felix Mooneeram / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/red-cinema-chair-evlkOfkQ5rE?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8ZW1wdHklMjB0aGVhdGVyJTIwc2VhdHN8ZW58MXwwfHx8MTc5MTg1MDMyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Felix Mooneeram",
+      "photographerUrl": "https://unsplash.com/@felixmooneeram?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "Sunlight shining on the brick facade and marquee of a neighborhood theater.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Red cinema chair",
+    "credit": "Felix Mooneeram / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

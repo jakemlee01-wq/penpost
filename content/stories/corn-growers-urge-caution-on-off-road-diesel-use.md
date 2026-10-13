@@ -22,11 +22,21 @@
   "significance": "statewide",
   "significanceReason": "Affects farmers statewide across Minnesota.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: A red semi-truck cab without a trailer",
+      "credit": "Troy Mortier / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/a-red-semi-truck-cab-without-a-trailer-pAV_Y7DBOSg?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1778016187983-c3a44eee1f46?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8dHJhY3RvciUyMGZ1ZWwlMjB0YW5rfGVufDF8MHx8fDE3OTE4NTAzMDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Troy Mortier",
+      "photographerUrl": "https://unsplash.com/@troyscanon?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "farm",
-    "alt": "A tractor beside a fuel tank on a sunny rural farm.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "A red semi-truck cab without a trailer",
+    "credit": "Troy Mortier / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

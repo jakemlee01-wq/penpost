@@ -20,11 +20,21 @@
   "significance": "statewide",
   "significanceReason": "Statewide announcement regarding an annual outdoor tourism and hunting event.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: brown and black chicken on green grass field during daytime",
+      "credit": "David Thielen / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/brown-and-black-chicken-on-green-grass-field-during-daytime-BDLYHi0nOiA?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1622909967994-49e65035ffeb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8cGhlYXNhbnQlMjBodW50aW5nJTIwZmllbGR8ZW58MXwwfHx8MTc5MTg1MDMxOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "David Thielen",
+      "photographerUrl": "https://unsplash.com/@david_thielen?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "mainstreet",
-    "alt": "A sunny autumn main street in a small Minnesota town with trees.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Brown and black chicken on green grass field during daytime",
+    "credit": "David Thielen / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

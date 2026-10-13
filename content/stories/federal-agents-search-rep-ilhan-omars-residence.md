@@ -21,11 +21,21 @@
   "significance": "national",
   "significanceReason": "Involves a sitting U.S. Representative and federal immigration probe with national political repercussions.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: Historic brick building with a white domed tower",
+      "credit": "Dennis Zhang / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/historic-brick-building-with-a-white-domed-tower-T07vRPaoUS8?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1754878209528-00311ed30de1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8ZmVkZXJhbCUyMGNvdXJ0aG91c2UlMjBleHRlcmlvcnxlbnwxfDB8fHwxNzkxODUwMzEyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "Dennis Zhang",
+      "photographerUrl": "https://unsplash.com/@windagh?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "office",
-    "alt": "A sunlit government building with tall pillars beneath a clear blue sky.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Historic brick building with a white domed tower",
+    "credit": "Dennis Zhang / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

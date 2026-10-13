@@ -25,11 +25,21 @@
   "significance": "regional",
   "significanceReason": "The closure affects over 4,000 active car-sharing members across Minneapolis and St. Paul.",
   "image": {
+    "photo": {
+      "kind": "stock",
+      "caption": "Stock photo: electric vehicle charging cable plugged into car",
+      "credit": "CHUTTERSNAP / Unsplash",
+      "license": "Unsplash License",
+      "pageUrl": "https://unsplash.com/photos/electric-vehicle-charging-cable-plugged-into-car-xJLsHl0hIik?utm_source=penpost&utm_medium=referral",
+      "hotlinkUrl": "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTAwNTM1fDB8MXxzZWFyY2h8MXx8ZWxlY3RyaWMlMjB2ZWhpY2xlJTIwY2hhcmdpbmd8ZW58MXwwfHx8MTc5MTg1MDMxNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "photographer": "CHUTTERSNAP",
+      "photographerUrl": "https://unsplash.com/@chuttersnap?utm_source=penpost&utm_medium=referral"
+    },
     "scene": "road",
-    "alt": "A sunny city street corner with parked compact cars and electric charging stations.",
-    "credit": "Penpost illustration",
-    "rightsNote": "Owned illustration. No photo from the source was used.",
-    "illustrative": true
+    "alt": "Electric vehicle charging cable plugged into car",
+    "credit": "CHUTTERSNAP / Unsplash",
+    "rightsNote": "Unsplash License. Hotlinked per Unsplash API guidelines.",
+    "illustrative": false
   },
   "status": "published",
   "isDemo": false,

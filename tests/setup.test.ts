@@ -75,10 +75,16 @@ describe("reading the answer", () => {
     const p = localParse(SETUP_EXAMPLE, areas);
     expect(p.areas).toEqual(expect.arrayContaining(["county:hennepin", "town:brainerd"]));
     expect(p.areas).not.toContain("region:twin-cities");
-    expect(p.interests.map((i) => i.category)).toEqual(expect.arrayContaining(["sports", "food", "culture"]));
+    expect(p.interests.map((i) => i.category)).toEqual(expect.arrayContaining(["sports", "food", "culture", "politics"]));
     expect(p.likes).toEqual(expect.arrayContaining(["timberwolves", "minnesota wild", "schools", "state fair", "pyrex"]));
-    // "I never miss the state fair" is a like, not a dislike.
+    // "I never miss the state fair" is a like, and "don't really care about politics but wanna know
+    // what's going on" keeps politics in lightly. Neither is a dislike.
     expect(p.avoids).toEqual([]);
+  });
+  it("still treats a plain dislike as a dislike", () => {
+    const p = localParse("I love the Vikings but I don't care about politics.", areas);
+    expect(p.interests.map((i) => i.category)).not.toContain("politics");
+    expect(p.avoids).toContain("politics");
   });
   it("turns a business-minded answer into sections, niche likes and a dislike", () => {
     const text =

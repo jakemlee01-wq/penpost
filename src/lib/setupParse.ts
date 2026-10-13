@@ -25,7 +25,7 @@ export const MAX_AVOIDS = 12;
 export const STARTER_INTERESTS: Interest[] = [{ category: "business", scope: "minnesota" }];
 
 export const SETUP_EXAMPLE =
-  "big wolves and wild fan, wanna know when restaurants open or close in the west metro, got two kids so school news too, we got a cabin up by brainerd so lake country stuff, and i never miss the state fair and i collect vintage pyrex so if either makes the news i want it";
+  "big wolves and wild fan, wanna know when restaurants open or close in the west metro, got two kids so school news too, we got a cabin up by brainerd so lake country stuff, don't really care about politics but wanna at least feel like i know what's going on, and i never miss the state fair and i collect vintage pyrex so if either makes the news i want it";
 
 export const NOTICE_BUILT = "Built from what you told us. We'll keep learning as you read.";
 export const NOTICE_STARTER =
@@ -122,7 +122,8 @@ interests: sections the reader wants. category is one of: ${CATEGORY_IDS.join(",
 - scope: "minnesota" by default (covers their places plus statewide news). "national" when they want U.S.-wide news on that subject or the subject is inherently national (a national company, AI tools, Wall Street). "local" only if they say they want just their own town.
 - Do not add a section the reader says they don't care about.
 
-likes: specific things to favor, as short lowercase phrases of 1 to 3 words: niche interests, companies, people, teams, sports. Include the obvious plain form of abbreviations ("vc" -> "venture capital") and team nicknames ("wolves" -> "timberwolves", "wild" -> "minnesota wild"). Kids or school news -> "schools". Collections and hobbies as the plain thing ("I collect vintage pyrex" -> "pyrex"). "I never miss X" means they like X. Up to ${MAX_LIKES}.
+likes: specific things to favor, as short lowercase phrases of 1 to 3 words: niche interests, companies, people, teams, sports. Include the obvious plain form of abbreviations ("vc" -> "venture capital") and team nicknames ("wolves" -> "timberwolves", "wild" -> "minnesota wild"). Kids or school news -> "schools". Collections and hobbies as the plain thing ("I collect vintage pyrex" -> "pyrex"). "I never miss X" means they like X.
+- Lukewarm but wants the basics ("don't really care about politics but want to know what's going on"): include that section, and do NOT add it to avoids. Up to ${MAX_LIKES}.
 avoids: things the reader says they don't care about or dislike, as short lowercase phrases. Up to ${MAX_AVOIDS}. Only explicit dislikes.
 
 Catalog of areas:
@@ -188,6 +189,8 @@ const NICHE: [RegExp, string][] = [
 const NATIONAL_CUE = /\b(national(ly)?|across the country|u\.?s\.?|america\w*|wall street|global(ly)?|world(wide)?|the country)\b/;
 /** Phrases that sound negative but mean the opposite: "I never miss the state fair". */
 const POSITIVE_IDIOMS = /\b(never miss(es|ed)?|can'?t get enough of|wouldn'?t miss|never get tired of|can'?t miss)\b/g;
+/** "...but I want to know what's going on": the subject before it stays in, just lightly. */
+const KEEP_UP = /\b(know what'?s (going on|happening)|keep up|stay (informed|in the loop)|in the loop|the big (stuff|news|things)|the basics|the headlines)\b/;
 const NEGATION = /\b(don'?t|do not|doesn'?t|not|never|no|skip|hate|dislike|can'?t stand|less|without)\b/;
 
 const REGION_ALIASES: Record<string, RegExp> = {
@@ -268,8 +271,10 @@ export function localParse(text: string, areas: Areas): ParsedSetup {
 
   // Clauses: sentences, then "but" and ", and" so "I like X, but not Y" splits cleanly.
   const clauses = lower.split(/[.;!?\n]+|\bbut\b|,\s*and\b|\bexcept\b|\bhowever\b/).map((c) => c.trim()).filter(Boolean);
-  for (const clause of clauses) {
-    const negated = NEGATION.test(clause.replace(POSITIVE_IDIOMS, ""));
+  for (const [n, clause] of clauses.entries()) {
+    // "Don't really care about politics but wanna know what's going on": lightly informed, not a dislike.
+    const lukewarm = KEEP_UP.test(clauses[n + 1] ?? "");
+    const negated = !lukewarm && NEGATION.test(clause.replace(POSITIVE_IDIOMS, ""));
     const scope: Scope = NATIONAL_CUE.test(clause) ? "national" : "minnesota";
     for (const [re, phrase] of NICHE) if (re.test(clause)) (negated ? avoids : likes).push(phrase);
     // "I collect vintage pyrex": keep the thing itself as a like.

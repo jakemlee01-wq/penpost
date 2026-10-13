@@ -20,7 +20,8 @@ interests: sections the reader wants. category is one of: ${ke.join(", ")}.
 - scope: "minnesota" by default (covers their places plus statewide news). "national" when they want U.S.-wide news on that subject or the subject is inherently national (a national company, AI tools, Wall Street). "local" only if they say they want just their own town.
 - Do not add a section the reader says they don't care about.
 
-likes: specific things to favor, as short lowercase phrases of 1 to 3 words: niche interests, companies, people, teams, sports. Include the obvious plain form of abbreviations ("vc" -> "venture capital") and team nicknames ("wolves" -> "timberwolves", "wild" -> "minnesota wild"). Kids or school news -> "schools". Collections and hobbies as the plain thing ("I collect vintage pyrex" -> "pyrex"). "I never miss X" means they like X. Up to ${Fe}.
+likes: specific things to favor, as short lowercase phrases of 1 to 3 words: niche interests, companies, people, teams, sports. Include the obvious plain form of abbreviations ("vc" -> "venture capital") and team nicknames ("wolves" -> "timberwolves", "wild" -> "minnesota wild"). Kids or school news -> "schools". Collections and hobbies as the plain thing ("I collect vintage pyrex" -> "pyrex"). "I never miss X" means they like X.
+- Lukewarm but wants the basics ("don't really care about politics but want to know what's going on"): include that section, and do NOT add it to avoids. Up to ${Fe}.
 avoids: things the reader says they don't care about or dislike, as short lowercase phrases. Up to ${et}. Only explicit dislikes.
 
 Catalog of areas:

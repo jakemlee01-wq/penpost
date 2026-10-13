@@ -108,6 +108,25 @@ describe("coverage", () => {
   });
 });
 
+describe("named sports and statewide sections", () => {
+  it("naming basketball and football narrows sports: the Wild game drops out, the Vikings stay", () => {
+    const p = base({ interests: [{ category: "sports", scope: "minnesota" }], likes: ["basketball", "football"] });
+    expect(eligibility(byId("2026-10-09-wild-tampa"), p.towns, towns, p).eligible).toBe(false);
+    expect(eligibility(byId("2026-10-09-vikings-4-0"), p.towns, towns, p).eligible).toBe(true);
+  });
+  it("without named sports, every sport still counts", () => {
+    const p = base({ interests: [{ category: "sports", scope: "minnesota" }] });
+    expect(eligibility(byId("2026-10-09-wild-tampa"), p.towns, towns, p).eligible).toBe(true);
+  });
+  it("a statewide story in the reader's sections ranks in the local tier, but loses ties to their own towns", () => {
+    const local = { ...byId("2026-10-09-gudea"), tone: "neutral" as const };
+    const statewide = { ...local, id: "x-statewide", significance: "statewide" as const, cities: [] };
+    const p = base();
+    expect(eligibility(statewide, p.towns, towns, p).base).toBe(eligibility(local, p.towns, towns, p).base);
+    expect(scoreStories([statewide, local], p, towns, { topics: {}, writers: {} })[0].story.id).toBe(local.id);
+  });
+});
+
 describe("lighter editions", () => {
   it("never puts more than one heavy story in a reader's five, and only a must-know one", () => {
     const heavy = pool.map((s) => ({ ...s, tone: "heavy" as const, mustKnow: true }));

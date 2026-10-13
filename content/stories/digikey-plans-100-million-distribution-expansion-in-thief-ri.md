@@ -21,8 +21,8 @@
   ],
   "tone": "light",
   "mustKnow": false,
-  "significance": "regional",
-  "significanceReason": "Thief River Falls is outside the catalog, so the nearest catalog town (Bemidji) is used and significance is set to regional.",
+  "significance": "statewide",
+  "significanceReason": "A $100 million expansion by one of Minnesota's largest private employers matters to business readers statewide.",
   "image": {
     "photo": {
       "kind": "stock",

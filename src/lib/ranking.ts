@@ -12,10 +12,14 @@ import { phraseMatches } from "./setupParse";
  *             local and statewide sports; national economy covers local, state and national.
  *    Must-know stories (big news for the reader's places, or statewide must-knows) skip the
  *    section and tone checks, so nothing important gets filtered out.
+ *    Sports narrows to the sports the reader named: someone who said "basketball and football"
+ *    doesn't get a hockey game just because they turned sports on.
+ *    A statewide story in one of the reader's sections ranks with stories from their own towns:
+ *    a $100 million Minnesota expansion is local news to a reader who follows Minnesota business.
  *    A reader with no places gets statewide and national stories only.
  * 2. Tone. Editions lean lighter for everyone: a heavy story gets in only when it's must-know.
  * 3. Score = geography tier + small capped nudges (likes and dislikes from setup, votes,
- *    favorite writers, a lift for light stories). Nudges can reorder stories within a tier but
+ *    favorite writers, a one-point tie-break for light stories). Nudges can reorder stories within a tier but
  *    never move one across tiers. Dislikes are a nudge only, never a filter.
  * 4. Coverage: must-know stories go in first, then each section the reader turned on gets
  *    its best story (if it has one), then remaining slots go by score. So five slots can't
@@ -44,7 +48,8 @@ export const LIKE_POINTS = 3;
 export const MAX_LIKE_POINTS = 6;
 /** Explicit dislikes from setup: a down-weight inside the tier. Never removes a story. */
 export const AVOID_POINTS = 6;
-export const LIGHT_TONE_POINTS = 4;
+/** A tie-break only: a light story should never beat a more substantive one on tone alone. */
+export const LIGHT_TONE_POINTS = 1;
 /** Total of all nudges stays under the smallest gap between tiers (10). */
 export const MAX_NUDGE = 9;
 /** Kept for the taste-only cap used in Settings and tests. */
@@ -95,10 +100,18 @@ export function placeFit(story: Story, readerTowns: string[], towns: Town[]): El
   }
 }
 
+/** Sports a reader can name in setup likes. Naming any of them narrows the sports section to those. */
+export const SPORT_PHRASES = ["football", "basketball", "hockey", "baseball", "soccer", "golf", "volleyball", "wrestling", "softball", "tennis", "running", "fishing", "hunting"];
+
 /** Does one of the story's sections match an interest wide enough to cover it? */
-export function sectionFit(story: Story, interests: Interest[]): boolean {
+export function sectionFit(story: Story, interests: Interest[], likes: string[] = []): boolean {
   const level = storyLevel(story);
-  return story.categories.some((c) => interests.some((i) => i.category === c && SCOPE_RANK[i.scope] >= level));
+  const namedSports = likes.filter((l) => SPORT_PHRASES.includes(l.trim().toLowerCase()));
+  return story.categories.some(
+    (c) =>
+      interests.some((i) => i.category === c && SCOPE_RANK[i.scope] >= level) &&
+      (c !== "sports" || !namedSports.length || namedSports.some((sport) => phraseMatches(sport, story))),
+  );
 }
 
 /**
@@ -106,13 +119,21 @@ export function sectionFit(story: Story, interests: Interest[]): boolean {
  * Without a profile's interests (older callers), only place is checked.
  * Likes and dislikes are deliberately absent here: they only nudge the score.
  */
-export function eligibility(story: Story, readerTowns: string[], towns: Town[], profile?: Pick<ReaderProfile, "interests">): Eligibility {
+export function eligibility(
+  story: Story,
+  readerTowns: string[],
+  towns: Town[],
+  profile?: Pick<ReaderProfile, "interests"> & Partial<Pick<ReaderProfile, "likes">>,
+): Eligibility {
   const place = placeFit(story, readerTowns, towns);
   if (!place.eligible || !profile) return place;
   const mustKnow = story.mustKnow && story.significance !== "national";
   if (mustKnow) return { ...place, reason: `${place.reason}, must-know` };
-  if (!sectionFit(story, profile.interests)) return { eligible: false, base: 0, reason: "not one of your interests" };
+  if (!sectionFit(story, profile.interests, profile.likes)) return { eligible: false, base: 0, reason: "not one of your interests" };
   if (story.tone === "heavy") return { eligible: false, base: 0, reason: "heavy story, not must-know" };
+  if (story.significance === "statewide" && place.base < BASE_SCORE.localMatch) {
+    return { eligible: true, base: BASE_SCORE.localMatch, reason: "statewide, in your sections" };
+  }
   return place;
 }
 
@@ -171,7 +192,12 @@ export function scoreStories(stories: Story[], profile: ReaderProfile | string[]
     out.push({ story, score: e.base + nudge, base: e.base, nudge, reason: e.reason });
   }
   return out.sort(
-    (a, b) => b.score - a.score || b.story.publishedAt.localeCompare(a.story.publishedAt) || a.story.id.localeCompare(b.story.id),
+    (a, b) =>
+      b.score - a.score ||
+      // On a tie, the reader's own towns come before statewide stories lifted into the local tier.
+      Number(a.reason.startsWith("statewide, in your")) - Number(b.reason.startsWith("statewide, in your")) ||
+      b.story.publishedAt.localeCompare(a.story.publishedAt) ||
+      a.story.id.localeCompare(b.story.id),
   );
 }
 

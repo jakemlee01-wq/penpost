@@ -22,8 +22,8 @@
   ],
   "tone": "light",
   "mustKnow": false,
-  "significance": "regional",
-  "significanceReason": "The project impacts Pine Island and the broader Rochester/Olmsted County region.",
+  "significance": "statewide",
+  "significanceReason": "A proposed Google data center would be one of the largest tech investments in Minnesota, relevant statewide.",
   "image": {
     "scene": "industrial",
     "alt": "A sunny view of green fields alongside a modern low-rise building.",

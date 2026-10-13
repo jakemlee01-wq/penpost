@@ -2,35 +2,43 @@
   "regions": [
     {
       "id": "twin-cities",
-      "name": "Twin Cities metro"
+      "name": "Twin Cities metro",
+      "hub": "minneapolis"
     },
     {
       "id": "west-central",
-      "name": "West central Minnesota"
+      "name": "West central Minnesota",
+      "hub": "willmar"
     },
     {
       "id": "southwest",
-      "name": "Southwest Minnesota"
+      "name": "Southwest Minnesota",
+      "hub": "marshall"
     },
     {
       "id": "central",
-      "name": "Central Minnesota"
+      "name": "Central Minnesota",
+      "hub": "st-cloud"
     },
     {
       "id": "southeast",
-      "name": "Southeast Minnesota"
+      "name": "Southeast Minnesota",
+      "hub": "rochester"
     },
     {
       "id": "south-central",
-      "name": "South central Minnesota"
+      "name": "South central Minnesota",
+      "hub": "mankato"
     },
     {
       "id": "northeast",
-      "name": "Northeast Minnesota"
+      "name": "Northeast Minnesota",
+      "hub": "duluth"
     },
     {
       "id": "northwest",
-      "name": "Northwest Minnesota"
+      "name": "Northwest Minnesota",
+      "hub": "bemidji"
     }
   ],
   "counties": [

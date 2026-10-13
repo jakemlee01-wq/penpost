@@ -9,7 +9,7 @@ import type { Town } from "./schema";
  */
 
 export const AreasSchema = z.object({
-  regions: z.array(z.object({ id: z.string(), name: z.string() })).min(1),
+  regions: z.array(z.object({ id: z.string(), name: z.string(), hub: z.string().optional() })).min(1),
   counties: z.array(z.object({ id: z.string(), name: z.string(), region: z.string() })).min(1),
   towns: z.array(z.object({ id: z.string().regex(/^[a-z0-9-]+$/), name: z.string(), county: z.string() })).min(1),
 });

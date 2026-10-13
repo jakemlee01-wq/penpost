@@ -7,7 +7,7 @@
   "writerId": "ben",
   "publishedAt": "2026-10-13T06:00:00-05:00",
   "cities": [
-    "dawson"
+    "benson"
   ],
   "topics": [
     "missing-persons",
@@ -20,7 +20,7 @@
   "tone": "light",
   "mustKnow": false,
   "significance": "regional",
-  "significanceReason": "The events occurred in Alexandria and Douglas County, which are not cataloged towns, so the nearest region is used.",
+  "significanceReason": "The searches were in Alexandria and Douglas County, which are not cataloged towns, so the story is filed under Benson, the nearest catalog town.",
   "image": {
     "photo": {
       "kind": "stock",

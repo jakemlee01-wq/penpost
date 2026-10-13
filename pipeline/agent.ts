@@ -17,7 +17,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { z } from "zod";
-import { AreasSchema } from "../src/lib/areas";
+import { AreasSchema, type Areas } from "../src/lib/areas";
 import { chicagoDate } from "../src/lib/dates";
 import { parseStoryFile } from "../src/lib/parse";
 import { CATEGORY_IDS, WriterSchema } from "../src/lib/schema";
@@ -173,15 +173,25 @@ function names(headline: string): Set<string> {
 export function sameEvent(a: Pick<Event, "headline" | "storyKey">, b: Pick<Event, "headline" | "storyKey">): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   if ((a.storyKey && norm(a.storyKey) === norm(b.storyKey)) || norm(a.headline) === norm(b.headline)) return true;
-  const wa = words(a);
-  const wb = words(b);
-  const small = Math.min(wa.size, wb.size);
-  if (!small) return false;
-  let shared = 0;
-  for (const w of wa) if (wb.has(w)) shared++;
   const nb = names(b.headline);
   const sharedName = [...names(a.headline)].some((n) => nb.has(n));
-  return sharedName && shared >= 3 && shared / small >= 0.5;
+  if (!sharedName) return false;
+  // Compare headline plus key, and headline alone: long, differently worded keys can hide two headlines about the same thing.
+  const overlaps = (wa: Set<string>, wb: Set<string>) => {
+    const small = Math.min(wa.size, wb.size);
+    if (!small) return false;
+    let shared = 0;
+    for (const w of wa) if (wb.has(w)) shared++;
+    return shared >= 3 && shared / small >= 0.5;
+  };
+  return overlaps(words(a), words(b)) || overlaps(words({ headline: a.headline, storyKey: "" }), words({ headline: b.headline, storyKey: "" }));
+}
+
+/** The town a regional story with no catalog town is filed under: the region's hub, else its first town. */
+export function regionHub(areas: Areas, region: string): string | undefined {
+  const inRegion = areas.towns.filter((t) => areas.counties.find((c) => c.id === t.county)?.region === region);
+  const hub = areas.regions.find((r) => r.id === region)?.hub;
+  return inRegion.find((t) => t.id === hub)?.id ?? inRegion[0]?.id;
 }
 
 /**
@@ -285,9 +295,9 @@ export async function runAgent(opts: AgentOptions) {
         .map((i) => (i.significance === "national" && i.cities.length ? { ...i, significance: "statewide" as const } : i))
         .map((i) => {
           if (i.cities.length || i.significance === "statewide" || i.significance === "national") return i;
-          // No catalog town: in a regional topic, file it under the region as a regional story. Elsewhere, drop it
+          // No catalog town: in a regional topic, file it under the region's hub town as a regional story. Elsewhere, drop it
           // rather than show a small-town story to every Minnesota reader.
-          const regionTown = topic.region ? areas.towns.find((tw) => areas.counties.find((c) => c.id === tw.county)?.region === topic.region)?.id : undefined;
+          const regionTown = topic.region ? regionHub(areas, topic.region) : undefined;
           return regionTown ? { ...i, cities: [regionTown], significance: "regional" as const } : null;
         })
         .filter((i): i is NonNullable<typeof i> => i !== null);

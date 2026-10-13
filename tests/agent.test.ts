@@ -2,7 +2,7 @@ import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildTopics, matchSources, pickEvents, runAgent, sameEvent, type Event } from "../pipeline/agent";
+import { buildTopics, matchSources, pickEvents, regionHub, runAgent, sameEvent, type Event } from "../pipeline/agent";
 import { createModel, type Call } from "../pipeline/model";
 import { parseStoryFile } from "../src/lib/parse";
 
@@ -96,6 +96,21 @@ describe("agent topics and picking", () => {
     expect(sameEvent(e("Gun fires during Mankato arrest with no injuries reported"), e("Suspect arrested in Mankato after handgun fires during struggle"))).toBe(true);
     expect(sameEvent(e("Vikings beat Saints to stay unbeaten"), e("Wild top Panthers behind Kaprizov hat trick"))).toBe(false);
     expect(sameEvent(e("Rochester approves downtown housing plan"), e("Duluth approves downtown parking plan"))).toBe(false);
+  });
+
+  it("treats same-theme headlines as one event even when their keys differ", () => {
+    expect(
+      sameEvent(
+        { headline: "Minnesota marks Indigenous Peoples Day by water, fire, and song", storyKey: "statewide-indigenous-peoples-day-ceremonies-2026" },
+        { headline: "Sanford Health Bemidji marks Indigenous Peoples Day", storyKey: "sanford-bemidji-hospital-observance-native-patients" },
+      ),
+    ).toBe(true);
+  });
+
+  it("files a regional story with no catalog town under the region's hub town", () => {
+    const areas = JSON.parse(readFileSync(join(repo, "content/areas.json"), "utf8"));
+    expect(regionHub(areas, "west-central")).toBe("willmar");
+    expect(regionHub(areas, "nowhere")).toBeUndefined();
   });
 
   it("skips heavy stories unless they are must-know", () => {

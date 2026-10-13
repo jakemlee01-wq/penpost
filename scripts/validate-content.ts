@@ -22,6 +22,8 @@ const regionIds = new Set(areas.regions.map((r) => r.id));
 const countyIds = new Set(areas.counties.map((c) => c.id));
 for (const c of areas.counties) if (!regionIds.has(c.region)) errors.push(`areas.json: county ${c.id} has unknown region ${c.region}`);
 for (const t of areas.towns) if (!countyIds.has(t.county)) errors.push(`areas.json: town ${t.id} has unknown county ${t.county}`);
+const regionOfTown = new Map(areas.towns.map((t) => [t.id, areas.counties.find((c) => c.id === t.county)?.region]));
+for (const r of areas.regions) if (r.hub && regionOfTown.get(r.hub) !== r.id) errors.push(`areas.json: region ${r.id} hub ${r.hub} is not a town in that region`);
 
 if (writers.map((w) => w.id).sort().join() !== [...WRITER_IDS].sort().join()) errors.push("writers.json must contain exactly emma, jack, grace, luke, ben");
 

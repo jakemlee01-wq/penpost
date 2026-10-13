@@ -10,6 +10,9 @@ const repo = join(__dirname, "..");
 let tmp = "";
 afterEach(() => tmp && rmSync(tmp, { recursive: true, force: true }));
 
+// A date with no real edition, so the copied content/ folder never collides with a live edition.
+const TEST_DATE = "2099-01-06";
+
 function makeRoot() {
   tmp = mkdtempSync(join(tmpdir(), "penpost-agent-"));
   cpSync(join(repo, "content"), join(tmp, "content"), { recursive: true });
@@ -113,7 +116,7 @@ describe("runAgent end to end (fake Gemini)", () => {
     const root = makeRoot();
     const before = new Set(readdirSync(join(root, "content/stories")));
     const model = createModel({ PENPOST_PROVIDER: "mock", PENPOST_MAX_CALLS: "200" }, writerResponder());
-    const res = await runAgent({ root, date: "2026-10-13", maxStories: 5, model, key: "k", fetchImpl: fakeSearch(), log: () => {} });
+    const res = await runAgent({ root, date: TEST_DATE, maxStories: 5, model, key: "k", fetchImpl: fakeSearch(), log: () => {} });
     expect(res.published).toBe(5);
     const files = readdirSync(join(root, "content/stories")).filter((f) => !before.has(f));
     expect(files).toHaveLength(5);
@@ -121,14 +124,14 @@ describe("runAgent end to end (fake Gemini)", () => {
     expect(s.status).toBe("published");
     expect(s.cities).toEqual(["willmar"]);
     expect(s.sources[0].url).toBe("https://www.wctrib.com/news/acme");
-    const manifest = JSON.parse(readFileSync(join(root, "content/editions/2026-10-13.json"), "utf8"));
+    const manifest = JSON.parse(readFileSync(join(root, `content/editions/${TEST_DATE}.json`), "utf8"));
     expect(manifest.candidateStoryIds).toHaveLength(5);
   });
 
   it("holds stories the checker flags and leaves them out of the edition", async () => {
     const root = makeRoot();
     const model = createModel({ PENPOST_PROVIDER: "mock", PENPOST_MAX_CALLS: "200" }, writerResponder(["$18 million"]));
-    const res = await runAgent({ root, date: "2026-10-13", maxStories: 2, model, key: "k", fetchImpl: fakeSearch(), log: () => {} });
+    const res = await runAgent({ root, date: TEST_DATE, maxStories: 2, model, key: "k", fetchImpl: fakeSearch(), log: () => {} });
     expect(res.published).toBe(0);
     expect(res.written.every((w) => w.status === "draft")).toBe(true);
   });
@@ -139,7 +142,7 @@ describe("runAgent end to end (fake Gemini)", () => {
     const model = createModel({ PENPOST_PROVIDER: "mock", PENPOST_MAX_CALLS: "200" }, writerResponder());
     process.env.PENPOST_TOPICS = "local-twin-cities";
     try {
-      const res = await runAgent({ root, date: "2026-10-13", maxStories: 5, model, key: "k", fetchImpl: fakeSearch(false, calls), log: () => {} });
+      const res = await runAgent({ root, date: TEST_DATE, maxStories: 5, model, key: "k", fetchImpl: fakeSearch(false, calls), log: () => {} });
       expect(res.published).toBe(0);
     } finally {
       delete process.env.PENPOST_TOPICS;

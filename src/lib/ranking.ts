@@ -28,6 +28,8 @@ import { phraseMatches } from "./setupParse";
  * 6. Five stories. If fewer than five fit the reader's interests, the rest are filled with the
  *    best remaining stories for their places (statewide and national included), so no reader
  *    gets an empty edition while the day has stories. Heavy stories still need to be must-know.
+ * 7. Feel-good bonus. Every reader gets one feel-good story a day as an extra last card, whatever
+ *    their interests: the closest one to their places. If one of their five already is one, no bonus.
  */
 
 export const MAX_STORIES = 5;
@@ -248,7 +250,26 @@ export function assembleStoryIds(
       .map((s) => ({ ...s, score: s.score - FILL_PENALTY, reason: `${s.reason}, fill` }));
     picked.push(...fill.slice(0, max - picked.length));
   }
-  return varyWriters(picked.sort((a, b) => b.score - a.score)).map((s) => s.story.id);
+  const ids = varyWriters(picked.sort((a, b) => b.score - a.score)).map((s) => s.story.id);
+  if (picked.some((s) => s.story.feelGood)) return ids;
+  const readerTowns = Array.isArray(profile) ? profile : profile.towns;
+  const bonus = pickFeelGood(stories.filter((s) => !ids.includes(s.id)), readerTowns, towns);
+  return bonus ? [...ids, bonus.id] : ids;
+}
+
+/** The day's feel-good story for a reader: closest to their places first (any place qualifies), then lighter, then newest. */
+export function pickFeelGood(stories: Story[], readerTowns: string[], towns: Town[]): Story | undefined {
+  return stories
+    .filter((s) => s.feelGood && s.status !== "draft" && s.tone !== "heavy")
+    // Good news travels: a story from another town still qualifies, it just ranks below nearby ones.
+    .map((s) => ({ s, fit: placeFit(s, readerTowns, towns) }))
+    .sort(
+      (a, b) =>
+        b.fit.base - a.fit.base ||
+        toneAdjustment(b.s) - toneAdjustment(a.s) ||
+        b.s.publishedAt.localeCompare(a.s.publishedAt) ||
+        a.s.id.localeCompare(b.s.id),
+    )[0]?.s;
 }
 
 /** Fill stories always rank below stories that matched the reader's interests. */

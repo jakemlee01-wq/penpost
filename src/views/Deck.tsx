@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { StoryBadge } from "../components/StoryBadge";
 import { StoryImage } from "../components/StoryImage";
 import { ChevronLeft, ChevronRight, ThumbDown, ThumbUp } from "../components/Icons";
 import { ProgressSegments } from "../components/ProgressSegments";
@@ -42,7 +43,12 @@ export function Deck({ reader }: { reader: Reader }) {
   const dateLabel = isToday ? formatEditionDate(edition.date) : `Latest: ${formatEditionDate(edition.date)}`;
   const total = deckStories.length;
   // Header shows what the reader is about to get; their places live in settings.
-  const summary = total ? `${total} ${total === 1 ? "story" : "stories"} · ${Math.max(1, edition.estimatedTotalReadMinutes)} min` : undefined;
+  // The feel-good bonus is the last card and isn't counted as one of the reader's stories.
+  const bonus = total > 1 && deckStories[total - 1].feelGood && deckStories.slice(0, -1).every((s) => !s.feelGood) ? 1 : 0;
+  const picks = total - bonus;
+  const summary = total
+    ? `${picks} ${picks === 1 ? "story" : "stories"}${bonus ? " + feel-good" : ""} · ${Math.max(1, edition.estimatedTotalReadMinutes)} min`
+    : undefined;
   const seenFlags = deck.storyIds.map((id) => deck.seen.includes(id));
 
   function advance() {
@@ -137,6 +143,7 @@ export function Deck({ reader }: { reader: Reader }) {
           <div className="card-media">
             <StoryImage story={story} className="card-img" variant="card" />
             {story.isDemo ? <span className="chip">Demo story</span> : null}
+            <StoryBadge story={story} />
             {!reader.state.hintSeen && deck.index === 0 ? (
               <p className="hint" role="note">Swipe for the next story</p>
             ) : null}

@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { AreasSchema, expandAreas, townsWithRegion } from "../src/lib/areas";
 import { parseStoryFile } from "../src/lib/parse";
-import { assembleStoryIds, eligibility, scoreStories, type ReaderProfile } from "../src/lib/ranking";
+import { assembleStoryIds, eligibility, pickFeelGood, scoreStories, type ReaderProfile } from "../src/lib/ranking";
+import { badgeKind } from "../src/components/StoryBadge";
 import type { Story } from "../src/lib/schema";
 
 const areas = AreasSchema.parse(JSON.parse(readFileSync(join(__dirname, "..", "content", "areas.json"), "utf8")));
@@ -124,6 +125,39 @@ describe("named sports and statewide sections", () => {
     const p = base();
     expect(eligibility(statewide, p.towns, towns, p).base).toBe(eligibility(local, p.towns, towns, p).base);
     expect(scoreStories([statewide, local], p, towns, { topics: {}, writers: {} })[0].story.id).toBe(local.id);
+  });
+});
+
+describe("feel-good bonus", () => {
+  const good = (id: string, over: Partial<Story> = {}): Story => ({ ...byId("2026-10-09-gudea"), id, feelGood: true, tone: "light", categories: ["culture"], ...over });
+  it("adds one feel-good story as an extra last card, whatever the reader's interests", () => {
+    const pool2 = [...pool, good("x-good", { significance: "statewide", cities: [] })];
+    const ids = assembleStoryIds(pool2, base(), towns, [], 5);
+    expect(ids.length).toBe(6);
+    expect(ids[5]).toBe("x-good");
+  });
+  it("prefers a feel-good story in the reader's places, but takes one from anywhere", () => {
+    const near = good("x-near", { significance: "local", cities: ["minneapolis"] });
+    const far = good("x-far", { significance: "local", cities: ["rochester"] });
+    const p = base();
+    expect(pickFeelGood([far, near], p.towns, towns)?.id).toBe("x-near");
+    expect(pickFeelGood([far], p.towns, towns)?.id).toBe("x-far");
+  });
+  it("adds no bonus when one of the five already is a feel-good story", () => {
+    const local = good("x-in-five", { categories: ["business"], significance: "local", cities: ["minneapolis"] });
+    const ids = assembleStoryIds([...pool, local, good("x-other", { significance: "statewide", cities: [] })], base(), towns, [], 5);
+    expect(ids).toContain("x-in-five");
+    expect(ids).not.toContain("x-other");
+  });
+});
+
+describe("story badges", () => {
+  it("shows the sport for sports stories, the sun for feel-good, otherwise the first section", () => {
+    const s = (over: Partial<Story>) => ({ ...byId("2026-10-09-gudea"), feelGood: false, ...over });
+    expect(badgeKind(byId("2026-10-09-wild-tampa"))).toBe("hockey");
+    expect(badgeKind(byId("2026-10-09-vikings-4-0"))).toBe("football");
+    expect(badgeKind(s({ categories: ["real-estate", "business"] }))).toBe("real-estate");
+    expect(badgeKind(s({ feelGood: true }))).toBe("feel-good");
   });
 });
 

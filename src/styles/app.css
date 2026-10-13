@@ -147,6 +147,13 @@ button { font: inherit; color: inherit; }
   border-radius: 999px;
 }
 .chip.quiet { left: auto; right: 12px; font-size: 11px; font-weight: 600; color: var(--ink-2); padding: 3px 9px; }
+.story-badge {
+  position: absolute; top: 12px; right: 12px;
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px;
+  background: rgba(255, 254, 252, 0.92); color: var(--ink-2);
+  box-shadow: 0 1px 2px rgba(41, 55, 71, 0.12);
+}
+.story-badge.feel-good { background: var(--warm); color: var(--ink); }
 img.card-img.photo, img.article-img.photo { object-fit: cover; }
 img.card-img.photo { pointer-events: none; -webkit-user-drag: none; user-select: none; }
 .article-figure figcaption a { color: var(--ink-2); }

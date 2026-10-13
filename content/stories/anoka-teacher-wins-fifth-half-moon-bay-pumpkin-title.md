@@ -19,6 +19,7 @@
   ],
   "tone": "light",
   "mustKnow": false,
+  "feelGood": true,
   "significance": "statewide",
   "significanceReason": "A Minnesota grower won a prominent world championship involving significant statewide representation.",
   "image": {

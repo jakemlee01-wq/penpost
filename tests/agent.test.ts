@@ -80,8 +80,9 @@ describe("agent topics and picking", () => {
   it("covers every region plus Minnesota and national topics for every category", () => {
     const topics = buildTopics([{ id: "a", name: "A" }, { id: "b", name: "B" }]);
     expect(topics.filter((t) => t.scope === "local")).toHaveLength(2);
-    expect(topics.filter((t) => t.scope === "minnesota")).toHaveLength(10);
-    expect(topics.filter((t) => t.scope === "national")).toHaveLength(10);
+    expect(topics.filter((t) => t.scope === "minnesota")).toHaveLength(11);
+    expect(topics.filter((t) => t.scope === "national")).toHaveLength(11);
+    expect(topics.map((t) => t.id)).toEqual(expect.arrayContaining(["mn-feel-good", "us-feel-good"]));
   });
 
   it("takes one event per topic before any topic gets a second, and drops duplicates", () => {

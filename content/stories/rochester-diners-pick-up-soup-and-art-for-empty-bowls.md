@@ -21,6 +21,7 @@
   ],
   "tone": "light",
   "mustKnow": false,
+  "feelGood": true,
   "significance": "local",
   "significanceReason": "The fundraiser event takes place in Rochester and benefits the regional area.",
   "image": {

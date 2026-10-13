@@ -65,6 +65,8 @@ export const StoryMetaSchema = z.object({
   tone: z.enum(["light", "neutral", "heavy"]).default("neutral"),
   // Big news for its places that should reach readers regardless of their interests or mood.
   mustKnow: z.boolean().default(false),
+  // A story that makes you feel good about the world. Every reader gets one a day as a bonus last card.
+  feelGood: z.boolean().default(false),
   significanceReason: z.string().min(5),
   sources: z.array(SourceSchema).min(1),
   image: StoryImageSchema.optional(),

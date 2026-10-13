@@ -28,6 +28,8 @@ export type LocalState = {
   hintSeen: boolean;
   /** One honest line shown on the deck right after setup, until dismissed or the reader moves on. */
   notice: string | null;
+  /** Answers to the daily question on the caught-up screen, by question id. */
+  answers: Record<string, { option: string; date: string; note: string }>;
 };
 
 export function defaultState(): LocalState {
@@ -38,6 +40,7 @@ export function defaultState(): LocalState {
     decks: {},
     hintSeen: false,
     notice: null,
+    answers: {},
   };
 }
 
@@ -94,7 +97,18 @@ export function sanitize(value: unknown, normalizeAreas: (ids: unknown) => strin
     decks: v.decks && typeof v.decks === "object" ? v.decks : {},
     hintSeen: Boolean(v.hintSeen),
     notice: typeof v.notice === "string" && v.notice.length < 300 ? v.notice : null,
+    answers: sanitizeAnswers(v.answers),
   };
+}
+
+function sanitizeAnswers(raw: unknown): LocalState["answers"] {
+  if (!raw || typeof raw !== "object") return {};
+  const out: LocalState["answers"] = {};
+  for (const [id, a] of Object.entries(raw as Record<string, unknown>).slice(0, 200)) {
+    const x = a as Partial<LocalState["answers"][string]>;
+    if (typeof x?.option === "string" && typeof x.date === "string") out[id] = { option: x.option, date: x.date, note: typeof x.note === "string" ? x.note.slice(0, 200) : "" };
+  }
+  return out;
 }
 
 function phrases(raw: unknown, max: number): string[] {

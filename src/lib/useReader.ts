@@ -4,6 +4,7 @@ import { chicagoDate, pickEdition } from "./dates";
 import { assembleStoryIds } from "./ranking";
 import type { Edition, Story, Vote } from "./schema";
 import type { SetupResult } from "./setupParse";
+import type { Prefs, Question, QuestionOption } from "./questions";
 import { applyVote, deckKey, defaultState, loadState, saveState, type DeckState, type LocalState } from "./storage";
 
 export type Reader = ReturnType<typeof useReader>;
@@ -55,6 +56,12 @@ export function useReader() {
       return { ...s, decks: { ...kept, [key]: deck } };
     });
   }, [deck, key, state.decks, commit]);
+
+  // Every published story in today's edition, for the daily question.
+  const pool = useMemo(
+    () => (manifest ? manifest.candidateStoryIds.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s)) : []),
+    [manifest],
+  );
 
   const deckStories = useMemo(() => (deck ? deck.storyIds.map((id) => storyById.get(id)!).filter(Boolean) : []), [deck]);
 
@@ -130,6 +137,19 @@ export function useReader() {
         notice: result.notice,
       })),
     dismissNotice: () => commit((s) => ({ ...s, notice: null })),
+    pool,
+    /**
+     * Apply an answer to the daily question. Like votes, it shapes the next edition, not this one:
+     * today's deck is carried over to the new settings so nothing reshuffles under the reader.
+     */
+    answerQuestion: (q: Question, opt: QuestionOption) =>
+      commit((s) => {
+        const before: Prefs = s.prefs;
+        const nextPrefs = { ...s.prefs, ...opt.apply(before) };
+        const decks = { ...s.decks };
+        if (manifest && deck) decks[deckKey(manifest.id, expand(nextPrefs.areas), nextPrefs)] = s.decks[key] ?? deck;
+        return { ...s, prefs: nextPrefs, decks, answers: { ...s.answers, [q.id]: { option: opt.id, date: today, note: opt.confirm } } };
+      }),
     readerTowns,
     setAreas: (ids: string[]) => commit((s) => ({ ...s, prefs: { ...s.prefs, areas: ids } })),
     setPrefs: (patch: Partial<LocalState["prefs"]>) => commit((s) => ({ ...s, prefs: { ...s.prefs, ...patch } })),

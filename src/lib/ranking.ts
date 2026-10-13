@@ -274,3 +274,8 @@ export function pickFeelGood(stories: Story[], readerTowns: string[], towns: Tow
 
 /** Fill stories always rank below stories that matched the reader's interests. */
 export const FILL_PENALTY = 1000;
+
+/** 1 when the last card is the feel-good bonus (not one of the reader's picks), else 0. */
+export function feelGoodBonus(deck: Pick<Story, "feelGood">[]): 0 | 1 {
+  return deck.length > 1 && deck[deck.length - 1].feelGood && deck.slice(0, -1).every((s) => !s.feelGood) ? 1 : 0;
+}

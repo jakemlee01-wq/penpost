@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, ThumbDown, ThumbUp } from "../components/Ico
 import { ProgressSegments } from "../components/ProgressSegments";
 import { TopBar } from "../components/TopBar";
 import { formatEditionDate } from "../lib/dates";
+import { feelGoodBonus } from "../lib/ranking";
 import { href } from "../lib/router";
 import type { Reader } from "../lib/useReader";
 import { Complete } from "./Complete";
@@ -44,7 +45,7 @@ export function Deck({ reader }: { reader: Reader }) {
   const total = deckStories.length;
   // Header shows what the reader is about to get; their places live in settings.
   // The feel-good bonus is the last card and isn't counted as one of the reader's stories.
-  const bonus = total > 1 && deckStories[total - 1].feelGood && deckStories.slice(0, -1).every((s) => !s.feelGood) ? 1 : 0;
+  const bonus = feelGoodBonus(deckStories);
   const picks = total - bonus;
   const summary = total
     ? `${picks} ${picks === 1 ? "story" : "stories"}${bonus ? " + feel-good" : ""} · ${Math.max(1, edition.estimatedTotalReadMinutes)} min`

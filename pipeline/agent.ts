@@ -301,7 +301,7 @@ export async function runAgent(opts: AgentOptions) {
   log(`${queue.length} events picked from ${byTopic.flat().length}`);
 
   // 3. Write and check
-  const written: { file: string; status: string; writer: string; flags: string[]; topic: string; words?: number }[] = [];
+  const written: { file: string; status: string; writer: string; flags: string[]; topic: string; words?: number; facts?: number }[] = [];
   const storyIds = new Map<string, string>();
   const skipped: string[] = [];
   const recentWriters = existing.map((s) => s.writerId as string);
@@ -373,7 +373,7 @@ ${JSON.stringify(facts, null, 2)}`,
       const parsedStory = parseStoryFile(fileText, `${slug}.md`);
       writeFileSync(join(storyDir, `${slug}.md`), fileText);
       storyIds.set(`content/stories/${slug}.md`, parsedStory.id);
-      written.push({ file: `content/stories/${slug}.md`, status, writer: writer.name, flags, topic: ev.topic.id, words: parsedStory.wordCount });
+      written.push({ file: `content/stories/${slug}.md`, status, writer: writer.name, flags, topic: ev.topic.id, words: parsedStory.wordCount, facts: ev.facts.length });
       recentWriters.push(writer.id);
       previous = writer.id;
       log(`${status === "draft" ? "HELD " : "ok   "} ${writer.name} [${ev.topic.id}]: ${header.headline}`);
@@ -401,7 +401,7 @@ ${JSON.stringify(facts, null, 2)}`,
   if (process.env.GITHUB_ACTIONS === "true" && !process.env.VITEST) {
     const esc = (t: string) => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
     console.log(`::notice title=Draft result::${esc(summary)}`);
-    const lines = written.map((w) => `${w.status === "draft" ? "HELD" : "ok"} [${w.topic}] ${w.words ?? "?"}w ${w.file.replace("content/stories/", "")}${w.status === "draft" ? ` :: ${w.flags.filter((f) => f.startsWith("Unsupported")).join(" | ").slice(0, 400)}` : ""}`).concat(skipped.map((s) => `failed: ${s}`));
+    const lines = written.map((w) => `${w.status === "draft" ? "HELD" : "ok"} [${w.topic}] ${w.facts ?? "?"}f/${w.words ?? "?"}w ${w.file.replace("content/stories/", "")}${w.status === "draft" ? ` :: ${w.flags.filter((f) => f.startsWith("Unsupported")).join(" | ").slice(0, 400)}` : ""}`).concat(skipped.map((s) => `failed: ${s}`));
     if (lines.length) console.log(`::notice title=Stories::${esc(lines.slice(0, 60).join("\n"))}`);
     console.log(`::notice title=Research::${esc(research.join("\n"))}`);
   }

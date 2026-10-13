@@ -13,6 +13,18 @@ function ImageCaption({ story }: { story: Parameters<typeof imageCaption>[0] }) 
   return (
     <figcaption>
       {c.text}
+      {c.unsplash ? (
+        <>
+          {" · Photo by "}
+          <a href={c.unsplash.profile} target="_blank" rel="noopener noreferrer">
+            {c.unsplash.name}
+          </a>
+          {" on "}
+          <a href={c.unsplash.photo} target="_blank" rel="noopener noreferrer">
+            Unsplash
+          </a>
+        </>
+      ) : null}
       {c.credit ? (
         <>
           {" · "}

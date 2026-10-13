@@ -1,0 +1,54 @@
+name: Backfill photos
+
+# Run by hand to add Unsplash photos to a day's stories that only have an illustration.
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Edition date (YYYY-MM-DD, America/Chicago). Leave blank for today."
+        required: false
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: draft-edition
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Add photos
+        env:
+          PENPOST_PROVIDER: gemini
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          PENPOST_TRIAGE_MODEL: ${{ vars.PENPOST_TRIAGE_MODEL }}
+          PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}
+        run: npx tsx scripts/backfill-photos.ts ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+      - run: npm run validate
+      - name: Publish to main
+        id: publish
+        run: |
+          if git diff --quiet content/stories; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git config user.name "penpost-bot"
+          git config user.email "penpost-bot@users.noreply.github.com"
+          git add content/stories
+          git commit -m "Photos for $(TZ=America/Chicago date +%F)"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Deploy the site
+        if: steps.publish.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main

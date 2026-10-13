@@ -16,7 +16,7 @@ type UnsplashResult = {
   plus?: boolean;
   urls: { regular: string };
   links: { html: string; download_location: string };
-  user: { name: string };
+  user: { name: string; links?: { html?: string } };
 };
 
 export async function findStockPhoto(
@@ -43,6 +43,8 @@ export async function findStockPhoto(
       license: "Unsplash License",
       pageUrl: `${hit.links.html}?utm_source=penpost&utm_medium=referral`,
       hotlinkUrl: `${hit.urls.regular}`,
+      photographer: hit.user.name,
+      ...(hit.user.links?.html ? { photographerUrl: `${hit.user.links.html}?utm_source=penpost&utm_medium=referral` } : {}),
     },
   };
 }

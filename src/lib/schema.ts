@@ -32,6 +32,8 @@ export const StoryPhotoSchema = z.object({
   pageUrl: z.string().url(), // where the license and credit can be checked
   downloadUrl: z.string().url().optional(), // fetched into the site at build time
   hotlinkUrl: z.string().url().optional(), // used directly when the source requires hotlinking
+  photographer: z.string().optional(), // Unsplash: photographer name for "Photo by X on Unsplash"
+  photographerUrl: z.string().url().optional(), // Unsplash: photographer profile link
 });
 export type StoryPhoto = z.infer<typeof StoryPhotoSchema>;
 

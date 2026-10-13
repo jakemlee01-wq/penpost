@@ -14,11 +14,16 @@ export function StoryImage({ story, className, variant }: { story: Story; classN
 }
 
 /** Caption line for the article: what it shows, and who took it. */
-export function imageCaption(story: Story): { text: string; credit?: string; link?: string } | null {
+export function imageCaption(
+  story: Story,
+): { text: string; credit?: string; link?: string; unsplash?: { name: string; profile: string; photo: string } } | null {
   const image = story.image;
   if (!image) return null;
   if (photoUrl(story) && image.photo) {
-    return { text: image.photo.caption, credit: `Photo: ${image.photo.credit}`, link: image.photo.pageUrl };
+    const p = image.photo;
+    // Unsplash requires "Photo by <photographer> on Unsplash", both linked.
+    if (p.photographer && p.photographerUrl) return { text: p.caption, unsplash: { name: p.photographer, profile: p.photographerUrl, photo: p.pageUrl } };
+    return { text: p.caption, credit: `Photo: ${p.credit}`, link: p.pageUrl };
   }
   return { text: "Illustration: Penpost" };
 }

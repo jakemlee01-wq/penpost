@@ -223,7 +223,7 @@ export function About() {
         <p>
           Writers work from company announcements, public records, and other reporting, then write a fresh account. A company's claim is
           reported as a claim. When a story relies on another outlet's reporting, it says so. Source names, links, and dates appear at
-          the end of each article. Photos are licensed; generic ones are labeled "Stock photo" so they never read as the actual event.
+          the end of each article. Photos are licensed; generic ones say "Stock photo" in the article caption so they never read as the actual event.
         </p>
 
         <h2>The writers</h2>

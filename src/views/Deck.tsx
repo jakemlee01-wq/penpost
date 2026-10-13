@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
-import { StoryImage, isStockShown } from "../components/StoryImage";
+import { StoryImage } from "../components/StoryImage";
 import { ChevronLeft, ChevronRight, ThumbDown, ThumbUp } from "../components/Icons";
 import { ProgressSegments } from "../components/ProgressSegments";
 import { TopBar } from "../components/TopBar";
@@ -134,7 +134,7 @@ export function Deck({ reader }: { reader: Reader }) {
         >
           <div className="card-media">
             <StoryImage story={story} className="card-img" variant="card" />
-            {story.isDemo ? <span className="chip">Demo story</span> : isStockShown(story) ? <span className="chip quiet">Stock photo</span> : null}
+            {story.isDemo ? <span className="chip">Demo story</span> : null}
             {!reader.state.hintSeen && deck.index === 0 ? (
               <p className="hint" role="note">Swipe for the next story</p>
             ) : null}

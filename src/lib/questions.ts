@@ -78,7 +78,8 @@ function sportsQuestion(c: QuestionContext): Question | null {
   const example = c.pool.find((s) => s.categories.includes("sports") && !c.deck.includes(s) && others.some((o) => phraseMatches(o, s)));
   const top = others.slice(0, 2);
   return {
-    id: `sports-beyond:${[...named].sort().join(",")}`,
+    // One id for good: adding a sport changes `named`, and an id built from it would re-ask tomorrow.
+    id: "sports-beyond",
     context: `You said you're a fan of Minnesota ${list(named)}.`,
     prompt: `Want other Minnesota sports too?`,
     example: example ? quote(example) : undefined,
@@ -217,9 +218,11 @@ const GENERATORS = [sportsQuestion, scopeQuestion, homeAreaQuestion, sectionQues
 /** Today's question: the first useful one the reader hasn't answered. Null once they've answered one today. */
 export function questionFor(c: QuestionContext, answers: Answers, today: string): Question | null {
   if (Object.values(answers).some((a) => a.date === today)) return null;
+  // Older saved answers carry a suffix ("sports-beyond:basketball,football"); they count as the same question.
+  const asked = (id: string) => Object.keys(answers).some((k) => k === id || k.startsWith(`${id}:`));
   for (const gen of GENERATORS) {
     const q = gen(c);
-    if (q && !answers[q.id]) return q;
+    if (q && !asked(q.id)) return q;
   }
   return null;
 }

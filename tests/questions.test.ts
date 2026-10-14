@@ -44,6 +44,16 @@ describe("daily question", () => {
     expect(all.apply(jake).likes).toEqual(expect.arrayContaining(["hockey", "baseball", "golf"]));
   });
 
+  it("asks the sports question once, even after an answer adds a sport", () => {
+    const first = questionFor(ctx(jake), {}, "2026-10-13")!;
+    const after = first.options.find((o) => o.id === "add-hockey")!.apply(jake);
+    const answers = { [first.id]: { option: "add-hockey", date: "2026-10-13", note: "" } };
+    expect(questionFor(ctx(after), answers, "2026-10-14")?.id).not.toMatch(/^sports-beyond/);
+    // An answer saved under the old id format still counts.
+    const legacy = { "sports-beyond:basketball,football": { option: "add-hockey", date: "2026-10-13", note: "" } };
+    expect(questionFor(ctx(after), legacy, "2026-10-14")?.id).not.toMatch(/^sports-beyond/);
+  });
+
   it("asks about national news on the reader's own business likes, and a focused yes only widens to those", () => {
     const answers = { "sports-beyond:basketball,football": { option: "keep", date: "2026-10-13", note: "" } };
     const national = { ...pool[0], id: "x-nat", significance: "national" as const, categories: ["business" as const], topics: ["retail"], headline: "Retailer opens stores", preview: "" };

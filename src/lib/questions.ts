@@ -16,8 +16,9 @@ export type Prefs = Pick<ReaderPreferences, "areas" | "interests" | "likes" | "a
 export type QuestionOption = { id: string; label: string; confirm: string; apply: (p: Prefs) => Prefs };
 export type Question = {
   id: string;
-  /** What we're building on, in the reader's terms: "You said you follow venture capital and private equity." */
+  /** The why, shown under the question in smaller type: "Right now you get them from Minnesota only." */
   context: string;
+  /** The question itself, readable on its own: it names what it's asking about, never "those". */
   prompt: string;
   /** A real headline from today's paper that this answer would bring in. */
   example?: string;
@@ -80,8 +81,8 @@ function sportsQuestion(c: QuestionContext): Question | null {
   return {
     // One id for good: adding a sport changes `named`, and an id built from it would re-ask tomorrow.
     id: "sports-beyond",
-    context: `You said you're a fan of Minnesota ${list(named)}.`,
-    prompt: `Want other Minnesota sports too?`,
+    context: `Right now your paper covers just ${named.length > 1 ? "those" : "that"}.`,
+    prompt: `Want other Minnesota sports besides ${list(named)}?`,
     example: example ? quote(example) : undefined,
     options: [
       { id: "keep", label: `Just ${list(named)}`, confirm: `Got it. Sports stays ${list(named)}.`, apply: keep },
@@ -105,7 +106,7 @@ function scopeQuestion(c: QuestionContext): Question | null {
     if (!focus.length) {
       return {
         id: `scope-national:${i.category}`,
-        context: `You follow ${name} in Minnesota.`,
+        context: `Right now you get ${name} from Minnesota only.`,
         prompt: `Want national ${name} stories too?`,
         example: quote(missed[0]),
         options: [
@@ -118,8 +119,8 @@ function scopeQuestion(c: QuestionContext): Question | null {
     const onFocus = missed.find((s) => focus.some((f) => phraseMatches(f, s)));
     return {
       id: `scope-national:${i.category}`,
-      context: `You said you follow ${list(shown)}.`,
-      prompt: `Want national news on ${shown.length > 1 ? "those" : "that"}, not just Minnesota?`,
+      context: `You said you follow ${shown.length > 1 ? "those" : "that"}. Right now you get ${shown.length > 1 ? "them" : "it"} from Minnesota only.`,
+      prompt: `Want national news on ${list(shown)}?`,
       example: onFocus ? quote(onFocus) : undefined,
       options: [
         {

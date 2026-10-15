@@ -38,8 +38,8 @@ export function Complete({ reader }: { reader: Reader }) {
       {question ? (
         <section className="daily-q" aria-labelledby="daily-q-title">
           <p className="daily-q-kicker">One question for tomorrow's paper</p>
-          <p className="daily-q-context">{question.context}</p>
           <h2 id="daily-q-title">{question.prompt}</h2>
+          <p className="daily-q-context">{question.context}</p>
           {question.example ? <p className="daily-q-example">From today's paper: {question.example}</p> : null}
           <div className="daily-q-options">
             {question.options.map((o) => (

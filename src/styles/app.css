@@ -225,6 +225,8 @@ img.card-img.photo { pointer-events: none; -webkit-user-drag: none; user-select:
 .nav-btn:not(:disabled):hover { background: var(--warm); }
 
 /* Completion */
+.complete-swipe { touch-action: pan-y; transition: transform 0.25s ease; }
+.complete-swipe.dragging { transition: none; }
 .complete { display: grid; place-items: center; align-content: center; gap: 14px; padding: 16px 0 32px; min-height: 60dvh; }
 .complete-card {
   background: var(--card);
@@ -242,8 +244,8 @@ img.card-img.photo { pointer-events: none; -webkit-user-drag: none; user-select:
 .complete-note { font-size: 13px; color: var(--ink-2); margin: 14px 0 0; }
 .daily-q { width: 100%; background: var(--card); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 20px 20px 18px; }
 .daily-q-kicker { margin: 0 0 4px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
-.daily-q-context { margin: 0 0 4px; font-size: 15px; color: var(--ink); }
-.daily-q h2 { margin: 0 0 14px; font-size: 19px; line-height: 1.35; font-weight: 800; }
+.daily-q-context { margin: 0 0 14px; font-size: 14px; color: var(--ink-2); }
+.daily-q h2 { margin: 0 0 6px; font-size: 19px; line-height: 1.35; font-weight: 800; }
 .daily-q-example { margin: -6px 0 14px; font-size: 14px; color: var(--ink-2); font-style: italic; }
 .daily-q-options { display: flex; flex-direction: column; gap: 8px; }
 .daily-q-option {

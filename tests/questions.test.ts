@@ -37,7 +37,8 @@ const ctx = (prefs: Prefs): QuestionContext => ({ prefs, setupText, pool, deck: 
 describe("daily question", () => {
   it("builds on the sports the reader named, even inside phrases, and never offers one they avoid", () => {
     const q = questionFor(ctx(jake), {}, "2026-10-13")!;
-    expect(q.context).toBe("You said you're a fan of Minnesota basketball and football.");
+    // The bold question reads on its own: it names the sports instead of leaning on the line under it.
+    expect(q.prompt).toBe("Want other Minnesota sports besides basketball and football?");
     expect(q.options.map((o) => o.id)).not.toContain("add-soccer");
     const all = q.options.find((o) => o.id === "all")!;
     expect(all.label).toBe("All except soccer");
@@ -59,7 +60,8 @@ describe("daily question", () => {
     const national = { ...pool[0], id: "x-nat", significance: "national" as const, categories: ["business" as const], topics: ["retail"], headline: "Retailer opens stores", preview: "" };
     const q = questionFor({ ...ctx(jake), pool: [...pool, national] }, answers, "2026-10-14")!;
     expect(q.id).toBe("scope-national:business");
-    expect(q.context).toBe("You said you follow venture capital, private equity and value investing.");
+    expect(q.prompt).toBe("Want national news on venture capital, private equity and value investing?");
+    expect(q.prompt).not.toMatch(/\bthose\b/);
     const focused = q.options.find((o) => o.id === "focus")!.apply(jake);
     const towns = townsWithRegion(areas);
     const t = expandAreas(focused.areas, areas);

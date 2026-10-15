@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { useEffect } from "react";
 import { StoryBadge } from "../components/StoryBadge";
 import { StoryImage } from "../components/StoryImage";
 import { ChevronLeft, ChevronRight, ThumbDown, ThumbUp } from "../components/Icons";
@@ -8,15 +8,15 @@ import { formatEditionDate } from "../lib/dates";
 import { feelGoodBonus } from "../lib/ranking";
 import { href } from "../lib/router";
 import type { Reader } from "../lib/useReader";
+import { useSwipe } from "../lib/useSwipe";
 import { Complete } from "./Complete";
-
-const SWIPE_THRESHOLD = 60;
 
 export function Deck({ reader }: { reader: Reader }) {
   const { edition, deck, deckStories, today } = reader;
-  const [dx, setDx] = useState(0);
-  const drag = useRef<{ x: number; y: number; active: boolean; moved: boolean } | null>(null);
-  const suppressClick = useRef(false);
+  // Swipe is navigation only. It never records a vote. It also works on the caught-up screen,
+  // so a reader who finished can swipe right to get back to the last story.
+  const swipe = useSwipe({ onLeft: () => advance(), onRight: () => reader.prev() });
+  const { dx } = swipe;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -75,47 +75,26 @@ export function Deck({ reader }: { reader: Reader }) {
       <div className="screen">
         <TopBar dateLabel={dateLabel} sub={summary} />
         <ProgressSegments total={total} index={deck.index} seen={seenFlags} />
-        <Complete reader={reader} />
+        <div
+          className={`complete-swipe${dx ? " dragging" : ""}`}
+          style={dx > 0 ? { transform: `translateX(${dx / 3}px)` } : undefined}
+          {...swipe.handlers}
+          // A swipe that ends over an answer button must not answer the question.
+          onClickCapture={(e) => {
+            if (swipe.wasSwipe()) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
+          <Complete reader={reader} />
+        </div>
       </div>
     );
   }
 
   const story = deckStories[deck.index];
   const vote = reader.voteFor(story.id);
-
-  const onPointerDown = (e: RPointerEvent) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    drag.current = { x: e.clientX, y: e.clientY, active: false, moved: false };
-  };
-  const onPointerMove = (e: RPointerEvent) => {
-    const d = drag.current;
-    if (!d) return;
-    const mx = e.clientX - d.x;
-    const my = e.clientY - d.y;
-    if (!d.active) {
-      if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.2) {
-        d.active = true;
-        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-      } else if (Math.abs(my) > 10) {
-        drag.current = null; // vertical intent: leave scrolling alone
-        return;
-      } else return;
-    }
-    d.moved = true;
-    setDx(mx);
-  };
-  const onPointerUp = () => {
-    const d = drag.current;
-    drag.current = null;
-    if (d?.moved) {
-      suppressClick.current = true;
-      setTimeout(() => (suppressClick.current = false), 50);
-      // Swipe is navigation only. It never records a vote.
-      if (dx <= -SWIPE_THRESHOLD) advance();
-      else if (dx >= SWIPE_THRESHOLD) reader.prev();
-    }
-    setDx(0);
-  };
 
   return (
     <div className="screen deck-screen">
@@ -134,10 +113,7 @@ export function Deck({ reader }: { reader: Reader }) {
           key={story.id}
           className={`card${dx ? " dragging" : ""}`}
           style={dx ? { transform: `translateX(${dx}px) rotate(${dx / 60}deg)` } : undefined}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
+          {...swipe.handlers}
           aria-roledescription="story card"
           aria-label={`Story ${deck.index + 1} of ${total}`}
         >
@@ -153,7 +129,7 @@ export function Deck({ reader }: { reader: Reader }) {
             className="card-panel"
             href={href.story(story.slug)}
             onClick={(e) => {
-              if (suppressClick.current) e.preventDefault();
+              if (swipe.wasSwipe()) e.preventDefault();
             }}
             draggable={false}
           >

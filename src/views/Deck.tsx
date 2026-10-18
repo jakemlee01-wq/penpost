@@ -10,6 +10,7 @@ import { href } from "../lib/router";
 import type { Reader } from "../lib/useReader";
 import { useSwipe } from "../lib/useSwipe";
 import { Complete } from "./Complete";
+import { Curating, PaperGate } from "./TodaysPaper";
 
 export function Deck({ reader }: { reader: Reader }) {
   const { edition, deck, deckStories, today } = reader;
@@ -27,6 +28,9 @@ export function Deck({ reader }: { reader: Reader }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+
+  if (reader.curating) return <Curating reader={reader} />;
+  if (reader.gated) return <PaperGate reader={reader} />;
 
   if (!edition || !deck) {
     return (
@@ -63,7 +67,7 @@ export function Deck({ reader }: { reader: Reader }) {
         <TopBar dateLabel={dateLabel} sub={summary} />
         <main className="empty">
           <h1>A quiet day</h1>
-          <p>There are no stories for {edition.label} in this edition yet. Check back after the next morning edition.</p>
+          <p>There are no stories for {edition.label} in this edition yet. Check back tomorrow.</p>
           <a className="pill-link" href={href.settings()}>Change your places</a>
         </main>
       </div>
@@ -103,6 +107,11 @@ export function Deck({ reader }: { reader: Reader }) {
       {reader.state.notice ? (
         <p className="setup-notice" role="status">
           <span>{reader.state.notice}</span>
+          {reader.canRetryPaper ? (
+            <button className="notice-retry" onClick={reader.askForPaper}>
+              Try again
+            </button>
+          ) : null}
           <button className="notice-x" onClick={reader.dismissNotice} aria-label="Dismiss">
             ×
           </button>

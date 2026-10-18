@@ -1,14 +1,17 @@
 name: Draft daily edition
+# The Worker parses this title to see which topics a queued or running edition already covers.
+run-name: "Draft edition: ${{ inputs.topics || 'all topics' }}"
 
-# Weekday mornings. Cron runs in UTC: 09:00 UTC is 4:00 a.m. Central in summer
-# and 3:00 a.m. in winter, so the edition is live before the 5:00 a.m. check.
+# On demand only. A reader's "See today's paper" tap reaches the Worker (worker/src/index.ts, POST /curate),
+# which dispatches this workflow with just the topics nobody has generated yet today. There is no
+# schedule: a day with no taps writes nothing and spends nothing. You can still run it by hand from
+# the Actions tab (blank topics = every topic not already ready today).
 #
-# The job researches every region and interest with Gemini + Google Search, writes stories in the
-# Penpost writers' voices, holds any story the checker can't match to its sources, and publishes
-# the rest straight to main. There is no review step.
+# The job researches each topic with Gemini + Google Search, writes stories in the Penpost writers'
+# voices, holds any story the checker can't match to its sources, and publishes the rest straight to
+# main. Topic progress lives in content/topics/<date>.json (pending -> ready), so a second reader
+# never pays for the same topic twice.
 on:
-  schedule:
-    - cron: "0 9 * * 1-5"
   workflow_dispatch:
     inputs:
       date:
@@ -29,23 +32,64 @@ permissions:
   contents: write
   actions: write
 
-concurrency:
-  group: draft-edition
-  cancel-in-progress: false
-
 jobs:
-  draft:
+  # Mark the requested topics pending right away, even while another edition run is still writing,
+  # so a second tap sees "pending" and doesn't pay again. Not in the concurrency group on purpose.
+  claim:
+    if: github.ref == 'refs/heads/main' && !inputs.dry_run
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Mark topics pending
+        env:
+          EDITION_DATE: ${{ inputs.date }}
+          TOPICS: ${{ inputs.topics }}
+        run: bash pipeline/push-topics.sh claim
+
+  draft:
+    needs: claim
+    # Runs after the claim, or without it for dry runs and other branches.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    # One edition run at a time. GitHub keeps only the newest queued run; topics claimed by a
+    # replaced run stay "pending" in the manifest and the next run picks them up.
+    concurrency:
+      group: draft-edition
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The latest main, not the commit the run was dispatched at: it has the newest topic manifest.
+          ref: ${{ github.ref == 'refs/heads/main' && 'main' || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
 
+      - name: Plan topics
+        id: plan
+        env:
+          EDITION_DATE: ${{ inputs.date }}
+          TOPICS: ${{ inputs.topics }}
+        run: |
+          date="${EDITION_DATE:-$(TZ=America/Chicago date +%F)}"
+          topics="$(npx tsx pipeline/topics.ts plan --date "$date" --topics "$TOPICS")"
+          echo "date=$date" >> "$GITHUB_OUTPUT"
+          echo "topics=$topics" >> "$GITHUB_OUTPUT"
+          echo "Topics for $date: ${topics:-none (all ready already)}"
+
       - name: Research and write stories
+        if: steps.plan.outputs.topics != ''
         env:
           PENPOST_PROVIDER: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -56,30 +100,29 @@ jobs:
           PENPOST_WRITER_MODEL: ${{ vars.PENPOST_WRITER_MODEL }}
           PENPOST_FALLBACK_MODEL: ${{ vars.PENPOST_FALLBACK_MODEL }}
           PENPOST_MAX_CALLS: ${{ vars.PENPOST_MAX_CALLS || '300' }}
-          PENPOST_TOPICS: ${{ inputs.topics }}
+          PENPOST_TOPICS: ${{ steps.plan.outputs.topics }}
         run: >-
           npx tsx pipeline/agent.ts
-          ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+          --date ${{ steps.plan.outputs.date }}
           ${{ inputs.max_stories && format('--max-stories {0}', inputs.max_stories) || '' }}
 
       - name: Validate content
+        if: steps.plan.outputs.topics != ''
         run: npm run validate
 
       - name: Summary
         id: summary
+        if: steps.plan.outputs.topics != ''
         run: |
           echo "changes=$(cat pipeline/out/has-changes)" >> "$GITHUB_OUTPUT"
           cat pipeline/out/summary.md >> "$GITHUB_STEP_SUMMARY"
 
+      # Commits the stories and edition, then marks the topics ready (or failed) in the manifest.
       - name: Publish to main
-        if: steps.summary.outputs.changes == 'true' && github.ref == 'refs/heads/main' && !inputs.dry_run
-        run: |
-          git config user.name "penpost-bot"
-          git config user.email "penpost-bot@users.noreply.github.com"
-          git add content/stories content/editions
-          git commit -m "Edition $(TZ=America/Chicago date +%F)"
-          git pull --rebase origin main
-          git push origin HEAD:main
+        if: steps.plan.outputs.topics != '' && github.ref == 'refs/heads/main' && !inputs.dry_run
+        env:
+          EDITION_DATE: ${{ steps.plan.outputs.date }}
+        run: bash pipeline/push-topics.sh finish
 
       # Pushes made with the workflow token don't trigger other workflows, so start the deploy directly.
       - name: Deploy the site

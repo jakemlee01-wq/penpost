@@ -32,7 +32,8 @@ export function App() {
     case "account":
       return <Account />;
     case "today":
-      return <Today reader={reader} />;
+      // Before today's paper is asked for (or while it's being curated), the list has nothing to show yet.
+      return reader.gated || reader.curating ? <Deck reader={reader} /> : <Today reader={reader} />;
     default:
       return <Deck reader={reader} />;
   }

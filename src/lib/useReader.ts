@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { editions, expand, labelFor, stories, storyById, towns } from "./content";
+import { areas, editions, expand, labelFor, stories, storyById, towns } from "./content";
+import { FALLBACK_NOTICE, curateConfigured } from "./curate";
 import { chicagoDate, pickEdition } from "./dates";
+import { isWeekend, readerTopicIds } from "./topics";
 import { assembleStoryIds } from "./ranking";
 import type { Edition, Story, Vote } from "./schema";
 import type { SetupResult } from "./setupParse";
 import type { Prefs, Question, QuestionOption } from "./questions";
-import { applyVote, deckKey, defaultState, loadState, saveState, type DeckState, type LocalState } from "./storage";
+import { applyVote, deckKey, defaultState, loadState, saveState, type DeckState, type LocalState, type PaperAsk, type PaperCurating } from "./storage";
 
 export type Reader = ReturnType<typeof useReader>;
 
@@ -33,17 +35,25 @@ export function useReader() {
   );
   const key = manifest && !needsSetup ? deckKey(manifest.id, readerTowns, state.prefs) : "";
 
+  // On-demand editions: on a weekday, today's paper is written when the reader asks for it.
+  // Until they tap "See today's paper" (and it's ready, or we fall back), there is no deck to build.
+  const paperTopics = useMemo(() => readerTopicIds(state.prefs, areas), [state.prefs]);
+  const curating = curateConfigured && state.curating?.date === today ? state.curating : null;
+  const gated =
+    curateConfigured && !needsSetup && needsPaperTap({ today, editionDate: manifest?.date, hasDeck: Boolean(state.decks[key]), asked: state.asked, curating, topics: paperTopics });
+  const waiting = gated || Boolean(curating);
+
   // The deck is assembled once per edition + town set, then frozen so it
   // never reshuffles under the reader's thumb. Votes affect the next assembly.
   const deck: DeckState | null = useMemo(() => {
-    if (!manifest || needsSetup) return null;
+    if (!manifest || needsSetup || waiting) return null;
     const existing = state.decks[key];
     const pool = manifest.candidateStoryIds.map((id) => storyById.get(id)).filter((s): s is Story => Boolean(s));
     const sig = poolSignature(pool);
     if (existing && keepDeck(existing, pool.length, sig) && existing.storyIds.every((id) => storyById.has(id))) return existing;
     const storyIds = assembleStoryIds(pool, profile, towns, Object.values(state.feedback));
     return { storyIds, index: 0, seen: [], frozenAt: new Date().toISOString(), poolSize: pool.length, poolSig: sig };
-  }, [manifest, needsSetup, key, state.decks, profile, state.feedback]);
+  }, [manifest, needsSetup, waiting, key, state.decks, profile, state.feedback]);
 
   // Persist a freshly assembled deck right away so a vote can't reshuffle it.
   useEffect(() => {
@@ -112,12 +122,41 @@ export function useReader() {
     [commit, edition],
   );
 
+  /** Start (or retry) today's paper. Without a Worker, the bundled edition is the paper. */
+  const askForPaper = useCallback(() => {
+    const date = today;
+    const topics = paperTopics;
+    commit((s) =>
+      curateConfigured
+        ? { ...s, notice: s.notice === FALLBACK_NOTICE ? null : s.notice, curating: { date, topics, startedAt: new Date().toISOString() } }
+        : { ...s, asked: { date, topics } },
+    );
+  }, [commit, paperTopics, today]);
+
   return {
     state,
     today,
     edition,
     deck,
     deckStories,
+    /** True when today's paper hasn't been asked for yet: show the "See today's paper" screen. */
+    gated,
+    /** The tap in progress, if any: show the curating screen. */
+    curating,
+    paperTopics,
+    askForPaper,
+    /** The Worker accepted the tap: a reload won't send it again. */
+    markRequested: () => commit((s) => (s.curating ? { ...s, curating: { ...s.curating, requested: true } } : s)),
+    markReloaded: () => commit((s) => (s.curating ? { ...s, curating: { ...s.curating, reloadedAt: new Date().toISOString() } } : s)),
+    /** The paper is ready (failed = false) or we gave up waiting: build the deck from what this bundle has. */
+    finishPaper: (failed: boolean) =>
+      commit((s) => {
+        const c = s.curating;
+        if (!c) return s;
+        return { ...s, curating: null, asked: { date: c.date, topics: c.topics, ...(failed ? { failed: true } : {}) }, notice: failed ? FALLBACK_NOTICE : s.notice };
+      }),
+    /** Today's paper fell back to the latest edition and can be tried again. */
+    canRetryPaper: curateConfigured && !curating && state.asked?.date === today && Boolean(state.asked.failed) && !isWeekend(today),
     next: () => {
       if (!deck) return;
       if (state.notice) commit((s) => ({ ...s, notice: null }));
@@ -180,6 +219,25 @@ export function useReader() {
     },
     allStories: stories,
   };
+}
+
+/**
+ * On a weekday, today's paper starts with a tap. The "See today's paper" screen shows until the reader
+ * has a frozen deck for today's edition, or has asked today for every topic their settings need
+ * (changing settings to add a section asks again), and isn't already waiting on a tap.
+ */
+export function needsPaperTap(x: {
+  today: string;
+  editionDate: string | undefined;
+  hasDeck: boolean;
+  asked: PaperAsk | null;
+  curating: PaperCurating | null;
+  topics: string[];
+}): boolean {
+  if (isWeekend(x.today) || x.curating) return false;
+  if (x.editionDate === x.today && x.hasDeck) return false;
+  const asked = x.asked;
+  return !(asked && asked.date === x.today && x.topics.every((t) => asked.topics.includes(t)));
 }
 
 /**

@@ -496,7 +496,7 @@ Recommended later pipeline:
 6. Queue the proposed edition for Jake's review.
 7. Publish approved static content, then build and deploy.
 
-A scheduled build job can run outside the website and publish static results. GitHub Actions supports scheduled and manual workflows; confirm its current schedule behavior, usage limits, and account costs before relying on it. Use America/Chicago as the editorial date basis and handle daylight saving changes intentionally. A precise morning delivery time is not yet specified; make it configurable and do not promise a hard delivery SLA.
+Update (Oct 2026): editions are on demand, not scheduled. The weekday cron is gone. A reader's "See today's paper" tap goes to the Cloudflare Worker (`POST /curate`), which dispatches the GitHub Actions drafting job for only the reader's topics that nobody has generated yet that day. Progress and per-topic spend live in `content/topics/<date>.json` (pending, then ready). The Worker now holds a second secret, a fine-grained GitHub token scoped to this repo (Actions read/write, Contents read). A day with no taps costs nothing. Use America/Chicago as the editorial date basis. See README, "On-demand editions".
 
 AI credentials belong in server-side/job secrets, never client code or committed files. Budget limits, retries, monitoring, failures, and human review belong in the pipeline. If a run fails, keep the last good edition and display its real date. Do not silently publish unverified replacement content.
 

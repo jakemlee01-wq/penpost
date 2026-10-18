@@ -1,8 +1,15 @@
 /**
- * Penpost setup parser: a tiny Cloudflare Worker that holds the second Gemini key.
+ * Penpost Worker: holds the setup parser's Gemini key and starts on-demand editions.
  *
  *   POST /parse   {"text": "I live in the Twin Cities and follow startups..."}
  *   -> 200        {"areas": [...], "interests": [...], "likes": [...], "avoids": [...]}
+ *
+ *   POST /curate  {"date": "2026-10-19", "topics": ["local-twin-cities", "mn-business", ...]}
+ *   GET  /curate/status?date=2026-10-19&topics=local-twin-cities,mn-business
+ *   -> 200        {"status": "ready" | "generating" | "failed", ...} (see curate.ts)
+ *
+ * /curate is how a "See today's paper" tap becomes stories: it dispatches the drafting workflow
+ * for the reader's topics that nobody has generated yet today. See worker/src/curate.ts.
  *
  * The static site can't keep a key secret, so it sends the reader's setup answer here.
  * The Worker asks Gemini to map it onto Penpost's catalog, then runs the same sanitizer the
@@ -12,8 +19,9 @@
 import areasJson from "../../content/areas.json";
 import { AreasSchema } from "../../src/lib/areas";
 import { MAX_SETUP_CHARS, parseSystemPrompt, parseUserPrompt, sanitizeParsed } from "../../src/lib/setupParse";
+import { curate, curateStatus, type CurateEnv } from "./curate";
 
-export interface Env {
+export interface Env extends CurateEnv {
   /** Secret: `npx wrangler secret put GEMINI_API_KEY`. Use a separate key from the daily job. */
   GEMINI_API_KEY: string;
   /** Comma-separated list of sites allowed to call this Worker. */
@@ -33,7 +41,7 @@ const DEFAULT_ORIGINS =
 function cors(origin: string): Record<string, string> {
   return {
     "access-control-allow-origin": origin,
-    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
     "access-control-max-age": "86400",
     vary: "Origin",
@@ -52,13 +60,29 @@ export async function handle(req: Request, env: Env, fetchImpl: typeof fetch = f
   const headers = cors(origin);
 
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
-  if (url.pathname !== "/parse") return json({ error: "not found" }, 404, headers);
-  if (req.method !== "POST") return json({ error: "method not allowed" }, 405, headers);
+  const route = url.pathname === "/parse" || url.pathname === "/curate" ? "POST" : url.pathname === "/curate/status" ? "GET" : null;
+  if (!route) return json({ error: "not found" }, 404, headers);
+  if (req.method !== route) return json({ error: "method not allowed" }, 405, headers);
 
   if (env.RATE_LIMITER) {
     const ip = req.headers.get("cf-connecting-ip") ?? "unknown";
     const { success } = await env.RATE_LIMITER.limit({ key: ip });
     if (!success) return json({ error: "too many requests" }, 429, headers);
+  }
+
+  if (url.pathname === "/curate") {
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "expected JSON" }, 400, headers);
+    }
+    const r = await curate(body, env, areas, fetchImpl);
+    return json(r.body, r.status, headers);
+  }
+  if (url.pathname === "/curate/status") {
+    const r = await curateStatus(url.searchParams, env, areas, fetchImpl);
+    return json(r.body, r.status, headers);
   }
 
   let text = "";

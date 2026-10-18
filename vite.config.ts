@@ -6,6 +6,8 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 // username.github.io/penpost/ and at a custom domain root.
 export default defineConfig(({ mode }) => ({
   base: "./",
+  // Lets the app tell whether this bundle already has stories that finished at a given time (src/lib/curate.ts).
+  define: { __PENPOST_BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   plugins: [react(), ...(mode === "single" ? [viteSingleFile()] : [])],
   build: {
     outDir: mode === "single" ? "dist-single" : "dist",

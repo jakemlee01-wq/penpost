@@ -87,3 +87,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy.yml --ref main
+
+      # Runs last so a partial edition still publishes. A run that publishes nothing (out of
+      # credits, bad key, every topic failing) goes red instead of looking like a quiet success.
+      - name: Fail if the edition is empty
+        if: ${{ !inputs.dry_run }}
+        run: |
+          published=$(cat pipeline/out/published 2>/dev/null || echo 0)
+          if [ "$published" -eq 0 ]; then
+            echo "::error title=Empty edition::0 stories published. Check the Research annotation for the cause (e.g. HTTP 402 means Gemini credits are depleted)."
+            exit 1
+          fi

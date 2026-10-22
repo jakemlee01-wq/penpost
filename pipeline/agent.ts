@@ -439,6 +439,7 @@ ${JSON.stringify(facts, null, 2)}`,
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "summary.md"), [`## Penpost edition for ${date}`, "", summary, "", ...written.map((w) => `- ${w.status === "draft" ? "HELD" : "ok"} ${w.writer} [${w.topic}] ${w.file}${w.flags.length ? ` (${w.flags.join("; ")})` : ""}`), ...skipped.map((s) => `- failed: ${s}`)].join("\n") + "\n");
   writeFileSync(join(outDir, "has-changes"), written.length ? "true" : "false");
+  writeFileSync(join(outDir, "published"), String(published));
   log(`done: ${summary}`);
   if (process.env.GITHUB_ACTIONS === "true" && !process.env.VITEST) {
     const esc = (t: string) => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");

@@ -15,7 +15,7 @@ const run = (r: Request, e = env, keys = () => [key], down = false) => {
   return { res: handle(r, e, { fetchImpl: f, now: () => NOW, certCache: {} }), calls };
 };
 
-const PRIVATE_MARKERS = ["What needs me next?", "Send the sample invoice", "Stand-up with the sample team", OWNER];
+const PRIVATE_MARKERS = ["Today - Mon Nov 9", "Sample invoice is ready to send", "Stand-up with the sample team", "Good morning", "Waiting to hear back", OWNER];
 
 async function expectNoPrivate(res: Response) {
   const text = await res.text();
@@ -27,11 +27,11 @@ describe("hub sign-in check", () => {
     const res = await run(req("/", await sign(key, claims()))).res;
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("What needs me next?");
-    expect(html).toContain("Send the sample invoice");
+    expect(html).toContain("Today - Mon Nov 9");
+    expect(html).toContain("Sample invoice is ready to send");
   });
 
-  for (const path of ["/", "/api/today", "/hub.css", "/hub.js", "/anything-else"]) {
+  for (const path of ["/", "/api/today", "/d/money", "/d/today", "/hub.css", "/hub.js", "/anything-else"]) {
     it(`refuses ${path} with no session and returns nothing private`, async () => {
       const res = await run(req(path)).res;
       expect(res.status).toBe(401);
@@ -47,7 +47,7 @@ describe("hub sign-in check", () => {
     expect(body.error).toBe("signed_out");
   });
 
-  it("refuses requests on another hostname that skip Access (e.g. workers.dev)", async () => {
+  it("refuses a request with no Access token whatever the Host header says (does NOT prove deployed hostname isolation)", async () => {
     const res = await run(req("/api/today", undefined, { host: "penpost-hub.someone.workers.dev" })).res;
     expect(res.status).toBe(401);
     await expectNoPrivate(res);
@@ -91,7 +91,7 @@ describe("hub sign-in check", () => {
     expect(res.status).toBe(401);
     const html = await res.text();
     expect(html).toContain("Your sign-in has expired.");
-    expect(html).not.toContain("Send the sample invoice");
+    expect(html).not.toContain("Sample invoice is ready to send");
   });
 
   it("refuses a token that is not valid yet", async () => {
@@ -104,7 +104,7 @@ describe("hub sign-in check", () => {
     expect(res.status).toBe(403);
     const html = await res.text();
     expect(html).toContain("This account cannot open this hub.");
-    expect(html).not.toContain("Send the sample invoice");
+    expect(html).not.toContain("Sample invoice is ready to send");
   });
 
   it("matches the allowed email without regard to case", async () => {
@@ -159,7 +159,23 @@ describe("hub sign-in check", () => {
   });
 });
 
-describe("hub cache isolation and sign-out", () => {
+describe("public stylesheet for error pages", () => {
+  it("is served without a session and contains nothing private", async () => {
+    const { res, calls } = run(req("/hub-public.css"));
+    const r = await res;
+    expect(r.status).toBe(200);
+    expect(r.headers.get("content-type")).toContain("text/css");
+    expect(calls.length).toBe(0);
+    await expectNoPrivate(r);
+  });
+  it("is the only public route; the main stylesheet still needs a session", async () => {
+    expect((await run(req("/hub.css")).res).status).toBe(401);
+    expect((await run(req("/hub-public.css/../hub.css")).res).status).toBe(401);
+    expect((await run(req("/hub-public.css?x=/api/today")).res).status).toBe(200);
+  });
+});
+
+describe("hub response headers and sign-out link (local checks; deployed cache isolation is unverified)", () => {
   it("marks every response private and no-store, and sets no cookies of its own", async () => {
     const good = await sign(key, claims());
     const t = Math.floor(NOW.getTime() / 1000);
@@ -172,6 +188,8 @@ describe("hub cache isolation and sign-out", () => {
       req("/"),
       req("/", await sign(key, claims({ exp: t - 3600 }))),
       req("/", await sign(key, claims({ email: "x@example.com" }))),
+      req("/hub-public.css"),
+      req("/d/money", good),
     ];
     for (const r of cases) {
       const res = await run(r).res;
@@ -189,7 +207,7 @@ describe("hub cache isolation and sign-out", () => {
     expect(html).toContain('href="/cdn-cgi/access/logout"');
   });
 
-  it("after sign-out (no session), the same request is refused", async () => {
+  it("a request without the session token is refused (stands in for sign-out; real cookie logout is unverified until deployed)", async () => {
     const token = await sign(key, claims());
     expect((await run(req("/api/today", token)).res).status).toBe(200);
     expect((await run(req("/api/today")).res).status).toBe(401);

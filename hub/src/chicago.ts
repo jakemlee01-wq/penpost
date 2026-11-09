@@ -54,3 +54,11 @@ export function wallTimeLabel(hhmm: string | null | undefined): string {
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${m[2]} ${suffix}`;
 }
+
+const titleFmt = new Intl.DateTimeFormat("en-US", { timeZone: HUB_TZ, weekday: "short", month: "short", day: "numeric" });
+
+/** "Mon Nov 9" for the page title. */
+export function ctTitleDate(at: Date): string {
+  const p = Object.fromEntries(titleFmt.formatToParts(at).map((x) => [x.type, x.value]));
+  return `${p.weekday} ${p.month} ${p.day}`;
+}

@@ -1,12 +1,15 @@
 /**
- * Server-rendered hub page. Every value from a source goes through esc(); only https links are
- * rendered as links. The page works without JavaScript; the script only runs the flag sheet.
+ * Server-rendered hub pages. Every source value goes through esc(); only https links are rendered.
+ *
+ * Glance surface: title, morning message and calendar (the hero), ONE next thing with a quiet count,
+ * then five domain cards. No buttons on the glance surface; tasks and the flag sheet live one tap
+ * behind, on each domain page.
  */
-import { ctDayLong, ctTime, wallTimeLabel } from "./chicago";
-import { stateMessage, type ItemView, type TodayView } from "./contract";
+import { ctDayShort, ctTime, ctTitleDate, wallTimeLabel } from "./chicago";
+import { countText, stateText, type DomainView, type SectionState, type TaskView, type TodayView } from "./contract";
 
-export const VISIBLE_ITEMS = 5;
 export const LOGOUT_PATH = "/cdn-cgi/access/logout";
+export const PUBLIC_CSS_PATH = "/hub-public.css";
 
 export function esc(v: unknown): string {
   return String(v ?? "")
@@ -27,7 +30,7 @@ function safeUrl(u: string | undefined): string | null {
   }
 }
 
-function shell(title: string, body: string): string {
+function shell(title: string, body: string, css: string): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -36,7 +39,7 @@ function shell(title: string, body: string): string {
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>${esc(title)}</title>
-<link rel="stylesheet" href="/hub.css">
+<link rel="stylesheet" href="${css}">
 </head>
 <body>
 ${body}
@@ -44,63 +47,130 @@ ${body}
 </html>`;
 }
 
-function itemHtml(it: ItemView): string {
-  const url = safeUrl(it.source.url);
-  const checked = ctTime(new Date(it.checked_at));
-  const stale = it.fresh
-    ? ""
-    : `<p class="stale">Out of date. Last changed ${esc(ctTime(new Date(it.source_updated_at)))} on ${esc(new Date(it.source_updated_at).toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" }))}. Check the source before acting.</p>`;
-  return `<li class="item${it.fresh ? "" : " is-stale"}">
-  <div class="item-top"><h3 class="item-label">${esc(it.label)}</h3><span class="status status-${esc(it.status)}">${esc(it.status_label)}</span></div>
-  <p class="item-body">${esc(it.body)}</p>
-  ${stale}
-  <p class="meta">From ${esc(it.source.label)} · checked ${esc(checked)}</p>
-  <div class="actions">${url ? `<a class="open" href="${esc(url)}" rel="noreferrer">Open in ${esc(it.source.label)}</a>` : ""}<button type="button" class="flag" data-id="${esc(it.id)}" data-label="${esc(it.label)}" data-ref="${esc(it.source.record_ref)}">Flag as wrong</button></div>
+/** "checked 7:00 AM", or "checked Sun Nov 8, 7:00 AM" when not today. */
+function when(isoStr: string | undefined, today: string, verb: string): string {
+  if (!isoStr) return "";
+  const d = new Date(isoStr);
+  if (Number.isNaN(d.getTime())) return "";
+  const sameDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(d) === today;
+  return `${verb} ${sameDay ? "" : `${ctDayShort(d)}, `}${ctTime(d)}`;
+}
+
+function prov(parts: string[]): string {
+  const p = parts.filter(Boolean);
+  return p.length ? `<p class="prov">${esc(p.join(" · "))}</p>` : "";
+}
+
+function stateBlock(state: SectionState, source: string, quiet: string): string {
+  return `<p class="state state-${esc(state.kind)}">${esc(stateText(state, source, quiet))}</p>`;
+}
+
+const banner = (view: TodayView) => (view.example ? `<p class="example">Example data. Everything here is invented.</p>` : "");
+
+function domainCard(d: DomainView, view: TodayView): string {
+  let main: string;
+  let extra = "";
+  if (d.id === "today") {
+    main = d.state.kind === "ok" ? countText(view.counts) : stateText(d.state, d.sourceName, "Nothing open.", true);
+  } else if (d.state.kind === "ok" && d.fact) {
+    main = d.fact.fresh ? d.fact.text : `Last known: ${d.fact.text}`;
+    if (!d.fact.fresh) extra = `<span class="card-warn">May be out of date. Last changed ${esc(when(d.fact.source_updated_at, view.today, "").trim())}.</span>`;
+  } else {
+    main = stateText(d.state, d.sourceName, "Quiet.", true);
+  }
+  const okish = d.state.kind === "ok" || d.state.kind === "quiet";
+  const lastChecked = d.state.kind === "late" || d.state.kind === "unreachable" ? d.state.last_checked_at : undefined;
+  const p = okish ? when(d.checked_at, view.today, "checked") : lastChecked ? when(lastChecked, view.today, "last checked") : "";
+  return `<li><a class="card card-${esc(d.state.kind)}" href="/d/${esc(d.id)}">
+<span class="card-name">${esc(d.name)}</span>
+<span class="card-fact">${esc(main)}</span>${extra}
+${p ? `<span class="card-prov">${esc(p)}</span>` : ""}
+</a></li>`;
+}
+
+export function renderGlance(view: TodayView, email: string): string {
+  const now = new Date(view.generated_at);
+  const today = view.today;
+
+  const m = view.morning;
+  const morning =
+    m.state.kind === "ok" && m.message
+      ? `<p class="morning-text">${esc(m.message.text)}</p>${prov([m.message.source.label, when(m.message.generated_at, today, "written")])}`
+      : stateBlock(m.state, "the morning message", "No morning message today.");
+
+  const c = view.calendar;
+  const cal =
+    c.state.kind === "ok"
+      ? `<ul class="cal">${c.entries.map((e) => `<li><span class="cal-time">${esc(wallTimeLabel(e.due_time))}</span><span class="cal-title">${esc(e.title)}</span></li>`).join("")}</ul>${prov(["Calendar", when(c.checked_at, today, "checked")])}`
+      : `${stateBlock(c.state, "the calendar", "Nothing on the calendar today.")}${c.state.kind === "quiet" ? prov(["Calendar", when(c.checked_at, today, "checked")]) : ""}`;
+
+  let next: string;
+  const t = view.tasks;
+  if (t.state.kind !== "ok" && t.state.kind !== "quiet") next = stateBlock(t.state, "the task list", "");
+  else if (view.next) {
+    const n = view.next;
+    next = `<p class="next-label">${esc(n.label)}</p><p class="next-body">${esc(n.body)}</p>${prov([n.source.label, when(n.source_updated_at, today, "changed"), when(t.checked_at, today, "checked")])}`;
+  } else next = `<p class="next-label quiet">Nothing needs you right now.</p>`;
+  const more = view.counts.total - (view.next ? 1 : 0);
+  const countLine = t.state.kind === "ok" ? `<p class="count">${esc(countText(view.counts))}${more > 0 ? ` <a href="/d/today">${more} more in Task list</a>` : ""}</p>` : "";
+
+  const body = `<main class="wrap">
+${banner(view)}
+<h1>Today - ${esc(ctTitleDate(now))}</h1>
+<section class="hero" aria-label="Morning message and calendar">
+<div class="morning">${morning}</div>
+<div class="cal-wrap"><h2>Calendar</h2>${cal}</div>
+</section>
+<section class="next" aria-labelledby="next-h">
+<h2 id="next-h">Next</h2>
+${next}
+${countLine}
+</section>
+<section aria-labelledby="areas-h">
+<h2 id="areas-h" class="visually-hidden">Areas</h2>
+<ul class="cards">${view.domains.map((d) => domainCard(d, view)).join("\n")}</ul>
+</section>
+<footer class="foot"><p>Signed in as ${esc(email)}. <a href="${LOGOUT_PATH}">Sign out</a></p><p>Updated ${esc(ctTime(now))}</p></footer>
+</main>`;
+  return shell(`Today - ${ctTitleDate(now)}`, body, "/hub.css");
+}
+
+function taskHtml(t: TaskView, today: string): string {
+  const url = safeUrl(t.source.url);
+  return `<li class="task${t.fresh ? "" : " is-stale"}">
+<p class="task-label">${esc(t.label)}</p>
+<p class="task-body">${esc(t.body)}</p>
+<p class="task-status">${esc(t.status_text)}</p>
+${t.fresh ? "" : `<p class="stale">Out of date. Check ${esc(t.source.label)} before acting.</p>`}
+${prov([`From ${t.source.label}`, when(t.source_updated_at, today, "changed"), when(t.checked_at, today, "checked")])}
+<div class="actions">${url ? `<a class="open" href="${esc(url)}" rel="noreferrer">Open in ${esc(t.source.label)}</a>` : ""}<button type="button" class="flag" data-id="${esc(t.id)}" data-label="${esc(t.label)}" data-ref="${esc(t.source.record_ref)}">Flag as wrong</button></div>
 </li>`;
 }
 
-export function renderPage(view: TodayView, email: string): string {
-  const now = new Date(view.generated_at);
-  const next = view.next;
-  let list = "";
-  if (next.state.kind === "ok") {
-    const first = next.items.slice(0, VISIBLE_ITEMS).map(itemHtml).join("\n");
-    const rest = next.items.slice(VISIBLE_ITEMS);
-    list = `<ol class="items">${first}</ol>`;
-    if (rest.length) {
-      list += `<details class="more"><summary>Show ${rest.length} more</summary><ol class="items" start="${VISIBLE_ITEMS + 1}">${rest.map(itemHtml).join("\n")}</ol></details>`;
-    }
-  } else {
-    list = `<p class="notice notice-${esc(next.state.kind)}">${esc(stateMessage(next.state, "list"))}</p>`;
+export function renderDomain(view: TodayView, id: string, email: string): string | null {
+  const d = view.domains.find((x) => x.id === id);
+  if (!d) return null;
+  const today = view.today;
+  const title = d.id === "today" ? "Task list" : d.name;
+  let factHtml = "";
+  if (d.id !== "today") {
+    if (d.state.kind === "ok" && d.fact) {
+      factHtml = `<div class="fact"><p class="fact-text">${esc(d.fact.fresh ? d.fact.text : `Last known: ${d.fact.text}`)}</p>${d.fact.fresh ? "" : `<p class="stale">May be out of date.</p>`}${prov([`From ${d.fact.source.label}`, when(d.fact.source_updated_at, today, "changed"), when(d.checked_at, today, "checked")])}</div>`;
+    } else factHtml = `<div class="fact">${stateBlock(d.state, d.sourceName, "Quiet. Nothing new.")}${d.state.kind === "quiet" ? prov([cap(d.sourceName), when(d.checked_at, today, "checked")]) : ""}</div>`;
   }
-
-  const cal = view.calendar;
-  let calHtml = "";
-  if (cal.state.kind === "ok") {
-    calHtml = `<ul class="cal">${cal.entries.map((e) => `<li><span class="cal-time">${esc(wallTimeLabel(e.due_time))}</span><span class="cal-title">${esc(e.title)}</span></li>`).join("")}</ul>`;
-  } else {
-    calHtml = `<p class="notice notice-${esc(cal.state.kind)}">${esc(stateMessage(cal.state, "calendar"))}</p>`;
-  }
-
-  const morning = view.morning ? `<p class="morning">${esc(view.morning.text)}</p>` : "";
+  const t = view.tasks;
+  let tasks: string;
+  if (t.state.kind !== "ok" && t.state.kind !== "quiet") tasks = stateBlock(t.state, "the task list", "");
+  else if (!d.tasks.length) tasks = `<p class="state">No open tasks here.</p>`;
+  else tasks = `<ol class="tasks">${d.tasks.map((x) => taskHtml(x, today)).join("\n")}</ol>`;
 
   const body = `<main class="wrap">
-<header class="top">
-<h1>What needs me next?</h1>
-<p class="date">${esc(ctDayLong(now))} · updated ${esc(ctTime(now))}</p>
-${morning}
-</header>
-<section aria-labelledby="list-h">
-<h2 id="list-h" class="visually-hidden">Next items</h2>
-${list}
-</section>
-<section aria-labelledby="cal-h" class="cal-section">
-<h2 id="cal-h">Today's calendar</h2>
-${calHtml}
-</section>
-<footer class="foot">
-<p>Signed in as ${esc(email)}. <a href="${LOGOUT_PATH}">Sign out</a></p>
-</footer>
+${banner(view)}
+<p class="back"><a href="/">Back to Today</a></p>
+<h1>${esc(title)}</h1>
+${factHtml}
+<section aria-labelledby="tasks-h"><h2 id="tasks-h">${d.id === "today" ? "Open" : "Tasks"}</h2>${tasks}</section>
+<footer class="foot"><p>Signed in as ${esc(email)}. <a href="${LOGOUT_PATH}">Sign out</a></p></footer>
 </main>
 <dialog id="flag-sheet" aria-labelledby="flag-h">
 <form method="dialog" class="sheet">
@@ -123,7 +193,11 @@ ${calHtml}
 </form>
 </dialog>
 <script src="/hub.js" defer></script>`;
-  return shell("What needs me next?", body);
+  return shell(title, body, "/hub.css");
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export type ErrorKind = "signed_out" | "expired" | "forbidden" | "auth_down" | "not_configured" | "rate_limited" | "not_found" | "data_down";
@@ -135,7 +209,7 @@ const ERRORS: Record<ErrorKind, { status: number; title: string; text: string; a
   auth_down: { status: 503, title: "Sign-in check is down", text: "The hub could not check your sign-in just now. Nothing is wrong with your account. Try again in a few minutes." },
   not_configured: { status: 503, title: "Hub not set up", text: "Sign-in has not been set up for this hub yet, so it stays locked." },
   rate_limited: { status: 429, title: "Slow down", text: "Too many requests. Wait a minute and try again." },
-  not_found: { status: 404, title: "Not found", text: "There is nothing at this address." },
+  not_found: { status: 404, title: "Not found", text: "There is nothing at this address.", action: `<a class="button" href="/">Back to Today</a>` },
   data_down: { status: 500, title: "Something broke", text: "The hub hit an error building this page. Your sources were not changed." },
 };
 
@@ -143,55 +217,81 @@ export function errorInfo(kind: ErrorKind) {
   return ERRORS[kind];
 }
 
+/** Error pages use only the public stylesheet, so they render styled even when signed out. */
 export function renderError(kind: ErrorKind): string {
   const e = ERRORS[kind];
-  return shell(e.title, `<main class="wrap lock"><h1>${esc(e.title)}</h1><p>${esc(e.text)}</p>${e.action ?? ""}</main>`);
+  return shell(e.title, `<main class="lock"><p class="lock-mark" aria-hidden="true">Private hub</p><h1>${esc(e.title)}</h1><p>${esc(e.text)}</p>${e.action ?? ""}</main>`, PUBLIC_CSS_PATH);
 }
 
-export const HUB_CSS = `:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--muted:#5d6470;--line:#e3e6eb;--blue:#007aff;--warn:#8a5a00;--warn-bg:#fff6e0;--stuck:#b3261e}
+/** Public, generic styles for error pages only. Contains nothing private. */
+export const PUBLIC_CSS = `:root{--bg:#f6f7f9;--ink:#16181d;--muted:#5d6470;--blue:#007aff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-width:320px}
+.lock{max-width:440px;margin:0 auto;padding:22vh 20px 40px;text-align:center}
+.lock-mark{font-size:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+h1{font-size:26px;line-height:1.2;margin:0 0 8px}
+p{margin:0 0 12px}
+.button{display:inline-block;margin-top:8px;min-height:48px;line-height:48px;padding:0 20px;border-radius:12px;background:var(--blue);color:#fff;text-decoration:none;font-weight:600}
+.button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+`;
+
+export const HUB_CSS = `:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--muted:#5d6470;--faint:#8a909b;--line:#e3e6eb;--blue:#007aff;--warn:#8a5a00;--warn-bg:#fff6e0}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-width:320px}
-.wrap{max-width:560px;margin:0 auto;padding:20px 16px 40px}
-h1{font-size:28px;line-height:1.2;margin:8px 0 4px;letter-spacing:-.01em}
-h2{font-size:20px;margin:0 0 10px}
-.date{color:var(--muted);font-size:15px;margin:0 0 12px}
-.morning{background:var(--card);border-left:4px solid var(--blue);border-radius:10px;padding:12px 14px;margin:0 0 16px}
-.items{list-style:none;margin:0;padding:0;display:grid;gap:12px}
-.item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-.item-top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
-.item-label{font-size:19px;line-height:1.3;margin:0}
-.item-body{margin:6px 0 0;color:var(--ink)}
-.status{flex:none;font-size:14px;font-weight:600;padding:3px 9px;border-radius:999px;background:#eef1f5;color:var(--muted);white-space:nowrap}
-.status-todo{background:#e8f1ff;color:#0057b8}
-.status-blocked{background:#fdecea;color:var(--stuck)}
-.meta{font-size:14px;color:var(--muted);margin:8px 0 0}
-.is-stale{border-style:dashed;background:#fbfbfc}
-.is-stale .item-label,.is-stale .item-body{color:var(--muted)}
-.stale{margin:8px 0 0;font-size:15px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:6px 10px}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-width:320px}
+.wrap{max-width:620px;margin:0 auto;padding:12px 16px 40px}
+.example{font-size:13px;color:var(--muted);background:#eef1f5;border-radius:8px;padding:4px 10px;margin:0 0 8px}
+h1{font-size:28px;line-height:1.15;margin:4px 0 12px;letter-spacing:-.015em}
+h2{font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.hero{background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.morning-text{font-size:19px;line-height:1.35;margin:0}
+.cal-wrap{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.cal{list-style:none;margin:0;padding:0}
+.cal li{display:flex;gap:12px;padding:2px 0}
+.cal-time{flex:none;width:72px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prov{font-size:13px;color:var(--faint);margin:6px 0 0}
+.state{margin:0;color:var(--muted)}
+.state-late,.state-unreachable,.state-bad_data{color:var(--warn)}
+.next{margin-top:18px;padding:2px 0 2px 14px;border-left:3px solid var(--blue)}
+.next-label{font-size:20px;font-weight:600;line-height:1.3;margin:0}
+.next-label.quiet{font-weight:500;color:var(--muted)}
+.next-body{margin:4px 0 0}
+.count{font-size:15px;color:var(--muted);margin:6px 0 0}
+.count a{color:var(--blue);text-decoration:none;font-weight:600;display:inline-block;min-height:44px;line-height:44px}
+.cards{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.card{display:flex;flex-direction:column;gap:2px;min-height:84px;height:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;color:inherit;text-decoration:none}
+.card-name{font-size:14px;font-weight:600;color:var(--muted)}
+.card-fact{font-size:16px;line-height:1.35}
+.card-prov{margin-top:auto;font-size:12px;color:var(--faint)}
+.card-warn{font-size:13px;color:var(--warn)}
+.card-quiet .card-fact{color:var(--muted)}
+.card-late,.card-unreachable,.card-bad_data{background:#fffdf7;border-color:#f0dca8}
+.card-late .card-fact,.card-unreachable .card-fact,.card-bad_data .card-fact{font-size:14px;color:var(--warn)}
+.card-not_connected .card-fact{font-size:14px;color:var(--muted)}
+.foot{margin-top:28px;font-size:14px;color:var(--muted)}
+.foot p{margin:0}
+.foot a{color:var(--blue);display:inline-block;min-height:44px;line-height:44px}
+.back{margin:0}
+.back a{color:var(--blue);text-decoration:none;font-weight:600;display:inline-block;min-height:44px;line-height:44px}
+.fact{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:20px}
+.fact-text{font-size:19px;margin:0}
+.tasks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.task{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.task-label{font-size:18px;font-weight:600;margin:0}
+.task-body{margin:4px 0 0}
+.task-status{font-size:14px;color:var(--muted);margin:6px 0 0}
+.is-stale{border-style:dashed}
+.is-stale .task-label,.is-stale .task-body{color:var(--muted)}
+.stale{margin:8px 0 0;font-size:14px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:6px 10px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .flag,.open{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
 .open{color:var(--blue);font-weight:600}
-.more{margin-top:12px}
-.more summary{min-height:44px;display:flex;align-items:center;color:var(--blue);font-weight:600;cursor:pointer}
-.more .items{margin-top:8px}
-.notice{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0}
-.notice-not_updated,.notice-unavailable{background:var(--warn-bg);border-color:#f0dca8;color:var(--warn)}
-.cal-section{margin-top:28px}
-.cal{list-style:none;margin:0;padding:0;background:var(--card);border:1px solid var(--line);border-radius:14px}
-.cal li{display:flex;gap:14px;padding:12px 16px;border-top:1px solid var(--line)}
-.cal li:first-child{border-top:0}
-.cal-time{flex:none;width:84px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
-.foot{margin-top:32px;font-size:14px;color:var(--muted)}
-.foot a{color:var(--blue);display:inline-block;min-height:44px;line-height:44px}
-a:focus-visible,button:focus-visible,summary:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+a:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.lock{text-align:center;padding-top:20vh}
-.button{display:inline-block;margin-top:12px;min-height:44px;line-height:44px;padding:0 18px;border-radius:12px;background:var(--blue);color:#fff;text-decoration:none;font-weight:600}
 dialog{border:0;border-radius:16px;padding:0;width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px)}
 dialog::backdrop{background:rgba(0,0,0,.35)}
 .sheet{padding:18px}
-.sheet h2{margin:0 0 4px}
+.sheet h2{font-size:20px;text-transform:none;letter-spacing:0;color:var(--ink);margin:0 0 4px}
 .sheet-item{color:var(--muted);margin:0 0 10px}
 fieldset{border:0;padding:0;margin:0 0 10px}
 legend{font-weight:600;margin-bottom:4px}
@@ -205,6 +305,7 @@ textarea{width:100%;font:inherit;font-size:16px;border:1px solid var(--line);bor
 .sheet-actions button{flex:1 1 140px;min-height:48px;border-radius:12px;font:inherit;font-weight:600;cursor:pointer}
 .primary{background:var(--blue);color:#fff;border:0}
 .secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}
+@media (max-width:359px){.cards{grid-template-columns:1fr}}
 `;
 
 export const HUB_JS = `(function(){

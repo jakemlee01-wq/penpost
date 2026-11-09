@@ -1,39 +1,93 @@
 {
-  "horizontalScrollAt320": false,
-  "signedOutStatus": 401,
+  "horizontalScroll": {
+    "normal-phone-320": false,
+    "partial-phone-320": false,
+    "normal-phone-390": false,
+    "partial-phone-390": false,
+    "normal-desktop-1280": false,
+    "partial-desktop-1280": false,
+    "domain-money-phone-320": false,
+    "domain-money-phone-390": false
+  },
+  "errorPages": {
+    "signed-out-phone-320": {
+      "status": 401,
+      "stylesheetLoaded": true,
+      "bodyBackground": "rgb(246, 247, 249)",
+      "fontIsSerifDefault": false,
+      "buttonBackground": "rgb(0, 122, 255)",
+      "bodyText": "PRIVATE HUB Please sign in You are not signed in. Sign in"
+    },
+    "signed-out-phone-390": {
+      "status": 401,
+      "stylesheetLoaded": true,
+      "bodyBackground": "rgb(246, 247, 249)",
+      "fontIsSerifDefault": false,
+      "buttonBackground": "rgb(0, 122, 255)",
+      "bodyText": "PRIVATE HUB Please sign in You are not signed in. Sign in"
+    },
+    "signed-out-desktop-1280": {
+      "status": 401,
+      "stylesheetLoaded": true,
+      "bodyBackground": "rgb(246, 247, 249)",
+      "fontIsSerifDefault": false,
+      "buttonBackground": "rgb(0, 122, 255)",
+      "bodyText": "PRIVATE HUB Please sign in You are not signed in. Sign in"
+    },
+    "wrong-account-phone-390": {
+      "status": 403,
+      "stylesheetLoaded": true,
+      "bodyBackground": "rgb(246, 247, 249)",
+      "fontIsSerifDefault": false,
+      "buttonBackground": "rgb(0, 122, 255)",
+      "bodyText": "PRIVATE HUB Not your hub This account cannot open this hub. Sign out and switch account"
+    },
+    "auth-down-phone-390": {
+      "status": 503,
+      "stylesheetLoaded": true,
+      "bodyBackground": "rgb(246, 247, 249)",
+      "fontIsSerifDefault": false,
+      "buttonBackground": null,
+      "bodyText": "PRIVATE HUB Sign-in check is down The hub could not check your sign-in just now. Nothing is wrong with your account. Try again in a few minutes."
+    }
+  },
   "localLoadMs": {
-    "median": 26,
-    "max": 42,
+    "median": 24,
+    "max": 29,
     "runs": 10
   },
   "serverRenderMs": {
-    "median": 1.35
+    "median": 2.37
   },
-  "pageBytes": 11294,
+  "glanceBytes": 8072,
   "throttledLoadMs": {
-    "median": 398,
-    "max": 416,
+    "median": 369,
+    "max": 383,
     "runs": 5,
-    "note": "150 ms latency, 1.6 Mbps down, 4x CPU slowdown, local server"
+    "note": "150 ms latency, 1.6 Mbps down, 4x CPU slowdown, local server; excludes real Cloudflare and the Access sign-in redirect"
   },
-  "firstItem": {
-    "label": "Send the sample invoice",
-    "top": 218,
-    "bottom": 414,
+  "glanceLayout": {
     "viewportHeight": 844,
-    "h1Top": 28,
-    "visibleItemsInFirstScreen": 3
+    "nextThingTop": 453,
+    "firstCardTop": 645,
+    "cardsFullyInFirstScreen": 2,
+    "buttonsOnGlance": 0,
+    "nextThingCount": 1
   },
-  "smallTouchTargets": [],
-  "keyboardTabOrderFirst6": [
-    "a: Open in Task list",
-    "button: Flag as wrong",
-    "button: Flag as wrong",
-    "a: Open in Task list",
-    "button: Flag as wrong",
-    "button: Flag as wrong"
+  "smallTouchTargetsGlance": [],
+  "keyboardGlance": [
+    "a: 4 more in Task list",
+    "a: Today 1 thing needs you, 4 more later. c",
+    "a: Jobs Waiting to hear back from Example C",
+    "a: More Juice Quiet. checked 7:00 AM",
+    "a: BreakerOps A sample customer asked about",
+    "a: Money No update yet from the money summa",
+    "a: Sign out",
+    "body: Example data. Everything here is invente"
   ],
+  "smallTouchTargetsDomain": [],
   "flagSheetKeyboard": {
+    "cardOpensWithEnter": true,
     "opensWithEnter": true,
     "closesWithEscape": true,
     "focusReturnsToButton": true

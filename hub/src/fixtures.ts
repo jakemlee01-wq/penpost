@@ -1,76 +1,104 @@
 /**
- * Synthetic fixtures for stage 1A. Every name, task and link here is invented.
- * Nothing is copied from a real person, calendar or project. Links point at example.com.
+ * Synthetic fixtures. Every person, company, task, date and fact here is invented and the page shows
+ * an "Example data" banner whenever fixtures are served. Links point at example.com.
  */
 import { ctDate, ctInstant } from "./chicago";
-import type { CalendarEntry, Feed, HubFeeds, HubItem, MorningMessage } from "./contract";
+import type { CalendarEntry, DomainFact, Feed, HubFeeds, MorningMessage, TaskItem } from "./contract";
 
 export const FIXTURE_SCENARIOS = ["normal", "empty", "stale", "missing_write", "outage", "partial", "not_connected"] as const;
 export type FixtureScenario = (typeof FIXTURE_SCENARIOS)[number];
 
-function iso(date: string, hhmm: string): string {
-  return ctInstant(date, hhmm).toISOString();
-}
+const iso = (date: string, hhmm: string) => ctInstant(date, hhmm).toISOString();
+const dayBefore = (date: string) => ctDate(new Date(ctInstant(date, "12:00").getTime() - 24 * 3_600_000));
+const ref = (label: string, id: string, url?: string) => ({ label, record_ref: `fixture/${id}`, ...(url ? { url } : {}) });
 
-function dayBefore(date: string): string {
-  return ctDate(new Date(ctInstant(date, "12:00").getTime() - 24 * 3_600_000));
-}
-
-function items(today: string): HubItem[] {
+function tasks(today: string): TaskItem[] {
   const checked = iso(today, "07:00");
-  const src = (label: string, ref: string, url?: string) => ({ label, record_ref: `fixture/${ref}`, ...(url ? { url } : {}) });
+  const t = (id: string, domain: TaskItem["domain"], label: string, body: string, status: TaskItem["status"], updated: string, url?: string): TaskItem => ({
+    id,
+    domain,
+    label,
+    body,
+    status,
+    source: ref("Task list", id, url),
+    source_updated_at: iso(today, updated),
+    checked_at: checked,
+    freshness: { kind: "max_age", hours: 48 },
+  });
   return [
-    { id: "n1", label: "Send the sample invoice", body: "Fictional client Northwind Test Co. is waiting on it.", status: "todo", source: src("Task list", "task-101", "https://example.com/tasks/101"), source_updated_at: iso(today, "06:40"), checked_at: checked, freshness: { kind: "daily_by", by_hour_ct: 8 } },
-    { id: "n2", label: "Call back the test supplier", body: "They asked for a time this week.", status: "waiting", source: src("Inbox notes", "note-7"), source_updated_at: iso(today, "06:10"), checked_at: checked, freshness: { kind: "max_age", hours: 24 } },
-    { id: "n3", label: "Finish the demo slide", body: "Two charts left.", status: "in_progress", source: src("Task list", "task-102", "https://example.com/tasks/102"), source_updated_at: iso(today, "05:55"), checked_at: checked, freshness: { kind: "daily_by", by_hour_ct: 8 } },
-    { id: "n4", label: "Renew the placeholder domain", body: "Expires Friday.", status: "todo", source: src("Task list", "task-103"), source_updated_at: iso(today, "06:00"), checked_at: checked, freshness: { kind: "max_age", hours: 48 } },
-    { id: "n5", label: "Review the sample contract", body: "Stuck until the other side sends page 3.", status: "blocked", source: src("Task list", "task-104"), source_updated_at: iso(today, "06:05"), checked_at: checked, freshness: { kind: "max_age", hours: 72 } },
-    { id: "n6", label: "Book the fictional team lunch", body: "Pick a day next week.", status: "todo", source: src("Task list", "task-105"), source_updated_at: iso(today, "06:20"), checked_at: checked, freshness: { kind: "max_age", hours: 72 } },
-    { id: "n7", label: "Water the test plant", body: "Every Monday.", status: "scheduled", source: src("Task list", "task-106"), source_updated_at: iso(today, "06:25"), checked_at: checked, freshness: { kind: "max_age", hours: 168 } },
+    t("t1", "money", "Sample invoice is ready to send", "Example client Northwind Test Co. is waiting on it.", "needs_you", "06:40", "https://example.com/tasks/t1"),
+    t("t2", "jobs", "Example recruiter reply is due Wednesday", "From the sample company in the fixture.", "later", "06:10"),
+    t("t3", "more-juice", "Test label proof is with the printer", "They said Thursday.", "waiting", "05:55", "https://example.com/tasks/t3"),
+    t("t4", "breakerops", "Placeholder domain renews Friday", "Auto-renew is on in the example.", "later", "06:00"),
+    t("t5", "today", "Fictional team lunch has no date yet", "Any day next week works.", "later", "06:20"),
   ];
 }
 
 function calendar(today: string): CalendarEntry[] {
-  const checked = iso(today, "07:00");
-  const src = (ref: string) => ({ label: "Calendar", record_ref: `fixture/cal-${ref}` });
   return [
-    { id: "c1", title: "Stand-up with the sample team", due_date: today, due_time: "09:00", source: src("1"), checked_at: checked },
-    { id: "c2", title: "Pick up the test package", due_date: today, due_time: null, source: src("2"), checked_at: checked },
-    { id: "c3", title: "Demo dry run", due_date: today, due_time: "14:30", source: src("3"), checked_at: checked },
-    { id: "c0", title: "Yesterday's leftover entry", due_date: dayBefore(today), due_time: "10:00", source: src("0"), checked_at: checked },
+    { id: "c1", title: "Stand-up with the sample team", due_date: today, due_time: "09:00", source: ref("Calendar", "cal-1") },
+    { id: "c2", title: "Pick up the test package", due_date: today, due_time: null, source: ref("Calendar", "cal-2") },
+    { id: "c3", title: "Demo dry run", due_date: today, due_time: "14:30", source: ref("Calendar", "cal-3") },
+    { id: "c0", title: "Yesterday's leftover entry", due_date: dayBefore(today), due_time: "10:00", source: ref("Calendar", "cal-0") },
   ];
 }
 
-function morning(today: string): MorningMessage[] {
-  return [{ text: "Good morning. Three things on the calendar and the invoice is first on the list.", for_date: today, generated_at: iso(today, "06:45"), source: { label: "Morning message", record_ref: "fixture/morning-1" } }];
+function morning(date: string): MorningMessage[] {
+  return [{ text: "Good morning. A light day: two meetings, one errand, and the sample invoice.", for_date: date, generated_at: iso(date, "06:45"), source: ref("Morning message", "morning-1") }];
+}
+
+function fact(today: string, id: string, text: string, label: string, updated = "06:30"): DomainFact[] {
+  return [{ text, source: ref(label, id), source_updated_at: iso(today, updated), freshness: { kind: "max_age", hours: 48 } }];
 }
 
 export function fixtureFeeds(scenario: FixtureScenario, now: Date): HubFeeds {
   const today = ctDate(now);
-  const checked_at = now.toISOString();
-  const ok = <T>(list: T[], written_for_date?: string): Feed<T> => ({ ok: true, checked_at, written_for_date, items: list });
-  const down = <T>(reason: "unreachable" | "not_connected" = "unreachable"): Feed<T> => ({ ok: false, checked_at, reason });
+  const checked = iso(today, "07:00");
+  const ok = <T>(items: T[], written_for_date?: string, checked_at = checked): Feed<T> => ({ ok: true, checked_at, written_for_date, items });
+  const down = <T>(reason: "unreachable" | "not_connected" = "unreachable"): Feed<T> =>
+    reason === "unreachable" ? { ok: false, reason, last_checked_at: iso(dayBefore(today), "07:00") } : { ok: false, reason };
+
+  const domains = {
+    jobs: ok(fact(today, "jobs-1", "Waiting to hear back from Example Co.", "Job tracker")),
+    "more-juice": ok<DomainFact>([]), // checked, nothing new: quiet
+    breakerops: ok(fact(today, "bo-1", "A sample customer asked about Thursday.", "BreakerOps updates")),
+    money: ok<DomainFact>([], undefined, iso(dayBefore(dayBefore(today)), "07:00")), // feed not checked recently: late
+  };
 
   switch (scenario) {
     case "normal":
-      return { calendar: ok(calendar(today)), next: ok(items(today), today), morning: ok(morning(today)) };
+      return { morning: ok(morning(today), today), calendar: ok(calendar(today)), tasks: ok(tasks(today), today), domains };
     case "empty":
-      return { calendar: ok([]), next: ok([], today), morning: ok(morning(today)) };
+      return {
+        morning: ok([], today),
+        calendar: ok([]),
+        tasks: ok([], today),
+        domains: { jobs: ok([]), "more-juice": ok([]), breakerops: ok([]), money: ok([]) },
+      };
     case "stale": {
-      // Today's write landed, but two records have not changed in longer than their rules allow.
-      const list = items(today).slice(0, 4);
-      list[1] = { ...list[1], source_updated_at: iso(dayBefore(dayBefore(today)), "09:00") };
-      list[2] = { ...list[2], source_updated_at: iso(dayBefore(today), "06:00") };
-      return { calendar: ok(calendar(today)), next: ok(list, today), morning: ok(morning(today)) };
+      // Records unchanged for longer than their rules, and a calendar feed that was last checked yesterday.
+      const list = tasks(today);
+      list[0] = { ...list[0], source_updated_at: iso(dayBefore(dayBefore(dayBefore(today))), "09:00") };
+      list[1] = { ...list[1], status: "needs_you" };
+      const oldFact = fact(today, "bo-1", "A sample customer asked about Thursday.", "BreakerOps updates");
+      oldFact[0] = { ...oldFact[0], source_updated_at: iso(dayBefore(dayBefore(dayBefore(today))), "09:00") };
+      return {
+        morning: ok(morning(today), today),
+        calendar: ok(calendar(today), undefined, iso(dayBefore(today), "07:00")),
+        tasks: ok(list, today),
+        domains: { ...domains, breakerops: ok(oldFact) },
+      };
     }
     case "missing_write":
-      // The daily write is still yesterday's. Morning message is also yesterday's.
-      return { calendar: ok(calendar(today)), next: ok(items(dayBefore(today)), dayBefore(today)), morning: ok(morning(dayBefore(today))) };
+      // Daily writes still carry yesterday's date.
+      return { morning: ok(morning(dayBefore(today)), dayBefore(today)), calendar: ok(calendar(today)), tasks: ok(tasks(dayBefore(today)), dayBefore(today)), domains };
     case "outage":
-      return { calendar: down(), next: down(), morning: down() };
+      return { morning: down(), calendar: down(), tasks: down(), domains: { jobs: down(), "more-juice": down(), breakerops: down(), money: down() } };
     case "partial":
-      return { calendar: ok(calendar(today)), next: down(), morning: down() };
-    case "not_connected":
-      return { calendar: down("not_connected"), next: down("not_connected"), morning: down("not_connected") };
+      return { morning: down(), calendar: ok(calendar(today)), tasks: down(), domains: { ...domains, jobs: down() } };
+    case "not_connected": {
+      const nc = <T>() => down<T>("not_connected");
+      return { morning: nc(), calendar: nc(), tasks: nc(), domains: { jobs: nc(), "more-juice": nc(), breakerops: nc(), money: nc() } };
+    }
   }
 }

@@ -1,0 +1,43 @@
+{
+  "horizontalScrollAt320": false,
+  "signedOutStatus": 401,
+  "localLoadMs": {
+    "median": 26,
+    "max": 42,
+    "runs": 10
+  },
+  "serverRenderMs": {
+    "median": 1.35
+  },
+  "pageBytes": 11294,
+  "throttledLoadMs": {
+    "median": 398,
+    "max": 416,
+    "runs": 5,
+    "note": "150 ms latency, 1.6 Mbps down, 4x CPU slowdown, local server"
+  },
+  "firstItem": {
+    "label": "Send the sample invoice",
+    "top": 218,
+    "bottom": 414,
+    "viewportHeight": 844,
+    "h1Top": 28,
+    "visibleItemsInFirstScreen": 3
+  },
+  "smallTouchTargets": [],
+  "keyboardTabOrderFirst6": [
+    "a: Open in Task list",
+    "button: Flag as wrong",
+    "button: Flag as wrong",
+    "a: Open in Task list",
+    "button: Flag as wrong",
+    "button: Flag as wrong"
+  ],
+  "flagSheetKeyboard": {
+    "opensWithEnter": true,
+    "closesWithEscape": true,
+    "focusReturnsToButton": true
+  },
+  "flagStatusText": "Copied. Not sent anywhere. Paste it where you track fixes.",
+  "consoleErrors": []
+}

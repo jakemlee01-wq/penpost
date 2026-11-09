@@ -1,0 +1,31 @@
+# Private hub Worker (stage 1A). NOT deployed by this PR. See hub/README.md before deploying.
+#
+# This Worker must only be reachable through a Cloudflare Access application.
+# The Worker also verifies the Access JWT on every request, so a request that skips Access is refused.
+#
+# Secrets are set in the Cloudflare dashboard (Workers > penpost-hub > Settings > Variables and Secrets)
+# or with `npx wrangler secret put <NAME> --config hub/wrangler.toml`. Never put them in this file.
+#   ACCESS_TEAM_DOMAIN   e.g. yourteam.cloudflareaccess.com
+#   ACCESS_AUD           the Access application's Audience (AUD) tag
+#   ALLOWED_EMAILS       the one email allowed in
+name = "penpost-hub"
+main = "src/worker.ts"
+compatibility_date = "2025-09-01"
+
+# No public *.workers.dev address and no preview URLs: the only way in is the Access-protected route.
+workers_dev = false
+preview_urls = false
+
+# Fill in once penpost.co's DNS is on Cloudflare and the Access application exists for this hostname.
+# routes = [{ pattern = "hub.penpost.co", custom_domain = true }]
+
+# Stage 1A: synthetic data only. Remove (or leave unset) for production until stage 1B wires real sources.
+# [vars]
+# HUB_DATA_MODE = "fixture"
+
+# Optional per-IP limit before the sign-in check. Check Cloudflare's current rate limiting docs before enabling.
+# [[unsafe.bindings]]
+# name = "RATE_LIMITER"
+# type = "ratelimit"
+# namespace_id = "1002"
+# simple = { limit = 60, period = 60 }

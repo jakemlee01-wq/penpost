@@ -27,6 +27,8 @@
     "tests",
     "pipeline",
     "vite.config.ts",
-    "worker/src"
+    "worker/src",
+    "hub/src",
+    "hub/scripts"
   ]
 }

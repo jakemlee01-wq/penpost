@@ -2,7 +2,7 @@
 
 Your places and interests, rooted in Minnesota. A phone-first daily: one story card at a time, up to five stories, then a real ending. Written by five disclosed AI writers (Emma, Jack, Grace, Luke, Ben).
 
-Readers set up on one screen by saying what they want in their own words (typed, or spoken through the mic button). Penpost turns that into places, sections, specific likes and dislikes. Personalization is meant to be experienced, not configured: the reader lands straight on an edition, and the granular controls live in Settings. Editions are capped at five stories, with at least one per chosen section when there's news. The browser remembers the picks, so no account is needed. The current edition (Oct. 9, 2026) is real Minnesota business news written from public sources. A daily job can draft new editions with Gemini for review.
+Readers set up on one screen by saying what they want in their own words (typed, or spoken through the mic button). Penpost turns that into places, sections, specific likes and dislikes. Personalization is meant to be experienced, not configured: the reader lands straight on an edition, and the granular controls live in Settings. Editions are capped at five stories, with at least one per chosen section when there's news. The browser remembers the picks, so no account is needed. The current edition (Oct. 9, 2026) is real Minnesota business news written from public sources. On weekdays the paper is written on demand: a reader taps "See today's paper" and Penpost researches and writes just the topics that reader's settings need and nobody has asked for yet that day. A day with no taps writes nothing and costs nothing.
 
 ## Run it
 
@@ -28,7 +28,7 @@ pipeline/                 daily drafting job: sources.json, feeds, prompts, mode
 tests/fixtures/stories/   fictional demo stories used only by the ranking tests
 src/lib/ranking.ts        edition assembly: geography first, small capped taste nudges, writer variety
 src/lib/setupParse.ts     first-run setup: Worker prompt, sanitizer, in-browser parser, defaults
-worker/                   Cloudflare Worker that reads setup answers with a second Gemini key
+worker/                   Cloudflare Worker: reads setup answers (/parse) and starts on-demand editions (/curate)
 src/lib/storage.ts        on-device state: towns, votes, deck position
 src/views/                Deck, Article, Writer profile, Complete, Settings, About, Today
 src/components/           ProgressSegments, TopBar, Avatar, Illustration, Icons
@@ -67,9 +67,14 @@ After submit the deck shows one line: "Built from what you told us. We'll keep l
 npx wrangler login
 npx wrangler deploy --config worker/wrangler.toml
 npx wrangler secret put GEMINI_API_KEY --config worker/wrangler.toml   # the second key, not the drafting key
+npx wrangler secret put GITHUB_TOKEN --config worker/wrangler.toml     # for on-demand editions, see below
 ```
 
-Then in GitHub, repo Settings, Secrets and variables, Actions, **Variables**: add `PENPOST_PARSE_URL` = the Worker URL plus `/parse` (for example `https://penpost-setup.<your-subdomain>.workers.dev/parse`) and push or re-run the deploy. Set a spending cap on that Gemini key in Google AI Studio. Optional rate limiting is sketched in `worker/wrangler.toml`.
+Or paste `worker/penpost-setup-worker.bundle.js` into the Cloudflare Worker editor (rebuild it with `npm run worker:bundle` after changing `worker/src`), then add both secrets under the Worker's Settings, Variables and secrets.
+
+The Worker holds two secrets: the second Gemini key, and a GitHub token. `GITHUB_TOKEN` is a **fine-grained personal access token** for `jakemlee01-wq/penpost` only, with **Actions: read and write** and **Contents: read-only**, nothing else. It lets the Worker read the day's topic manifest and start the drafting workflow. The Gemini drafting key stays in GitHub Actions.
+
+Then in GitHub, repo Settings, Secrets and variables, Actions, **Variables**: add `PENPOST_PARSE_URL` = the Worker URL plus `/parse` (for example `https://penpost-setup.<your-subdomain>.workers.dev/parse`) and push or re-run the deploy. The site finds `/curate` on the same Worker. Set a spending cap on that Gemini key in Google AI Studio. Each visitor gets 10 Worker requests a minute (the `RATE_LIMITER` binding in `worker/wrangler.toml`).
 
 ## Interests, tone and writers
 
@@ -115,20 +120,25 @@ Thumbs are optional. A swipe is navigation only; opening an article is navigatio
 
 The handoff supplied 1024px **opaque JPEGs with a checkerboard painted in**. This build uses a reviewed background-removal derivative (the checkerboard flood-filled away; faces untouched), resized to 384px PNG. It looks clean on cream and dark backgrounds and stays distinct at 32px, but it is not a Gemini transparent export. **Outstanding:** export genuine transparent PNGs from Gemini, drop them into `src/assets/avatars/{id}.png`, and update `source-assets/AVATAR_MANIFEST.json`. (The brief suggested `public/avatars/`; they live under `src/assets` so the single-file preview can inline them.)
 
-## Daily drafting job (Gemini)
+## On-demand editions ("See today's paper")
 
-`.github/workflows/draft-edition.yml` runs weekday mornings (10:20 UTC, about 5:20 a.m. Central in summer) and can be run by hand from the Actions tab.
+There is no schedule. Stories are researched and written only when a reader asks for today's paper, and only for topics nobody has generated yet that day.
 
-1. **Fetch** (plain code, no model): reads the enabled feeds in `pipeline/sources.json`, keeps items from the last 40 hours (80 on Mondays), drops anything already published.
-2. **Triage** (cheap model, one call): is it Minnesota business news, which towns, how significant.
-3. **Per story** (up to 10): extract a fact record, draft it in the assigned writer's voice (least-used writer, never twice in a row), then check the draft against the facts. A story with unsupported statements is saved as `status: "draft"` and stays off the site until you fix it.
-4. **Review**: the job opens a pull request with a summary table. Merge to publish; close to skip. The site keeps the last approved edition.
+1. **The tap.** On a weekday, a reader without today's deck sees one button, "See today's paper." Opening the app is not a tap. The app turns the reader's settings into topic IDs (`src/lib/topics.ts`, `readerTopicIds`): one `local-<region>` per region with a picked town, `mn-<section>` for each Minnesota or National section, `us-<section>` for each National section, `mn-feel-good` always and `us-feel-good` with any National section. No sections: `mn-business`.
+2. **The Worker** (`POST /curate`) checks the topics (real IDs only, at most 20, today's date, weekdays only), reads `content/topics/<date>.json` from the repo, and dispatches `.github/workflows/draft-edition.yml` with just the topics that are neither ready nor already being written. It answers `ready` or `generating`.
+3. **The workflow** first marks those topics `pending` in the manifest and pushes that right away, so a second tap during the run doesn't pay again. Then one run at a time researches and writes (`pipeline/agent.ts`, exact topic IDs, local and feel-good stories first, `PENPOST_MAX_CALLS` as the hard stop), validates, commits the stories and edition, marks each topic `ready` (or `failed`, so a later tap can retry it) with `finishedAt`, `storiesWritten` and `modelCalls`, and starts the deploy.
+4. **The curating screen** polls `GET /curate/status` every 12 seconds. A topic counts as ready once its stories are deployed: the manifest says ready and a "Test, build, deploy" run that started afterwards succeeded. The app compares the Worker's `readyAt` with its own build time and reloads itself if it's an older build, then builds and freezes the deck as before. After 5 minutes, or if the run fails, it shows the latest edition with "Today's paper is still being put together. Here is your latest." and a Try again button.
+
+Weekends: no generation; the app shows the latest edition. A day with no taps leaves the repo untouched and makes no Gemini calls.
+
+`content/topics/<date>.json` is the shared cache and the spend record (per topic, per day). It isn't bundled into the site.
+
+**Running it by hand:** Actions tab, "Draft daily edition", Run workflow. Blank topics means every topic that isn't ready today; `dry_run` researches and writes without publishing. To regenerate a topic that's already ready, delete its entry from the day's manifest first.
 
 Setup:
-1. Repo Settings, Secrets and variables, Actions: add secret `GEMINI_API_KEY` (the drafting key; keep a separate key for the onboarding reader later). Optional: `UNSPLASH_ACCESS_KEY` for stock photos.
-2. Optional repository variables: `PENPOST_TRIAGE_MODEL`, `PENPOST_WRITER_MODEL` (defaults are `gemini-3.5-flash-lite` and `gemini-3.8-flash`; the 2.5 models are limited to existing users, so check Google's current model list if a run fails with a 404), `PENPOST_MAX_CALLS` (default 40, a hard stop per run).
-3. Repo Settings, Actions, General: allow GitHub Actions to create pull requests.
-4. Run it once by hand from the Actions tab and read the pull request.
+1. Repo Settings, Secrets and variables, Actions: secret `GEMINI_API_KEY` (the drafting key). Optional: `UNSPLASH_ACCESS_KEY` for stock photos.
+2. Optional repository variables: `PENPOST_TRIAGE_MODEL`, `PENPOST_WRITER_MODEL`, `PENPOST_FALLBACK_MODEL`, `PENPOST_MAX_CALLS` (default 300, a hard stop per run).
+3. Deploy the Worker with `GITHUB_TOKEN` (above). Without it, the button falls back to the latest edition.
 
 To use Claude instead, set `PENPOST_PROVIDER: anthropic` in the workflow and add `ANTHROPIC_API_KEY`.
 

@@ -30,7 +30,14 @@ export type LocalState = {
   notice: string | null;
   /** Answers to the daily question on the caught-up screen, by question id. */
   answers: Record<string, { option: string; date: string; note: string }>;
+  /** The last "See today's paper" tap that finished: the day, the topics it covered, and whether it fell back. */
+  asked: PaperAsk | null;
+  /** A tap still waiting for its paper. Kept so a reload resumes the curating screen. */
+  curating: PaperCurating | null;
 };
+
+export type PaperAsk = { date: string; topics: string[]; failed?: boolean };
+export type PaperCurating = { date: string; topics: string[]; startedAt: string; requested?: boolean; reloadedAt?: string };
 
 export function defaultState(): LocalState {
   return {
@@ -41,6 +48,8 @@ export function defaultState(): LocalState {
     hintSeen: false,
     notice: null,
     answers: {},
+    asked: null,
+    curating: null,
   };
 }
 
@@ -98,6 +107,30 @@ export function sanitize(value: unknown, normalizeAreas: (ids: unknown) => strin
     hintSeen: Boolean(v.hintSeen),
     notice: typeof v.notice === "string" && v.notice.length < 300 ? v.notice : null,
     answers: sanitizeAnswers(v.answers),
+    asked: sanitizeAsk(v.asked),
+    curating: sanitizeCurating(v.curating),
+  };
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const topicList = (raw: unknown) =>
+  Array.isArray(raw) ? raw.filter((t): t is string => typeof t === "string" && /^(local|mn|us)-[a-z0-9-]+$/.test(t)).slice(0, 40) : [];
+
+function sanitizeAsk(raw: unknown): PaperAsk | null {
+  const a = raw as Partial<PaperAsk> | null;
+  if (!a || typeof a.date !== "string" || !DATE_RE.test(a.date)) return null;
+  return { date: a.date, topics: topicList(a.topics), ...(a.failed ? { failed: true } : {}) };
+}
+
+function sanitizeCurating(raw: unknown): PaperCurating | null {
+  const c = raw as Partial<PaperCurating> | null;
+  if (!c || typeof c.date !== "string" || !DATE_RE.test(c.date) || typeof c.startedAt !== "string" || Number.isNaN(Date.parse(c.startedAt))) return null;
+  return {
+    date: c.date,
+    topics: topicList(c.topics),
+    startedAt: c.startedAt,
+    ...(c.requested ? { requested: true } : {}),
+    ...(typeof c.reloadedAt === "string" ? { reloadedAt: c.reloadedAt } : {}),
   };
 }
 

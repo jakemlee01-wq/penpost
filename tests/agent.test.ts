@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -165,5 +165,41 @@ describe("runAgent end to end (fake Gemini)", () => {
     }
     expect(calls).toHaveLength(2);
     expect(calls[1]).toContain("at least two Google searches");
+  });
+
+  it("matches PENPOST_TOPICS exactly, never by substring", async () => {
+    const root = makeRoot();
+    const calls: string[] = [];
+    const model = createModel({ PENPOST_PROVIDER: "mock", PENPOST_MAX_CALLS: "200" }, writerResponder());
+    process.env.PENPOST_TOPICS = "local-twin,mn-";
+    try {
+      await runAgent({ root, date: TEST_DATE, maxStories: 5, model, key: "k", fetchImpl: fakeSearch(true, calls), log: () => {} });
+    } finally {
+      delete process.env.PENPOST_TOPICS;
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  it("skips topics already ready today and reports per-topic results for the manifest", async () => {
+    const root = makeRoot();
+    mkdirSync(join(root, "content/topics"), { recursive: true });
+    writeFileSync(
+      join(root, `content/topics/${TEST_DATE}.json`),
+      JSON.stringify({ date: TEST_DATE, topics: { "local-twin-cities": { status: "ready", finishedAt: "x", storiesWritten: 1, modelCalls: 5 } } }),
+    );
+    const calls: string[] = [];
+    const model = createModel({ PENPOST_PROVIDER: "mock", PENPOST_MAX_CALLS: "200" }, writerResponder());
+    process.env.PENPOST_TOPICS = "local-twin-cities,mn-business";
+    try {
+      const res = await runAgent({ root, date: TEST_DATE, maxStories: 5, model, key: "k", fetchImpl: fakeSearch(true, calls), log: () => {} });
+      expect(res.published).toBe(1);
+    } finally {
+      delete process.env.PENPOST_TOPICS;
+    }
+    expect(calls.some((c) => c.includes("local news in Twin Cities"))).toBe(false);
+    const results = JSON.parse(readFileSync(join(root, "pipeline/out/topic-results.json"), "utf8"));
+    expect(Object.keys(results)).toEqual(["mn-business"]);
+    expect(results["mn-business"]).toMatchObject({ status: "ready", storiesWritten: 1 });
+    expect(results["mn-business"].modelCalls).toBeGreaterThan(3);
   });
 });

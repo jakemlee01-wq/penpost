@@ -562,3 +562,38 @@ img.card-img.photo { pointer-events: none; -webkit-user-drag: none; user-select:
 .paper-meta { display: block; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
 
 .interest-focus { flex-basis: 100%; margin: 4px 0 0; font-size: 13px; color: var(--ink-2); }
+
+/* Today's paper: the button screen and the curating screen */
+.paper-gate, .curating {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  min-height: 70dvh; padding: 24px 8px 48px;
+}
+.paper-gate h1, .curating h1 { font-size: 26px; line-height: 1.25; font-weight: 800; margin: 0 0 8px; text-wrap: balance; }
+.paper-gate-lead { color: var(--ink-2); margin: 0 0 28px; max-width: 32ch; }
+.paper-cta { max-width: 320px; }
+.paper-gate-links { margin: 18px 0 0; font-size: 15px; color: var(--ink-2); }
+.paper-gate-links a { font-weight: 700; text-decoration: none; }
+.curating-line { min-height: 3.2em; margin: 4px 0 0; color: var(--accent-ink); font-weight: 700; max-width: 30ch; animation: lineIn 0.6s ease; }
+.curating-progress { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); }
+.curating-note { margin: 20px 0 0; font-size: 14px; color: var(--ink-2); }
+@keyframes lineIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.pen-stroke { width: 160px; height: 64px; margin-bottom: 20px; }
+.pen-paper { fill: var(--card); stroke: var(--line); stroke-width: 1.5; }
+.pen-line {
+  fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation: penWrite 4.5s ease-in-out infinite;
+}
+@keyframes penWrite {
+  0% { stroke-dashoffset: 1; opacity: 1; }
+  60% { stroke-dashoffset: 0; opacity: 1; }
+  85% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+/* Reduced motion: the global rule stops the animation, so show the finished line. */
+@media (prefers-reduced-motion: reduce) {
+  .pen-line { stroke-dashoffset: 0; opacity: 1; }
+}
+.notice-retry {
+  flex: none; min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--card);
+  color: var(--accent-ink); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+}

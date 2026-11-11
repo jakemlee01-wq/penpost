@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "pipeline": "tsx pipeline/run.ts",
-    "photos": "tsx scripts/fetch-photos.ts"
+    "photos": "tsx scripts/fetch-photos.ts",
+    "worker:bundle": "esbuild worker/src/index.ts --bundle --format=esm --minify --keep-names --platform=neutral --main-fields=module,main --banner:js=\"// penpost-setup Worker. Paste this whole file into the Cloudflare Worker editor, replacing everything, then Deploy.\" --outfile=worker/penpost-setup-worker.bundle.js"
   },
   "dependencies": {
     "dompurify": "^3.1.6",

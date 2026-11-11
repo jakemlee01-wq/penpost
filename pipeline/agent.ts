@@ -3,7 +3,10 @@
  *
  *   npx tsx pipeline/agent.ts [--date YYYY-MM-DD] [--max-stories 30]
  *
- * Readers' picks live only in their browsers, so the job covers everything a reader can choose:
+ * Editions are made on demand: a reader's "See today's paper" tap asks the Worker, which dispatches
+ * this job for just the topics nobody has generated yet today (PENPOST_TOPICS, exact topic IDs).
+ * Topics already "ready" in content/topics/<date>.json are skipped. With no PENPOST_TOPICS (a manual
+ * run) it covers everything a reader can choose:
  *   - one local topic per region (all categories),
  *   - one Minnesota topic and one national topic per interest category.
  * 1. Research: each topic gets one Gemini call with Google Search. It returns recent news events as
@@ -21,10 +24,12 @@ import { AreasSchema, type Areas } from "../src/lib/areas";
 import { chicagoDate } from "../src/lib/dates";
 import { parseStoryFile } from "../src/lib/parse";
 import { CATEGORY_IDS, WriterSchema } from "../src/lib/schema";
+import { localTopicId, mnTopicId, usTopicId, type TopicResult } from "../src/lib/topics";
 import { RateLimitError, createModel, fetchWithRetry, parseJson, type Model } from "./model";
 import { findStockPhoto } from "./photos";
 import { CHECK_SYSTEM, checkPrompt, writerSystem, type Facts } from "./prompts";
 import { pickWriter, slugify, tidy } from "./run";
+import { RESULTS_FILE, readManifest } from "./topics";
 
 const CATEGORY_NAMES: Record<string, string> = {
   business: "business (companies, deals, openings, closings, jobs)",
@@ -45,12 +50,12 @@ export type Topic = { id: string; label: string; scope: "local" | "minnesota" | 
 
 export function buildTopics(regions: { id: string; name: string }[]): Topic[] {
   return [
-    ...regions.map((r) => ({ id: `local-${r.id}`, label: `local news in ${r.name}, Minnesota (any subject: business, government, schools, health, sports, culture)`, scope: "local" as const, region: r.id })),
-    ...CATEGORY_IDS.map((c) => ({ id: `mn-${c}`, label: `Minnesota ${CATEGORY_NAMES[c]}`, scope: "minnesota" as const, category: c })),
-    ...CATEGORY_IDS.map((c) => ({ id: `us-${c}`, label: `U.S. national ${CATEGORY_NAMES[c]}`, scope: "national" as const, category: c })),
+    ...regions.map((r) => ({ id: localTopicId(r.id), label: `local news in ${r.name}, Minnesota (any subject: business, government, schools, health, sports, culture)`, scope: "local" as const, region: r.id })),
+    ...CATEGORY_IDS.map((c) => ({ id: mnTopicId(c), label: `Minnesota ${CATEGORY_NAMES[c]}`, scope: "minnesota" as const, category: c })),
+    ...CATEGORY_IDS.map((c) => ({ id: usTopicId(c), label: `U.S. national ${CATEGORY_NAMES[c]}`, scope: "national" as const, category: c })),
     // Every reader gets a feel-good story a day, so search for them on purpose.
-    { id: "mn-feel-good", label: `feel-good news in Minnesota: ${FEEL_GOOD}`, scope: "minnesota" as const },
-    { id: "us-feel-good", label: `feel-good news in the U.S.: ${FEEL_GOOD}`, scope: "national" as const },
+    { id: mnTopicId("feel-good"), label: `feel-good news in Minnesota: ${FEEL_GOOD}`, scope: "minnesota" as const },
+    { id: usTopicId("feel-good"), label: `feel-good news in the U.S.: ${FEEL_GOOD}`, scope: "national" as const },
   ];
 }
 
@@ -267,7 +272,17 @@ export async function runAgent(opts: AgentOptions) {
   const byTopic: Event[][] = [];
   const research: string[] = [];
   const filter = (env.PENPOST_TOPICS || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const runTopics = filter.length ? topics.filter((tp) => filter.some((f) => tp.id.includes(f))) : topics;
+  // Exact IDs only, so a topic whose ID contains another's never comes along by accident.
+  const asked = filter.length ? topics.filter((tp) => filter.includes(tp.id)) : topics;
+  // Another run (or an earlier tap) already wrote these today: skip them.
+  const topicManifest = readManifest(root, date);
+  const runTopics = asked.filter((tp) => topicManifest.topics[tp.id]?.status !== "ready");
+  for (const tp of asked) if (!runTopics.includes(tp)) research.push(`${tp.id}: already ready today, skipped`);
+  // Per-topic spend and results, for content/topics/<date>.json.
+  const spent = new Map<string, number>();
+  const calls = () => searchCalls + model.usage.calls;
+  const charge = (id: string, before: number) => spent.set(id, (spent.get(id) ?? 0) + calls() - before);
+  const topicErrors = new Map<string, string>();
   const search = async (prompt: string): Promise<SearchResult> => {
     searchCalls++;
     try {
@@ -282,6 +297,7 @@ export async function runAgent(opts: AgentOptions) {
   };
   for (const topic of runTopics) {
     const prompt = `Today is ${today}. Search for news on this topic: ${topic.label}.${avoid}`;
+    const before = calls();
     try {
       // Step 1: grounded search in plain language. No web sources means the model answered from memory: retry once, then drop.
       let r = await search(prompt);
@@ -312,12 +328,18 @@ export async function runAgent(opts: AgentOptions) {
       research.push(`${topic.id} [${activeSearchModel}]: ${sources.length} web sources, ${parsed.items.length} events, ${events.length} kept`);
     } catch (e) {
       byTopic.push([]);
-      research.push(`${topic.id} [${activeSearchModel}]: failed (${(e as Error).message.replace(/\s+/g, " ").slice(0, 160)})`);
+      const msg = (e as Error).message.replace(/\s+/g, " ").slice(0, 160);
+      topicErrors.set(topic.id, msg);
+      research.push(`${topic.id} [${activeSearchModel}]: failed (${msg})`);
+    } finally {
+      charge(topic.id, before);
     }
   }
 
   // 2. Pick, leaving headroom for stories the checker holds.
-  const queue = pickEvents(byTopic, Math.ceil(maxStories * 1.3));
+  const picked = pickEvents(byTopic, Math.ceil(maxStories * 1.3));
+  // Local stories first (the most personal), keeping the round-robin order within each group.
+  const queue = [...picked.filter((e) => e.topic.scope === "local"), ...picked.filter((e) => e.topic.scope !== "local")];
   // Write a feel-good story first so the edition always has one, even if later stories run out the budget.
   const feelGoodAt = queue.findIndex((e) => e.feelGood && e.tone !== "heavy");
   if (feelGoodAt > 0) queue.unshift(...queue.splice(feelGoodAt, 1));
@@ -332,6 +354,7 @@ export async function runAgent(opts: AgentOptions) {
   let previous: string | undefined;
   for (const ev of queue) {
     if (written.filter((w) => w.status === "published").length >= maxStories) break;
+    const before = calls();
     try {
       // Depth: one targeted search on this event for background, numbers, quotes and what's next,
       // so the story can run 2 to 3 minutes without padding. Failures fall back to the original facts.
@@ -421,6 +444,8 @@ ${JSON.stringify(facts, null, 2)}`,
       log(`${status === "draft" ? "HELD " : "ok   "} ${writer.name} [${ev.topic.id}]: ${header.headline}`);
     } catch (e) {
       skipped.push(`${ev.headline} (error: ${(e as Error).message.slice(0, 120)})`);
+    } finally {
+      charge(ev.topic.id, before);
     }
   }
 
@@ -439,6 +464,15 @@ ${JSON.stringify(facts, null, 2)}`,
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "summary.md"), [`## Penpost edition for ${date}`, "", summary, "", ...written.map((w) => `- ${w.status === "draft" ? "HELD" : "ok"} ${w.writer} [${w.topic}] ${w.file}${w.flags.length ? ` (${w.flags.join("; ")})` : ""}`), ...skipped.map((s) => `- failed: ${s}`)].join("\n") + "\n");
   writeFileSync(join(outDir, "has-changes"), written.length ? "true" : "false");
+  // Per-topic results for the topic manifest (pipeline/topics.ts finish). A topic whose research
+  // failed (quota, crash) is "failed" so the next tap can try it again.
+  const results: Record<string, TopicResult> = {};
+  for (const tp of runTopics) {
+    const storiesWritten = written.filter((w) => w.topic === tp.id && w.status === "published").length;
+    const error = topicErrors.get(tp.id);
+    results[tp.id] = { status: error ? "failed" : "ready", storiesWritten, modelCalls: spent.get(tp.id) ?? 0, ...(error ? { error } : {}) };
+  }
+  writeFileSync(join(root, RESULTS_FILE), JSON.stringify(results, null, 2) + "\n");
   log(`done: ${summary}`);
   if (process.env.GITHUB_ACTIONS === "true" && !process.env.VITEST) {
     const esc = (t: string) => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");

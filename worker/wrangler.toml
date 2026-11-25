@@ -1,0 +1,36 @@
+# PenPost Problem Solver API. See README.md for first-time setup.
+name = "penpost-solver"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The orchestrator advances every active project by one step each minute.
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "penpost-solver"
+database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+migrations_dir = "migrations"
+
+[vars]
+ALLOWED_ORIGINS = "https://penpost.co,https://www.penpost.co,http://localhost:5173"
+# Model A (maker and planner by default) and Model B (checker by default).
+MODEL_A_PROVIDER = "anthropic"
+MODEL_A = "claude-opus-5-5"
+MODEL_A_PRICE_IN = "4"        # USD per million input tokens
+MODEL_A_PRICE_OUT = "20"      # USD per million output tokens (thinking included)
+MODEL_B_PROVIDER = "gemini"
+MODEL_B = "gemini-3.1-pro-preview"
+MODEL_B_PRICE_IN = "2"
+MODEL_B_PRICE_OUT = "12"
+# Step kinds where the roles swap (Model B makes, Model A checks).
+SWAP_KINDS = "research"
+ANTHROPIC_EFFORT = "high"
+MAX_OUTPUT_TOKENS = "16000"
+# Guardrails.
+MAX_ROUNDS = "3"              # tries per step (and per plan) before escalating to Jake
+PROJECT_CAP_USD = "5"         # hard dollar cap per project, enforced before every call
+PREVIEW_CAP_USD = "0.75"      # cap for the free part (intake, plan, review)
+PARALLEL_STEPS = "3"          # independent steps worked at once in one run

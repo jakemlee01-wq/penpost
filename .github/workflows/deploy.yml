@@ -24,12 +24,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - name: Download licensed story photos
-        run: npm run photos
-      - run: npm run build   # validates content, typechecks, builds dist/
+      - run: npx tsc -p worker/tsconfig.json
+      - run: npm run build   # typechecks and builds dist/
         env:
-          # The setup parser Worker's URL (repo variable). Empty = setup reads answers in the browser.
-          VITE_PARSE_URL: ${{ vars.PENPOST_PARSE_URL }}
+          # The penpost-solver Worker's URL (repo variable), e.g. https://penpost-solver.<subdomain>.workers.dev
+          VITE_API_URL: ${{ vars.PENPOST_API_URL }}
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:

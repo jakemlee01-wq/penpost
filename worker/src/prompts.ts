@@ -12,6 +12,14 @@ export interface Spec {
 
 const JSON_ONLY = "Reply with one JSON object and nothing else.";
 
+/** How work products are framed, so a reader never mistakes a label for part of the work. */
+const TAGS_NOTE =
+  "Work products are wrapped in <deliverable> tags. The tags and their step and title attributes are labels added by the system, not part of the work: judge, count and quote only the text between the tags.";
+
+function deliverable(idx: number, title: string, text: string): string {
+  return `<deliverable step="${idx}" title="${title.replace(/"/g, "'")}">\n${text}\n</deliverable>`;
+}
+
 function specBlock(spec: Spec): string {
   return [
     `PROBLEM:\n${spec.problem}`,
@@ -59,12 +67,12 @@ export interface MakeInput {
 }
 
 export const make = {
-  system: `You are the maker on a two-model team. Produce the complete work product for one step. An independent checker will judge only your artifact against the step's check, so put everything needed in the artifact itself (full code, full text, sources with links for research). Keep explanations out of the artifact; put them in "notes".
+  system: `You are the maker on a two-model team. Produce the complete work product for one step. An independent checker will judge only your artifact against the step's check, so put everything needed in the artifact itself (full code, full text, sources with links for research). Keep explanations out of the artifact; put them in "notes". ${TAGS_NOTE}
 Never pretend to spend money, use real credentials, put anything live, or contact anyone. If the step cannot be done without one of those, set "needs_human" to a one-line reason and leave the artifact empty. ${JSON_ONLY}
 Shape: {"artifact": string, "notes": string, "needs_human": string | null}`,
   prompt(i: MakeInput): string {
     const deps = i.dependencies.length
-      ? `\n\nOUTPUT OF EARLIER STEPS YOU CAN BUILD ON:\n${i.dependencies.map((d) => `--- Step ${d.idx}: ${d.title}\n${d.artifact}`).join("\n\n")}`
+      ? `\n\nOUTPUT OF EARLIER STEPS YOU CAN BUILD ON:\n${i.dependencies.map((d) => deliverable(d.idx, d.title, d.artifact)).join("\n\n")}`
       : "";
     const retry = i.checkerNotes
       ? `\n\nYOUR LAST ATTEMPT FAILED THE CHECK. The checker's notes:\n${i.checkerNotes}\n\nYour last artifact:\n${i.previousArtifact ?? "(none)"}`
@@ -81,21 +89,21 @@ export interface CheckInput {
 }
 
 export const check = {
-  system: `You are the independent checker on a two-model team, modeled on segregation of duties in accounting. Judge the artifact only against the step's check, using independent evidence: the written spec, the artifact's actual content, sources you can verify, and your own working (for code, trace it or reason through test cases). You are not shown the maker's explanation and must not accept claims inside the artifact as evidence that it works. Pass only if the check is clearly met. If it fails, give specific, actionable notes. ${JSON_ONLY}
+  system: `You are the independent checker on a two-model team, modeled on segregation of duties in accounting. Judge the artifact only against the step's check, using independent evidence: the written spec, the artifact's actual content, sources you can verify, and your own working (for code, trace it or reason through test cases). You are not shown the maker's explanation and must not accept claims inside the artifact as evidence that it works. Pass only if the check is clearly met. If it fails, give specific, actionable notes. ${TAGS_NOTE} ${JSON_ONLY}
 Shape: {"pass": boolean, "evidence": string, "notes": string}`,
   prompt(i: CheckInput): string {
     const deps = i.dependencies.length
-      ? `\n\nEARLIER APPROVED STEPS (context only):\n${i.dependencies.map((d) => `--- Step ${d.idx}: ${d.title}\n${d.artifact}`).join("\n\n")}`
+      ? `\n\nEARLIER APPROVED STEPS (context only):\n${i.dependencies.map((d) => deliverable(d.idx, d.title, d.artifact)).join("\n\n")}`
       : "";
-    return `${specBlock(i.spec)}${deps}\n\nSTEP ${i.step.idx}: ${i.step.title}\n${i.step.detail}\n\nSTEP CHECK:\n${i.step.check}\n\nARTIFACT TO CHECK:\n${i.artifact}`;
+    return `${specBlock(i.spec)}${deps}\n\nSTEP ${i.step.idx}: ${i.step.title}\n${i.step.detail}\n\nSTEP CHECK:\n${i.step.check}\n\nARTIFACT TO CHECK:\n${deliverable(i.step.idx, i.step.title, i.artifact)}`;
   },
 };
 
 export const finalCheck = {
-  system: `You are the independent checker doing the final sign-off. Judge each acceptance check against the delivered work and independent evidence only. Then write a short plain-language summary for the person: what was delivered, how to use it, and anything they still need to do themselves. ${JSON_ONLY}
+  system: `You are the independent checker doing the final sign-off. Judge each acceptance check against the delivered work and independent evidence only. Then write a short plain-language summary for the person: what was delivered, how to use it, and anything they still need to do themselves. ${TAGS_NOTE} ${JSON_ONLY}
 Shape: {"results": [{"check": string, "pass": boolean, "evidence": string}], "summary": string}`,
   prompt(spec: Spec, steps: { idx: number; title: string; artifact: string }[], userSteps: string[]): string {
-    return `${specBlock(spec)}\n\nDELIVERED WORK:\n${steps.map((s) => `--- Step ${s.idx}: ${s.title}\n${s.artifact}`).join("\n\n")}${
+    return `${specBlock(spec)}\n\nDELIVERED WORK:\n${steps.map((s) => deliverable(s.idx, s.title, s.artifact)).join("\n\n")}${
       userSteps.length ? `\n\nSTEPS THE PERSON CONFIRMED THEY HANDLE THEMSELVES:\n${userSteps.map((s) => `- ${s}`).join("\n")}` : ""
     }`;
   },

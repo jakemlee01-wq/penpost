@@ -110,6 +110,12 @@ describe("happy path", () => {
     for (const c of h.calls.filter((x) => x.action === "check" || x.action === "final")) {
       expect(c.call.prompt).not.toContain("SECRET-MAKER-EXPLANATION");
     }
+    // Work is framed in <deliverable> tags so a label is never read as part of the work
+    // (a live run once failed a word count by counting a "--- Step 1: ..." header).
+    const final = h.calls.find((x) => x.action === "final")!;
+    expect(final.call.prompt).toContain('<deliverable step="1" title="Write the script">\nimport csv\n# dedupe v1\n</deliverable>');
+    expect(final.call.prompt).not.toContain("--- Step");
+    expect(final.call.system).toContain("not part of the work");
     // The retry carries the checker's notes back to the maker.
     const makes = h.calls.filter((x) => x.action === "make");
     expect(makes[2].call.prompt).toContain("Add a usage example");

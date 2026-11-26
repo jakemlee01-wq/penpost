@@ -18,6 +18,21 @@ Status as of 2026-11-26 (updated after the first deployment). This brief is self
 - **Next task once the secrets are in:** build order step 4. Run one small real problem end to end through the deployed Worker. Then check that it doesn't stall from the Free plan's CPU limit (section 12, item 2), compare the logged cost (`events` table) with the Anthropic and Google dashboards, and fix any prompts whose replies don't parse as JSON.
 - **Update 2026-11-26, later:** the secrets are in, Jake set $5 spend limits per model key, and the branch is merged to `main` (fast-forward, now `c0462a4` or later).
   - **The site is live on penpost.co** (deploy run 70, 2026-11-26). Jake re-enabled the "Test, build, deploy" workflow, which had been disabled manually, and Pages is set to Source "GitHub Actions" with the custom domain penpost.co. www.penpost.co redirects to penpost.co. The built bundle points at the Worker URL. Pushes to `main` should now deploy on their own; if one doesn't, run the workflow by hand.
+- **Fixes from three live runs (commit `221eaeb`, deployed with migration `0002_estimates.sql`):**
+  - **Output limit:** Gemini gets an explicit `thinkingLevel`: `low` for making, `medium` for checking (Gemini 3 caps thinking by level; `thinkingBudget` is legacy). A redo of a failed step gets 24k tokens. A reply cut off at the limit is retried once with double the room, up to 64k and within the cap. Failed calls log and charge whatever usage the provider reported.
+  - **Idle time:** counts only while a project is active.
+  - **Planner:** self-review, audit and proofreading steps are rejected in code, and independent deliverables run in parallel.
+  - **Intake:** checks must be verifiable from the text alone, ASSUMPTION labels only on made-up rates and estimates, honest verdicts instead of forced targets, no invented policies or URLs. `Maker:`/`Checker:` labels are stripped from what the person sees.
+  - **Display:** `<$0.001` for tiny costs, the two caps labeled separately, and a plain explanation of what Resume will do.
+  - **Estimator:** a wider high end for multi-step and math-heavy plans, and an `estimates` table of estimate against actual.
+  - **Tests:** 41 now: `tests/engine.test.ts`, `tests/fixes.test.ts`, shared `tests/harness.ts`.
+- **Plumbing project `28a25fed` resumed after the fixes. It finished `done`.**
+  - **Step 3:** passed on its third redo, with no output-limit hits.
+  - **Verdict:** honest. 20 accounts in 60 days is "NOT realistic" (a 56 h/week need against 15 h available), and it recalibrates to 6. The table's columns sum correctly.
+  - **Cost:** $0.379 logged in total (Gemini $0.345, Haiku $0.035), of which $0.228 came after the resume. The old estimate was $0.09 to $0.13.
+  - **Lost spend:** the cut-off call before the fixes (event 67, 125 s) was logged at $0. Google probably billed about 16k output tokens for it.
+  - **No estimates row:** this project's estimate was made before that table existed.
+  - **Known issue:** its brief was written under the old intake rules. Its check required every figure, including given facts (20 accounts, 60 days, 8 people), to carry ASSUMPTION, so the output labels those too. New projects shouldn't.
 - **First live test run (done):** "Write a 150-word product description for a reusable water bottle."
   - **Driven directly, not through the site:** Claude couldn't read `ACCESS_CODE`, so it skipped the website and drove the live Worker directly. It inserted the project and the user actions into D1, the same way the API does, and pushed queue messages through the Cloudflare API.
   - **Result:** intake, plan, plan review, make, step check and final check all ran on the real models. The description came out at exactly 150 words with no digits.

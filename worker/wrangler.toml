@@ -40,7 +40,12 @@ MODEL_B_PRICE_OUT = "7.50"
 # Step kinds where the roles swap (Model B makes, Model A checks).
 SWAP_KINDS = "research"
 ANTHROPIC_EFFORT = "high"
-MAX_OUTPUT_TOKENS = "16000"
+MAX_OUTPUT_TOKENS = "16000"     # per call, reply plus thinking
+RETRY_OUTPUT_TOKENS = "24000"   # redo of a failed step (old artifact + checker notes + rewrite)
+MAX_OUTPUT_CEILING = "64000"    # one retry after hitting the limit doubles the allowance, up to this
+# Gemini 3 caps thinking by level (low | medium | high). Thinking tokens share the output allowance.
+GEMINI_THINKING_MAKE = "low"
+GEMINI_THINKING_CHECK = "medium"
 # Guardrails.
 MAX_ROUNDS = "3"              # tries per step (and per plan) before escalating to Jake
 PROJECT_CAP_USD = "2"         # hard dollar cap per project, enforced before every call

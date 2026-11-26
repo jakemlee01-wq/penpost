@@ -24,6 +24,10 @@ export interface Env {
   SWAP_KINDS?: string;
   ANTHROPIC_EFFORT?: string;
   MAX_OUTPUT_TOKENS?: string;
+  RETRY_OUTPUT_TOKENS?: string;
+  MAX_OUTPUT_CEILING?: string;
+  GEMINI_THINKING_MAKE?: string;
+  GEMINI_THINKING_CHECK?: string;
   MAX_ROUNDS?: string;
   PROJECT_CAP_USD?: string;
   PREVIEW_CAP_USD?: string;

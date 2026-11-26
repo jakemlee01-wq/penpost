@@ -20,6 +20,16 @@ export interface ModelCall {
   system: string;
   prompt: string;
   maxTokens: number;
+  /** Gemini only: how much the model may think. Thinking tokens share maxTokens with the reply. */
+  thinking?: ThinkingLevel;
+}
+
+export type ThinkingLevel = "low" | "medium" | "high";
+
+export interface Usage {
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number;
 }
 
 export interface ModelResult {
@@ -31,7 +41,20 @@ export interface ModelResult {
 
 export type ModelCaller = (cfg: ModelConfig, call: ModelCall) => Promise<ModelResult>;
 
-export class ModelError extends Error {}
+/**
+ * A model call that failed. `usage` is set when the provider billed the call anyway (for example
+ * a reply cut off at the output limit), so the orchestrator can still log and charge it.
+ * `kind: "max_tokens"` marks the one failure worth retrying once with a larger allowance.
+ */
+export class ModelError extends Error {
+  constructor(
+    message: string,
+    public usage?: Usage,
+    public kind: "max_tokens" | "other" = "other",
+  ) {
+    super(message);
+  }
+}
 
 /** Anthropic models that accept the server-side refusal fallback. */
 const SERVER_FALLBACK_MODELS = new Set(["claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"]);
@@ -83,22 +106,30 @@ async function callAnthropic(env: Env, cfg: ModelConfig, call: ModelCall): Promi
   const tokensIn =
     res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0);
   const tokensOut = res.usage.output_tokens;
-  if (res.stop_reason === "refusal") throw new ModelError("Model A declined the request");
-  if (res.stop_reason === "max_tokens") throw new ModelError("Model A hit the output limit");
+  const usage = { tokensIn, tokensOut, costUsd: cost(cfg, tokensIn, tokensOut) };
+  if (res.stop_reason === "refusal") throw new ModelError(`Model ${cfg.role} declined the request`, usage);
+  if (res.stop_reason === "max_tokens") throw new ModelError(`Model ${cfg.role} hit the output limit (${call.maxTokens} tokens)`, usage, "max_tokens");
   const text = res.content.map((b) => (b.type === "text" ? b.text : "")).join("");
   return { text, tokensIn, tokensOut, costUsd: cost(cfg, tokensIn, tokensOut) };
 }
 
-async function callGemini(env: Env, cfg: ModelConfig, call: ModelCall): Promise<ModelResult> {
+export async function callGemini(env: Env, cfg: ModelConfig, call: ModelCall, fetchImpl: typeof fetch = fetch): Promise<ModelResult> {
   if (!env.GEMINI_API_KEY) throw new ModelError("GEMINI_API_KEY is not set");
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model)}:generateContent`;
-  const res = await fetch(url, {
+  const res = await fetchImpl(url, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: call.system }] },
       contents: [{ role: "user", parts: [{ text: call.prompt }] }],
-      generationConfig: { maxOutputTokens: call.maxTokens, responseMimeType: "application/json" },
+      generationConfig: {
+        maxOutputTokens: call.maxTokens,
+        responseMimeType: "application/json",
+        // Gemini 3 models cap thinking by level (thinkingBudget is legacy and can't be combined
+        // with it). Thinking tokens count against maxOutputTokens, so a lower level leaves more
+        // of the allowance for the reply.
+        thinkingConfig: { thinkingLevel: call.thinking ?? "medium" },
+      },
     }),
   });
   if (!res.ok) throw new ModelError(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -108,10 +139,14 @@ async function callGemini(env: Env, cfg: ModelConfig, call: ModelCall): Promise<
   };
   const tokensIn = data.usageMetadata?.promptTokenCount ?? 0;
   const tokensOut = (data.usageMetadata?.candidatesTokenCount ?? 0) + (data.usageMetadata?.thoughtsTokenCount ?? 0);
+  const usage = { tokensIn, tokensOut, costUsd: cost(cfg, tokensIn, tokensOut) };
   const cand = data.candidates?.[0];
-  if (cand?.finishReason === "MAX_TOKENS") throw new ModelError("Model B hit the output limit");
+  if (cand?.finishReason === "MAX_TOKENS") {
+    const thoughts = data.usageMetadata?.thoughtsTokenCount ?? 0;
+    throw new ModelError(`Model ${cfg.role} hit the output limit (${call.maxTokens} tokens, ${thoughts} spent thinking)`, usage, "max_tokens");
+  }
   const text = (cand?.content?.parts ?? []).map((p) => p.text ?? "").join("");
-  if (!text) throw new ModelError(`Model B returned nothing (${cand?.finishReason ?? "no candidate"})`);
+  if (!text) throw new ModelError(`Model ${cfg.role} returned nothing (${cand?.finishReason ?? "no candidate"})`, usage);
   return { text, tokensIn, tokensOut, costUsd: cost(cfg, tokensIn, tokensOut) };
 }
 

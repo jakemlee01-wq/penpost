@@ -5,7 +5,7 @@
  */
 import { num, type Env } from "./env";
 import { estimate, type PlanStep } from "./estimate";
-import { cost, modelConfig, ModelError, parseJson, type ModelCaller, type ModelConfig, type Role } from "./models";
+import { cost, modelConfig, ModelError, parseJson, type ModelCaller, type ModelConfig, type Role, type ThinkingLevel, type Usage } from "./models";
 import * as P from "./prompts";
 import {
   ACTIVE_STATUSES,
@@ -109,6 +109,12 @@ const settings = (env: Env) => ({
   previewCapUsd: num(env.PREVIEW_CAP_USD, 0.5),
   parallel: Math.max(1, num(env.PARALLEL_STEPS, 3)),
   maxTokens: num(env.MAX_OUTPUT_TOKENS, 16000),
+  /** A redo of a failed step carries the old artifact and the checker's notes, so it gets more room. */
+  retryMaxTokens: num(env.RETRY_OUTPUT_TOKENS, 24000),
+  /** Hard ceiling for any single call, including the one retry after hitting the output limit. */
+  outputCeiling: num(env.MAX_OUTPUT_CEILING, 64000),
+  thinkingMake: (String(env.GEMINI_THINKING_MAKE ?? "low") as ThinkingLevel),
+  thinkingCheck: (String(env.GEMINI_THINKING_CHECK ?? "medium") as ThinkingLevel),
   swapKinds: String(env.SWAP_KINDS ?? "research")
     .split(",")
     .map((s) => s.trim())
@@ -198,11 +204,14 @@ async function log(d: Deps, projectId: string, e: LogEntry): Promise<void> {
 async function escalate(d: Deps, p: ProjectRow, reason: string): Promise<never> {
   await setProject(d, p.id, { status: "escalated", resume_status: p.status, escalation: reason });
   await log(d, p.id, { actor: "system", action: "escalate", startedAt: now(d), finishedAt: now(d), outcome: "fail", note: reason });
+  await recordOutcome(d, p.id, "escalated");
   throw new Halt(reason);
 }
 
 async function fail(d: Deps, p: ProjectRow, reason: string): Promise<never> {
   await setProject(d, p.id, { status: "failed", resume_status: p.status, escalation: reason });
+  await log(d, p.id, { actor: "system", action: "stopped", startedAt: now(d), finishedAt: now(d), outcome: "fail", note: reason });
+  await recordOutcome(d, p.id, "failed");
   throw new Halt(reason);
 }
 
@@ -213,8 +222,8 @@ function capFor(p: ProjectRow): number {
 }
 
 /** Worst-case cost of a call: its whole prompt plus the full output allowance. */
-function worstCase(d: Deps, cfg: ModelConfig, system: string, prompt: string): number {
-  return cost(cfg, approxTokens(system + prompt), settings(d.env).maxTokens);
+function worstCase(d: Deps, cfg: ModelConfig, system: string, prompt: string, allowance = settings(d.env).maxTokens): number {
+  return cost(cfg, approxTokens(system + prompt), allowance);
 }
 
 async function ensureBudget(d: Deps, p: ProjectRow, reserve: number): Promise<void> {
@@ -229,34 +238,78 @@ async function ensureBudget(d: Deps, p: ProjectRow, reserve: number): Promise<vo
   }
 }
 
-/** Make one model call, log it, and charge it to the project. Any error stops the project. */
+interface CallOpts {
+  stepId?: string | null;
+  /** Output allowance (reply plus thinking). Defaults to MAX_OUTPUT_TOKENS. */
+  maxTokens?: number;
+  /** Gemini thinking level; ignored by Anthropic. */
+  thinking?: ThinkingLevel;
+}
+
+async function charge(d: Deps, p: ProjectRow, usd: number): Promise<void> {
+  if (usd > 0) await db(d).prepare("UPDATE projects SET spent_usd = spent_usd + ? WHERE id = ?").bind(usd, p.id).run();
+}
+
+/**
+ * Make one model call, log it, and charge it to the project.
+ * - A reply cut off at the output limit is retried once with double the allowance (up to the
+ *   ceiling, and only if the budget allows). Anything else stops the project.
+ * - Every attempt is logged with its tokens and cost, and billed usage is charged even when the
+ *   call failed, so spend is never lost.
+ */
 async function call<T>(
   d: Deps,
   p: ProjectRow,
   cfg: ModelConfig,
   action: string,
   prompt: { system: string; prompt: string },
-  stepId: string | null = null,
+  opts: CallOpts = {},
 ): Promise<T> {
-  const startedAt = now(d);
-  const base = { stepId, actor: cfg.role, cfg, action, startedAt };
-  let res: Awaited<ReturnType<ModelCaller>>;
-  try {
-    res = await d.callModel(cfg, { ...prompt, maxTokens: settings(d.env).maxTokens });
-  } catch (err) {
-    const why = err instanceof ModelError ? err.message : `API error: ${(err as Error).message}`;
-    await log(d, p.id, { ...base, finishedAt: now(d), outcome: "error", note: why });
-    return fail(d, p, `${action} by Model ${cfg.role} (${cfg.model}) failed: ${why}`);
-  }
-  await db(d).prepare("UPDATE projects SET spent_usd = spent_usd + ? WHERE id = ?").bind(res.costUsd, p.id).run();
-  const usage = { finishedAt: now(d), tokensIn: res.tokensIn, tokensOut: res.tokensOut, costUsd: res.costUsd };
-  try {
-    const parsed = parseJson<T>(res.text);
-    await log(d, p.id, { ...base, ...usage, outcome: "ok" });
-    return parsed;
-  } catch (err) {
-    await log(d, p.id, { ...base, ...usage, outcome: "error", note: (err as Error).message });
-    return fail(d, p, `${action} by Model ${cfg.role} (${cfg.model}) failed: ${(err as Error).message}`);
+  const s = settings(d.env);
+  const stepId = opts.stepId ?? null;
+  let allowance = Math.min(opts.maxTokens ?? s.maxTokens, s.outputCeiling);
+  for (let attempt = 1; ; attempt++) {
+    const startedAt = now(d);
+    const base = { stepId, actor: cfg.role, cfg, action, startedAt };
+    let res: Awaited<ReturnType<ModelCaller>>;
+    try {
+      res = await d.callModel(cfg, { ...prompt, maxTokens: allowance, thinking: opts.thinking });
+    } catch (err) {
+      const usage: Usage | undefined = err instanceof ModelError ? err.usage : undefined;
+      await charge(d, p, usage?.costUsd ?? 0);
+      const why = err instanceof ModelError ? err.message : `API error: ${(err as Error).message}`;
+      const bigger = Math.min(allowance * 2, s.outputCeiling);
+      const retry = err instanceof ModelError && err.kind === "max_tokens" && attempt === 1 && bigger > allowance;
+      await log(d, p.id, {
+        ...base,
+        finishedAt: now(d),
+        tokensIn: usage?.tokensIn ?? 0,
+        tokensOut: usage?.tokensOut ?? 0,
+        costUsd: usage?.costUsd ?? 0,
+        outcome: retry ? "retry" : "error",
+        note: retry
+          ? `${why}. Retrying once with ${bigger} tokens.`
+          : usage
+            ? why
+            : `${why} (the provider reported no usage, so this call's cost could not be logged)`,
+      });
+      if (retry) {
+        await ensureBudget(d, p, worstCase(d, cfg, prompt.system, prompt.prompt, bigger));
+        allowance = bigger;
+        continue;
+      }
+      return fail(d, p, `${action} by Model ${cfg.role} (${cfg.model}) failed: ${why}`);
+    }
+    await charge(d, p, res.costUsd);
+    const usage = { finishedAt: now(d), tokensIn: res.tokensIn, tokensOut: res.tokensOut, costUsd: res.costUsd };
+    try {
+      const parsed = parseJson<T>(res.text);
+      await log(d, p.id, { ...base, ...usage, outcome: "ok" });
+      return parsed;
+    } catch (err) {
+      await log(d, p.id, { ...base, ...usage, outcome: "error", note: (err as Error).message });
+      return fail(d, p, `${action} by Model ${cfg.role} (${cfg.model}) failed: ${(err as Error).message}`);
+    }
   }
 }
 
@@ -373,10 +426,24 @@ async function runIntake(d: Deps, p: ProjectRow): Promise<void> {
   if (!r.problem || !r.solution || !acceptance.length) await fail(d, p, "Intake reply was missing the problem, solution or checks.");
   await setProject(d, p.id, {
     status: "awaiting_approval",
-    problem: r.problem,
-    solution: r.solution,
-    acceptance_json: JSON.stringify(acceptance),
+    problem: stripRoleLabels(r.problem!),
+    solution: stripRoleLabels(r.solution!),
+    acceptance_json: JSON.stringify(acceptance.map(stripRoleLabels)),
   });
+}
+
+/** Titles of steps that only review, audit or proofread other work. */
+const SELF_REVIEW =
+  /\b(audit|audits|auditing|proofread|proof-read|proofreading|self[- ]review|compliance[- ]check|quality[- ](check|assurance|review)|qa (pass|check|review)|fact[- ]check|double[- ]check|final (review|check|pass)|sanity[- ]check|review (and|&|then) (correct|revise|fix|edit|polish)|verify (and|&|then) (correct|revise|fix))\b/i;
+
+/** 1-based indexes of model steps that are self-review busywork. */
+export function selfReviewSteps(steps: { title: string; bucket: string }[]): number[] {
+  return steps.flatMap((x, i) => (x.bucket === "model" && SELF_REVIEW.test(x.title) ? [i + 1] : []));
+}
+
+/** Role labels the models sometimes put in customer-facing text ("Maker: ...", "Checker: ..."). */
+export function stripRoleLabels(text: string): string {
+  return text.replace(/^[ \t]*(\*\*)?(maker|checker|model [ab])(\*\*)?[ \t]*:[ \t]*(\*\*)?[ \t]*/gim, "");
 }
 
 interface PlanReply {
@@ -395,6 +462,18 @@ async function runPlan(d: Deps, p: ProjectRow): Promise<void> {
     // "Nothing worth doing right now" is a valid outcome: end without spending more.
     await setProject(d, p.id, { status: "done", summary: r.note || "Nothing worth doing right now.", finished_at: now(d) });
     return;
+  }
+
+  // The checker already reviews every step, so a plan with its own review/audit step is sent
+  // straight back (no reviewer call spent on it).
+  const reviewSteps = selfReviewSteps(raw.map((x) => ({ title: String(x.title ?? ""), bucket: String(x.bucket ?? "model") })));
+  if (reviewSteps.length) {
+    const rounds = p.plan_rounds + 1;
+    const notes = `Remove ${reviewSteps.map((i) => `step ${i} ("${raw[i - 1].title}")`).join(" and ")}. Never add self-review, audit, compliance-check or proofreading steps: an independent checker already checks every step against its check. Fold any count or rule into the producing step's own check instead.`;
+    await setProject(d, p.id, { plan_rounds: rounds, plan_notes: notes });
+    await log(d, p.id, { actor: "system", action: "plan_verdict", startedAt: now(d), finishedAt: now(d), outcome: "fail", note: notes });
+    if (rounds >= settings(d.env).maxRounds) await escalate(d, p, `Plan rejected ${rounds} times. Last notes: ${notes}`);
+    return; // still "planning": the next run replans with these notes
   }
 
   const kinds: StepKind[] = ["build", "write", "research"];
@@ -443,7 +522,7 @@ async function runPlanReview(d: Deps, p: ProjectRow): Promise<void> {
   }));
   const prompt = { system: P.planReview.system, prompt: P.planReview.prompt(spec(p), planView) };
   await ensureBudget(d, p, worstCase(d, b, prompt.system, prompt.prompt));
-  const r = await call<{ approved?: boolean; notes?: string }>(d, p, b, "plan_review", prompt);
+  const r = await call<{ approved?: boolean; notes?: string }>(d, p, b, "plan_review", prompt, { thinking: settings(d.env).thinkingCheck });
   const s = settings(d.env);
 
   if (r.approved !== true) {
@@ -466,6 +545,7 @@ async function runPlanReview(d: Deps, p: ProjectRow): Promise<void> {
     bucket: x.bucket,
     dependsOn: JSON.parse(x.depends_json),
     estTokens: x.est_tokens,
+    text: `${x.title}\n${x.detail}\n${x.check_text}`,
     ...rolesFor(d.env, x.kind),
   }));
   const est = estimate(planSteps, b, s.maxRounds);
@@ -474,6 +554,57 @@ async function runPlanReview(d: Deps, p: ProjectRow): Promise<void> {
     checklist_json: JSON.stringify(checklist),
     estimate_json: JSON.stringify(est),
   });
+  const spent = (await loadProject(d, p.id)).spent_usd;
+  await db(d)
+    .prepare(
+      `INSERT INTO estimates (project_id, estimated_at, model_steps, math_heavy, est_low_usd, est_high_usd, est_minutes_low, est_minutes_high, preview_usd)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(project_id) DO UPDATE SET estimated_at = excluded.estimated_at, model_steps = excluded.model_steps,
+         math_heavy = excluded.math_heavy, est_low_usd = excluded.est_low_usd, est_high_usd = excluded.est_high_usd,
+         est_minutes_low = excluded.est_minutes_low, est_minutes_high = excluded.est_minutes_high, preview_usd = excluded.preview_usd`,
+    )
+    .bind(p.id, now(d), est.modelSteps, est.mathHeavy ? 1 : 0, est.costLowUsd, est.costHighUsd, est.minutesLow, est.minutesHigh, spent)
+    .run();
+}
+
+/**
+ * Record actual cost and time against the estimate when a project stops (done, escalated or
+ * failed). Only projects that got an estimate have a row; the latest stop wins, so a resumed
+ * project's row reflects its final outcome.
+ */
+async function recordOutcome(d: Deps, id: string, outcome: "done" | "escalated" | "failed"): Promise<void> {
+  const p = await db(d)
+    .prepare("SELECT spent_usd, solve_started_at FROM projects WHERE id = ?")
+    .bind(id)
+    .first<{ spent_usd: number; solve_started_at: number | null }>();
+  if (!p) return;
+  const since = p.solve_started_at ?? Number.MAX_SAFE_INTEGER;
+  const agg = await db(d)
+    .prepare(
+      `SELECT COALESCE(SUM(cost_usd), 0) AS solve_usd,
+              SUM(CASE WHEN model IS NOT NULL THEN 1 ELSE 0 END) AS calls,
+              SUM(CASE WHEN outcome = 'retry' THEN 1 ELSE 0 END) AS retries
+       FROM events WHERE project_id = ? AND started_at >= ?`,
+    )
+    .bind(id, since)
+    .first<{ solve_usd: number; calls: number | null; retries: number | null }>();
+  const t = now(d);
+  await db(d)
+    .prepare(
+      `UPDATE estimates SET outcome = ?, recorded_at = ?, actual_solve_usd = ?, actual_total_usd = ?, actual_solve_minutes = ?,
+         model_calls = ?, retries = ? WHERE project_id = ?`,
+    )
+    .bind(
+      outcome,
+      t,
+      p.solve_started_at ? (agg?.solve_usd ?? 0) : 0,
+      p.spent_usd,
+      p.solve_started_at ? (t - p.solve_started_at) / 60000 : 0,
+      agg?.calls ?? 0,
+      agg?.retries ?? 0,
+      id,
+    )
+    .run();
 }
 
 type Action = { type: "make" | "check"; step: StepRow; role: Role };
@@ -510,13 +641,19 @@ async function runSolve(d: Deps, p: ProjectRow): Promise<boolean> {
 
   // Reserve the worst case for the whole batch up front, so parallel calls can't jointly overrun.
   const prompts = await Promise.all(batch.map((a) => buildPrompt(d, p, a, steps)));
-  const reserve = prompts.reduce((n, x, i) => n + worstCase(d, cfgFor(d, batch[i]), x.system, x.prompt), 0);
+  const reserve = prompts.reduce((n, x, i) => n + worstCase(d, cfgFor(d, batch[i]), x.system, x.prompt, allowanceFor(d, batch[i])), 0);
   await ensureBudget(d, p, reserve);
 
   const results = await Promise.allSettled(batch.map((a, i) => runAction(d, p, a, prompts[i])));
   const halted = results.find((r) => r.status === "rejected");
   if (halted && halted.status === "rejected" && !(halted.reason instanceof Halt)) throw halted.reason;
   return true;
+}
+
+/** Output allowance for an action: a redo of a failed step gets more room for its larger prompt and rewrite. */
+function allowanceFor(d: Deps, a: Action): number {
+  const s = settings(d.env);
+  return a.type === "make" && a.step.status === "failed" ? Math.max(s.retryMaxTokens, s.maxTokens) : s.maxTokens;
 }
 
 function cfgFor(d: Deps, a: Action): ModelConfig {
@@ -558,7 +695,11 @@ async function runAction(d: Deps, p: ProjectRow, a: Action, prompt: { system: st
   const step = a.step;
   if (a.type === "make") {
     if (step.rounds === 0 && step.status === "pending") await setStep(d, step.id, { started_at: now(d) });
-    const r = await call<{ artifact?: string; notes?: string; needs_human?: string | null }>(d, p, cfg, "make", prompt, step.id);
+    const r = await call<{ artifact?: string; notes?: string; needs_human?: string | null }>(d, p, cfg, "make", prompt, {
+      stepId: step.id,
+      maxTokens: allowanceFor(d, a),
+      thinking: s.thinkingMake,
+    });
     if (r.needs_human) {
       await setStep(d, step.id, { maker_notes: r.notes ?? null });
       await escalate(d, p, `Step ${step.idx} needs a person: ${r.needs_human}`);
@@ -568,7 +709,10 @@ async function runAction(d: Deps, p: ProjectRow, a: Action, prompt: { system: st
     return;
   }
 
-  const r = await call<{ pass?: boolean; evidence?: string; notes?: string }>(d, p, cfg, "check", prompt, step.id);
+  const r = await call<{ pass?: boolean; evidence?: string; notes?: string }>(d, p, cfg, "check", prompt, {
+    stepId: step.id,
+    thinking: s.thinkingCheck,
+  });
   const passed = r.pass === true;
   await db(d)
     .prepare("UPDATE events SET outcome = ? WHERE id = (SELECT MAX(id) FROM events WHERE project_id = ? AND step_id = ? AND action = 'check')")
@@ -616,7 +760,9 @@ async function runFinalCheck(d: Deps, p: ProjectRow): Promise<void> {
   const userSteps = steps.filter((x) => x.bucket !== "model").map((x) => `Step ${x.idx}: ${x.title}`);
   const prompt = { system: P.finalCheck.system, prompt: P.finalCheck.prompt(spec(p), work, userSteps) };
   await ensureBudget(d, p, worstCase(d, b, prompt.system, prompt.prompt));
-  const r = await call<{ results?: { check?: string; pass?: boolean; evidence?: string }[]; summary?: string }>(d, p, b, "final_check", prompt);
+  const r = await call<{ results?: { check?: string; pass?: boolean; evidence?: string }[]; summary?: string }>(d, p, b, "final_check", prompt, {
+    thinking: settings(d.env).thinkingCheck,
+  });
   const results = Array.isArray(r.results) ? r.results : [];
   const acceptance = spec(p).acceptance;
   const failed = results.filter((x) => x.pass !== true);
@@ -625,6 +771,7 @@ async function runFinalCheck(d: Deps, p: ProjectRow): Promise<void> {
     await escalate(d, p, `Final check did not pass: ${list}`);
   }
   await setProject(d, p.id, { status: "done", summary: r.summary ?? "All acceptance checks passed.", finished_at: now(d) });
+  await recordOutcome(d, p.id, "done");
 }
 
 // ---------------------------------------------------------------- scheduling
@@ -724,42 +871,126 @@ export async function projectView(d: Deps, id: string): Promise<ProjectView> {
     status: p.status,
     createdAt: p.created_at,
     request: p.request,
-    problem: p.problem,
-    solution: p.solution,
-    acceptance: JSON.parse(p.acceptance_json ?? "[]"),
+    problem: p.problem && stripRoleLabels(p.problem),
+    solution: p.solution && stripRoleLabels(p.solution),
+    acceptance: (JSON.parse(p.acceptance_json ?? "[]") as string[]).map(stripRoleLabels),
     checklist: JSON.parse(p.checklist_json ?? "[]"),
     estimate: p.estimate_json ? JSON.parse(p.estimate_json) : null,
     capUsd: PRE_START.includes(p.status) ? p.preview_cap_usd : p.cap_usd,
+    previewCapUsd: p.preview_cap_usd,
+    projectCapUsd: p.cap_usd,
     spentUsd: p.spent_usd,
     summary: p.summary,
     escalation: p.escalation,
+    resumePlan: resumePlan(d, p, steps),
     steps: stepViews,
     events: eventViews,
     idle: idleTime(p, events, now(d)),
   };
 }
 
-/** Idle = solving wall time minus the time each model spent in calls. */
-function idleTime(p: ProjectRow, events: EventRow[], t: number): { A: number; B: number } {
-  if (!p.solve_started_at) return { A: 0, B: 0 };
-  const end = p.finished_at ?? t;
-  const span = Math.max(0, end - p.solve_started_at);
+/**
+ * Plain-language description of what Resume will do for a stopped project: which step reruns,
+ * who runs it, and what is different this time.
+ */
+export function resumePlan(d: Deps, p: ProjectRow, steps: StepRow[]): string | null {
+  if (p.status !== "escalated" && p.status !== "failed") return null;
+  const s = settings(d.env);
+  const why = p.escalation ?? "";
+  const back = p.resume_status ?? "intake";
+  const cap = PRE_START.includes(back) ? p.preview_cap_usd : p.cap_usd;
+  const capLine = /dollar cap/i.test(why)
+    ? ` It stopped at its $${cap.toFixed(2)} cap, so enter a higher cap or it will stop again at the same point.`
+    : ` You can also enter a new cap (now $${cap.toFixed(2)}); leave it blank to keep it.`;
+
+  if (back === "intake") return `Resume drafts the brief again from your request.${capLine}`;
+  if (back === "planning" || back === "plan_review") {
+    return `Resume has Model A write a new plan using the reviewer's last notes, and resets the plan's rejection count so it gets ${s.maxRounds} fresh tries.${capLine}`;
+  }
+  if (back === "final_check") {
+    return `Resume reruns only the final sign-off: Model B checks every "Done means" item against the work already delivered. No steps are redone.${capLine}`;
+  }
+  const done = new Set(steps.filter((x) => x.status === "passed" || x.status === "external").map((x) => x.idx));
+  const next = steps.filter(
+    (x) => x.bucket === "model" && x.status !== "passed" && (JSON.parse(x.depends_json) as number[]).every((dep) => done.has(dep)),
+  );
+  if (!next.length) return `Resume continues solving from where it stopped.${capLine}`;
+  const limitHit = /output limit/i.test(why);
+  const lines = next.map((x) => {
+    const r = rolesFor(d.env, x.kind);
+    const name = `step ${x.idx} ("${x.title}")`;
+    if (x.status === "failed") {
+      const room = Math.max(s.retryMaxTokens, s.maxTokens).toLocaleString("en-US");
+      return `Model ${r.maker.role} redoes ${name} using the checker's notes from its last failed check, with room for ${room} tokens${
+        limitHit ? " (it ran out of room last time; if that happens again it gets one more try with double the room)" : ""
+      }, then Model ${r.checker.role} checks it`;
+    }
+    if (x.status === "made") return `Model ${r.checker.role} checks ${name}, which is already written`;
+    return `Model ${r.maker.role} makes ${name}, then Model ${r.checker.role} checks it`;
+  });
+  const reset = next.some((x) => x.rounds > 0) ? ` Failed-check counts reset, so each gets ${s.maxRounds} fresh tries.` : "";
+  return `Resume picks up where it stopped: ${lines.join("; ")}. Steps that already passed are kept.${reset}${capLine}`;
+}
+
+/**
+ * Idle = time a model spent waiting while the project was actively solving. Only periods in an
+ * active status count: from the start of solving (or a resume) until the project stops
+ * (escalated, failed or done). Busy time is the merged span of that model's calls.
+ */
+export function idleTime(
+  p: Pick<ProjectRow, "solve_started_at" | "finished_at" | "status">,
+  events: EventRow[],
+  t: number,
+): { A: number; B: number } {
+  if (p.solve_started_at == null) return { A: 0, B: 0 };
+  const start0 = p.solve_started_at;
+  const sorted = events
+    .filter((e) => (e.finished_at ?? e.started_at) >= start0)
+    .sort((x, y) => x.started_at - y.started_at || x.id - y.id);
+
+  // Active intervals: solving starts active; a stop marker (escalate, stopped, or a failed call
+  // in older logs) closes the interval; a resume reopens it.
+  const intervals: [number, number][] = [];
+  let open: number | null = start0;
+  for (const e of sorted) {
+    const at = e.finished_at ?? e.started_at;
+    const stop = e.action === "escalate" || e.action === "stopped" || (e.outcome === "error" && e.actor !== "user");
+    if (stop && open !== null) {
+      intervals.push([open, Math.max(open, at)]);
+      open = null;
+    } else if (e.action === "resume" && open === null) {
+      open = e.started_at;
+    }
+  }
+  if (open !== null) {
+    const stillActive = ACTIVE_STATUSES.includes(p.status);
+    const lastSeen = Math.max(open, ...sorted.map((e) => e.finished_at ?? e.started_at));
+    const end = p.finished_at ?? (stillActive ? t : lastSeen);
+    intervals.push([open, Math.max(open, end)]);
+  }
+  const activeMs = intervals.reduce((n, [a, b]) => n + (b - a), 0);
+
   const busy = (role: string) => {
-    const spans = events
-      .filter((e) => e.actor === role && e.finished_at && e.started_at >= p.solve_started_at! && (e.action === "make" || e.action === "check" || e.action === "final_check"))
-      .map((e) => [e.started_at, e.finished_at!] as const)
+    const spans = sorted
+      .filter((e) => e.actor === role && e.finished_at && ["make", "check", "final_check"].includes(e.action))
+      .flatMap((e) =>
+        // Only the part of a call inside an active interval counts.
+        intervals
+          .map(([a, b]) => [Math.max(a, e.started_at), Math.min(b, e.finished_at!)] as [number, number])
+          .filter(([x, y]) => y > x),
+      )
       .sort((x, y) => x[0] - y[0]);
     let total = 0;
     let cur: [number, number] | null = null;
-    for (const [s, f] of spans) {
-      if (cur && s <= cur[1]) cur[1] = Math.max(cur[1], f);
+    for (const [s0, f] of spans) {
+      if (cur && s0 <= cur[1]) cur[1] = Math.max(cur[1], f);
       else {
         if (cur) total += cur[1] - cur[0];
-        cur = [s, f];
+        cur = [s0, f];
       }
     }
     if (cur) total += cur[1] - cur[0];
     return total;
   };
-  return { A: Math.max(0, span - busy("A")), B: Math.max(0, span - busy("B")) };
+  return { A: Math.max(0, activeMs - busy("A")), B: Math.max(0, activeMs - busy("B")) };
 }

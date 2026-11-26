@@ -25,6 +25,8 @@ export interface Estimate {
   minutesHigh: number;
   modelSteps: number;
   calls: number;
+  /** True when the plan involves calculations (funnels, budgets, targets), which run long and fail checks more. */
+  mathHeavy?: boolean;
 }
 
 export interface ChecklistItem {
@@ -44,10 +46,17 @@ export interface ProjectView {
   acceptance: string[];
   checklist: ChecklistItem[];
   estimate: Estimate | null;
+  /** The cap in effect right now: the preview cap before solving starts, the project cap after. */
   capUsd: number;
+  /** Limit on the free part (brief, plan, review). */
+  previewCapUsd: number;
+  /** Limit on the whole project once solving starts. */
+  projectCapUsd: number;
   spentUsd: number;
   summary: string | null;
   escalation: string | null;
+  /** For a stopped project: what Resume will do, in plain words. */
+  resumePlan: string | null;
   steps: StepView[];
   events: EventView[];
   idle: IdleView;

@@ -4,6 +4,7 @@
  * this browser, while payments are out of scope.
  */
 import type { ProjectView, StepView } from "../worker/src/types";
+import { capNote, usd } from "./format";
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
 const app = document.getElementById("app")!;
@@ -14,7 +15,6 @@ let timer: number | undefined;
 
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-const usd = (n: number) => `$${n.toFixed(n > 0 && n < 0.1 ? 3 : 2)}`;
 const mins = (ms: number) => (ms < 60_000 ? `${Math.round(ms / 1000)}s` : `${Math.round(ms / 60_000)} min`);
 const clock = (t: number) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
@@ -170,7 +170,7 @@ function render(p: ProjectView): string {
     ${p.summary ? `<p>${esc(p.summary)}</p>` : ""}</div>`);
 
   if (p.status === "escalated" || p.status === "failed") {
-    parts.push(`<div class="card"><b>Resume</b><p class="small muted">Clears the pause and gives the stuck step fresh tries. Optionally raise the dollar cap (now ${usd(p.capUsd)}).</p>
+    parts.push(`<div class="card"><b>Resume</b><p class="small">${esc(p.resumePlan ?? `Resume picks up where it stopped. Optionally raise the dollar cap (now ${usd(p.capUsd)}).`)}</p>
       <div class="row"><input type="number" id="cap" data-keep min="0" step="0.5" placeholder="New cap in $ (optional)" style="max-width:220px" />
       <button id="resume">Resume</button><span class="action-error error"></span></div></div>`);
   }
@@ -206,7 +206,7 @@ function render(p: ProjectView): string {
              <label class="row small"><input type="checkbox" id="confirm" /> I've done these, or will do them myself.</label>`
           : ""
       }
-      ${p.status === "awaiting_start" ? `<div class="row"><button id="start">Start solving</button><span class="muted small">Cap: ${usd(p.capUsd)}. Payments come later.</span></div><p class="action-error error"></p>` : ""}`);
+      ${p.status === "awaiting_start" ? `<div class="row"><button id="start">Start solving</button><span class="muted small">${esc(capNote(p.spentUsd, p.previewCapUsd, p.projectCapUsd))}</span></div><p class="action-error error"></p>` : ""}`);
   }
 
   if (!preStart) parts.push(progress(p));
@@ -217,14 +217,14 @@ function progress(p: ProjectView): string {
   const modelSteps = p.steps.filter((s) => s.bucket === "model");
   const passed = modelSteps.filter((s) => s.status === "passed").length;
   const feed = p.events
-    .filter((e) => ["make", "check", "final_check", "plan", "plan_review", "intake", "queue_empty", "escalate", "error", "start", "resume"].includes(e.action))
+    .filter((e) => ["make", "check", "final_check", "plan", "plan_review", "intake", "queue_empty", "escalate", "stopped", "error", "start", "resume"].includes(e.action))
     .slice()
     .reverse();
   return `
     <h2>Progress</h2>
     <div class="stats">
       <div class="stat"><b>${passed} / ${modelSteps.length}</b><span>steps passed</span></div>
-      <div class="stat"><b>${usd(p.spentUsd)}</b><span>cost so far (cap ${usd(p.capUsd)})</span></div>
+      <div class="stat"><b>${usd(p.spentUsd)}</b><span>cost so far (project cap ${usd(p.projectCapUsd)})</span></div>
       <div class="stat"><b>${mins(p.idle.A)} / ${mins(p.idle.B)}</b><span>idle time, Model A / B</span></div>
     </div>
     <h2>Steps</h2>
@@ -254,6 +254,7 @@ function describe(actor: string, action: string, step: number | null): string {
     error: "hit an error",
     start: "started solving",
     resume: "resumed",
+    stopped: "stopped the project",
   };
   return `${who} ${verbs[action] ?? action}`;
 }

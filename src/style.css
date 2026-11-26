@@ -83,6 +83,7 @@ li { margin: 4px 0; }
 .pill.pass, .pill.passed { color: var(--pass); }
 .pill.fail, .pill.failed, .pill.error { color: var(--fail); }
 .pill.made, .pill.pending, .pill.external, .pill.ok { color: var(--muted); }
+.pill.retry { color: var(--warn); }
 
 .step { display: grid; gap: 4px; }
 .step-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }

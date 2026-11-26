@@ -2,6 +2,29 @@
 
 Status as of 2026-11-26 (updated after the first deployment). This brief is self-contained: it assumes you have the repo but none of the earlier conversation.
 
+## 0. Where things stand right now (read this first)
+
+- **The Worker is deployed** on the Cloudflare **Free** plan. Jake wants to stay on Free for now.
+  - Worker: `penpost-solver` at https://penpost-solver.jakemlee01.workers.dev
+  - D1 database: `penpost-solver`, id `2084e04b-c786-4cd5-863c-8a2f2c6d10c5`, migration `0001_init.sql` applied.
+  - Queue: `penpost-solver-steps`. The Worker is both its producer and its consumer.
+  - Cron: `* * * * *`. It only sweeps stalled projects back onto the queue.
+- **Check after deploy:**
+  - `GET /api/projects/x` from origin `https://penpost.co` returns `503 {"error":"server not configured"}`. That is expected until `ACCESS_CODE` is set.
+  - A request from another origin gets 403.
+  - The CORS preflight returns 204.
+- **Not done yet, waiting on Jake:** adding the three Worker secrets in the Cloudflare dashboard (Workers & Pages, then `penpost-solver`, Settings, Variables and Secrets, type Secret): `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `ACCESS_CODE`. Jake sets monthly spend limits on both model keys first.
+- **Not done yet, needs Jake's OK:** merging `claude/bold-babbage-kqgmx3` to `main`. That deploys the new site to penpost.co through GitHub Pages, replacing what's there, and removes the old news workflow. Nothing has been pushed to `main`.
+- **Next task once the secrets are in:** build order step 4. Run one small real problem end to end through the deployed Worker. Then check that it doesn't stall from the Free plan's CPU limit (section 12, item 2), compare the logged cost (`events` table) with the Anthropic and Google dashboards, and fix any prompts whose replies don't parse as JSON.
+- **Changes in the latest round:**
+  - **Models:** Model A is now `claude-haiku-5-5` ($0.10 / $0.50 per million tokens) and Model B is `gemini-3.8-flash`. Model B is priced at $1.50 / $7.50, Google's rate from 2027-01-01, to stay conservative; the introductory rate until 2026-12-31 is $0.75 / $3.75. Haiku doesn't accept the Anthropic server-side refusal fallback, so `models.ts` only sends `fallbacks` for models in `SERVER_FALLBACK_MODELS`.
+  - **Caps:** `PREVIEW_CAP_USD` is $0.50 and `PROJECT_CAP_USD` is $2. These are the defaults in both `wrangler.toml` and the code.
+  - **Execution:** steps now run as queue consumers, one message per step, batch size 1, `max_retries = 0`. Each step queues the next while the project is active. User actions queue the first step. The lease is 16 minutes, longer than the consumer's 15-minute wall time. The cron calls `sweep()`, which re-queues active, unleased projects untouched for 2 minutes. `tick()` was replaced by `stalled()`/`sweep()`.
+  - **Estimator:** time constants retuned for fast models and queue hand-off (40 seconds per call, 5 seconds per hand-off).
+  - **Site:** `deploy.yml` builds with `VITE_API_URL` set to the `PENPOST_API_URL` repo variable if present, else the Worker URL above.
+  - **Tests:** 20, all passing. Both typechecks are clean.
+- **How Claude deployed:** a Cloudflare API token, account `b0200d37fc44add03e63f4f82e4786ab`, held by Claude's cloud environment. Your session will need its own way to run `wrangler`: `npx wrangler login`, or a `CLOUDFLARE_API_TOKEN` with Workers Scripts, D1 and Queues edit permissions. Redeploy with `npm run worker:deploy`; run `npm run db:migrate:remote` only when the migrations change.
+
 ---
 
 ## 1. What we are building
@@ -67,7 +90,9 @@ The owner is **Jake**. Anything that spends real money, uses real credentials or
 - **Commits on the branch, on top of `main`:**
   - `3ebc685`: removes the old Penpost news product.
   - `c0d6c42`: adds the problem solver (Worker, D1 schema, site, tests).
-  - plus the commit that adds this file.
+  - `ab76611`: adds this handoff brief.
+  - `548fe74`: switches step execution to a Cloudflare Queue, switches the models to Haiku and Gemini Flash, lowers the caps, and records the deployment.
+  - plus a small commit that updates this brief.
 - **`main` still holds the old news app.** Until this branch merges, the old `draft-edition.yml` workflow on `main` is still scheduled for weekdays at 09:00 UTC. It calls Gemini with the repo's `GEMINI_API_KEY` Actions secret and pushes editions to `main`. The last edition is dated 2026-10-27, so it may already be failing or disabled. Merging this branch deletes that workflow.
 
 ### What was removed (the old product)

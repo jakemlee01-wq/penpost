@@ -16,6 +16,17 @@ Status as of 2026-11-26 (updated after the first deployment). This brief is self
 - **Not done yet, waiting on Jake:** adding the three Worker secrets in the Cloudflare dashboard (Workers & Pages, then `penpost-solver`, Settings, Variables and Secrets, type Secret): `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `ACCESS_CODE`. Jake sets monthly spend limits on both model keys first.
 - **Not done yet, needs Jake's OK:** merging `claude/bold-babbage-kqgmx3` to `main`. That deploys the new site to penpost.co through GitHub Pages, replacing what's there, and removes the old news workflow. Nothing has been pushed to `main`.
 - **Next task once the secrets are in:** build order step 4. Run one small real problem end to end through the deployed Worker. Then check that it doesn't stall from the Free plan's CPU limit (section 12, item 2), compare the logged cost (`events` table) with the Anthropic and Google dashboards, and fix any prompts whose replies don't parse as JSON.
+- **Update 2026-11-26, later:** the secrets are in, Jake set $5 spend limits per model key, and the branch is merged to `main` (fast-forward, now `c0462a4` or later).
+  - **The site isn't live yet:** the "Test, build, deploy" workflow is *disabled* in GitHub, so neither push triggered a build. Jake has to enable it (Actions tab, the workflow, then "Enable workflow") and then run it or push.
+- **First live test run (done):** "Write a 150-word product description for a reusable water bottle."
+  - **Driven directly, not through the site:** Claude couldn't read `ACCESS_CODE`, so it skipped the website and drove the live Worker directly. It inserted the project and the user actions into D1, the same way the API does, and pushed queue messages through the Cloudflare API.
+  - **Result:** intake, plan, plan review, make, step check and final check all ran on the real models. The description came out at exactly 150 words with no digits.
+  - **Bug found and fixed:** the final check counted the prompt's `--- Step 1: …` label as part of the work and failed it. Artifacts are now wrapped in `<deliverable>` tags (`c0462a4`). After the fix was deployed and the project resumed, it finished `done`.
+  - **Totals:**
+    - 7 model calls.
+    - Logged cost $0.0542: Haiku $0.0027 (3 calls) and Gemini $0.0515 (4 calls, priced at the 2027 rate; about $0.026 at the current introductory rate).
+    - The solve took about 2.5 minutes of wall time. The estimate shown was $0.04 to $0.05 and 2 to 4 minutes.
+    - Nothing stalled on the Free plan's CPU limit.
 - **Changes in the latest round:**
   - **Models:** Model A is now `claude-haiku-5-5` ($0.10 / $0.50 per million tokens) and Model B is `gemini-3.8-flash`. Model B is priced at $1.50 / $7.50, Google's rate from 2027-01-01, to stay conservative; the introductory rate until 2026-12-31 is $0.75 / $3.75. Haiku doesn't accept the Anthropic server-side refusal fallback, so `models.ts` only sends `fallbacks` for models in `SERVER_FALLBACK_MODELS`.
   - **Caps:** `PREVIEW_CAP_USD` is $0.50 and `PROJECT_CAP_USD` is $2. These are the defaults in both `wrangler.toml` and the code.

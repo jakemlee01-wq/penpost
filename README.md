@@ -4,7 +4,7 @@ Someone states a problem and the solution they want. They get a free feasibility
 
 - **Front end:** a static site on GitHub Pages at penpost.co (`index.html`, `src/`). No API keys here.
 - **Back end:** a Cloudflare Worker, `penpost-solver` (`worker/`). It holds both model keys as secrets, keeps all state in D1 and runs the orchestrator.
-- **Orchestrator:** plain code, not an AI (`worker/src/engine.ts`). It does one step per run. A Cron Trigger runs every minute, and user actions also start the next step straight away.
+- **Orchestrator:** plain code, not an AI (`worker/src/engine.ts`). It does one step per run. Each run is a message on a Cloudflare Queue (`penpost-solver-steps`): a user action queues the first step, and each step queues the next one while the project is active. A queue consumer can run up to 15 minutes, so long model calls aren't cut off. A Cron Trigger runs every minute, but only to re-queue projects whose chain of steps broke. All of this works on the Workers Free plan.
 
 ## Flow
 
@@ -27,7 +27,7 @@ If the plan has no steps worth doing, the project ends right there and spends no
 ## Guardrails
 
 - **Max rounds:** `MAX_ROUNDS` tries per step and per plan, then the project escalates to Jake.
-- **Dollar caps:** `PREVIEW_CAP_USD` covers the free part and `PROJECT_CAP_USD` covers the solve. Before each call the Worker reserves that call's worst-case cost, so it stops before going over the cap, not after.
+- **Dollar caps:** `PREVIEW_CAP_USD` ($0.50) covers the free part and `PROJECT_CAP_USD` ($2) covers the solve. Before each call the Worker reserves that call's worst-case cost, so it stops before going over the cap, not after.
 - **Escalation to Jake:** a project pauses as `escalated` if:
   - a step needs real money, credentials, production systems, going live or contacting people (the maker returns `needs_human`);
   - a cap is reached;
@@ -47,29 +47,32 @@ Every model call is a row in `events` with:
 
 A `queue_empty` row records when a model's queue runs dry, and why. The project page shows the activity feed, the cost so far, and each model's idle time (the solving time it spent outside calls).
 
-## First-time setup
+## Deployment
 
-Do these in order. Set the spend limits before adding any keys.
+Deployed on the Cloudflare **Free** plan:
+- **Worker:** `penpost-solver` at https://penpost-solver.jakemlee01.workers.dev
+- **D1 database:** `penpost-solver` (id in `worker/wrangler.toml`), with the migration applied.
+- **Queue:** `penpost-solver-steps`, which this Worker both produces to and consumes from.
 
-1. **Spend limits.** Set hard monthly spend limits in the Anthropic Console and in Google AI Studio (or Cloud billing) for the keys you'll use.
-2. **D1 and the Worker.**
+The site build points at the Worker URL by default (`.github/workflows/deploy.yml`). To change it, set the `PENPOST_API_URL` repo variable.
 
-   ```bash
-   npm install
-   npx wrangler login
-   npx wrangler d1 create penpost-solver      # paste the database_id into worker/wrangler.toml
-   npm run db:migrate:remote
-   npm run worker:deploy
-   npx wrangler secret put ANTHROPIC_API_KEY --config worker/wrangler.toml
-   npx wrangler secret put GEMINI_API_KEY --config worker/wrangler.toml
-   npx wrangler secret put ACCESS_CODE --config worker/wrangler.toml
-   ```
-3. **The site.** In GitHub, go to repo Settings, then Secrets and variables, then Actions, then **Variables**. Set `PENPOST_API_URL` to the Worker URL, for example `https://penpost-solver.<subdomain>.workers.dev`. Then push to `main`, or re-run "Test, build, deploy".
-4. **Models and prices.** These are vars in `worker/wrangler.toml`:
-   - Model A is `claude-opus-5-5` ($4 / $20 per million tokens).
-   - Model B is `gemini-3.1-pro-preview` ($2 / $12).
+**Secrets:** add these three in the Cloudflare dashboard (Workers & Pages, then `penpost-solver`, Settings, Variables and Secrets, type **Secret**), or with `npx wrangler secret put NAME --config worker/wrangler.toml`. Until `ACCESS_CODE` is set, the API answers 503.
+- `ANTHROPIC_API_KEY`
+- `GEMINI_API_KEY`
+- `ACCESS_CODE`
 
-   Check the Gemini model name and price against Google's pricing page before the first real run. Prices feed the estimator and the dollar caps.
+Set hard monthly spend limits on both model keys first.
+
+**Models and prices** are vars in `worker/wrangler.toml`. They feed the estimator and the dollar caps:
+- Model A is `claude-haiku-5-5` ($0.10 / $0.50 per million tokens, for prompts up to 100K tokens).
+- Model B is `gemini-3.8-flash`. It is charged here at $1.50 / $7.50, Google's price from 2027-01-01. Until 2026-12-31 Google lists an introductory $0.75 / $3.75, so the estimates run on the safe side.
+
+**Redeploy** after changing the Worker:
+
+```bash
+npm run db:migrate:remote   # only when worker/migrations changed
+npm run worker:deploy
+```
 
 ## Develop
 
@@ -81,7 +84,7 @@ npm run db:migrate:local
 npm run worker:dev        # Worker at localhost:8787; put ACCESS_CODE=... in worker/.dev.vars
 ```
 
-The Worker's cron runs every minute once deployed. Locally, trigger it with `curl "localhost:8787/__scheduled?cron=*+*+*+*+*"` (start `wrangler dev` with `--test-scheduled`).
+Locally, `wrangler dev` simulates the queue. To fire the sweeper cron, use `curl "localhost:8787/__scheduled?cron=*+*+*+*+*"` (start `wrangler dev` with `--test-scheduled`).
 
 ## Where things live
 
@@ -90,7 +93,7 @@ worker/src/engine.ts     the orchestrator: state machine, guardrails, logging, v
 worker/src/prompts.ts    one prompt per action; every reply is a JSON object
 worker/src/models.ts     Anthropic (SDK) and Gemini (REST) clients with token and cost accounting
 worker/src/estimate.ts   cost and time estimate from the reviewed plan
-worker/src/index.ts      HTTP routes and the cron handler
+worker/src/index.ts      HTTP routes, the queue consumer and the cron sweeper
 worker/migrations/       D1 schema
 src/main.ts              the three screens: problem, confirm and preview, progress
 tests/                   engine and HTTP tests

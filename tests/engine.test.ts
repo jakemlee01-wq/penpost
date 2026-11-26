@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { advance, approveIntake, createProject, projectView, resume, reviseIntake, startSolve, tick, type Deps } from "../worker/src/engine";
+import { advance, approveIntake, createProject, projectView, resume, reviseIntake, stalled, startSolve, type Deps } from "../worker/src/engine";
 import type { Env } from "../worker/src/env";
 import { estimate } from "../worker/src/estimate";
-import { handle } from "../worker/src/index";
+import { consume, handle, sweep } from "../worker/src/index";
 import { modelConfig, type ModelCall, type ModelConfig } from "../worker/src/models";
 import * as P from "../worker/src/prompts";
 import { makeD1 } from "./d1";
@@ -13,7 +13,12 @@ type Reply = string | object | ((call: ModelCall, cfg: ModelConfig) => unknown);
 function harness(script: Partial<Record<"intake" | "plan" | "review" | "make" | "check" | "final", Reply[]>>, envOver: Partial<Env> = {}) {
   const calls: { action: string; cfg: ModelConfig; call: ModelCall }[] = [];
   let clock = 1_000_000;
-  const env = { DB: makeD1(), ACCESS_CODE: "letmein", MAX_ROUNDS: "3", PROJECT_CAP_USD: "5", PREVIEW_CAP_USD: "0.75", ...envOver } as Env;
+  const sent: { id: string }[] = [];
+  const STEPS = {
+    send: async (body: { id: string }) => void sent.push(body),
+    sendBatch: async (msgs: { body: { id: string } }[]) => void sent.push(...msgs.map((m) => m.body)),
+  };
+  const env = { DB: makeD1(), STEPS, ACCESS_CODE: "letmein", MAX_ROUNDS: "3", PROJECT_CAP_USD: "5", PREVIEW_CAP_USD: "0.75", ...envOver } as unknown as Env;
   const actionOf = (system: string) =>
     system === P.intake.system ? "intake"
     : system === P.plan.system ? "plan"
@@ -36,7 +41,7 @@ function harness(script: Partial<Record<"intake" | "plan" | "review" | "make" | 
       return { text: typeof out === "string" ? out : JSON.stringify(out), tokensIn: 1000, tokensOut: 500, costUsd: 0.01 };
     },
   };
-  return { d, env, calls };
+  return { d, env, calls, sent };
 }
 
 const INTAKE = { problem: "Need a CSV dedupe script", solution: "A Python script that removes duplicate rows", acceptance: ["Script removes exact duplicate rows", "Usage is documented"] };
@@ -207,7 +212,7 @@ describe("guardrails", () => {
   });
 
   it("stops at the dollar cap before making the call", async () => {
-    const h = harness({ intake: [INTAKE] }, { PREVIEW_CAP_USD: "0.05" });
+    const h = harness({ intake: [INTAKE] }, { PREVIEW_CAP_USD: "0.001" });
     const id = await createProject(h.d, "x");
     await advance(h.d, id);
     const v = await projectView(h.d, id);
@@ -288,14 +293,48 @@ describe("scheduling", () => {
     expect((await projectView(h.d, id)).steps.map((s) => s.status)).toEqual(["made", "made", "made", "pending"]);
   });
 
-  it("tick advances each active project once and skips leased ones", async () => {
+  it("each queued step queues the next one until the project waits on the user", async () => {
+    const h = harness({ intake: [INTAKE], plan: [PLAN] });
+    const id = await createProject(h.d, "a");
+    const acks: string[] = [];
+    const batch = { messages: [{ body: { id }, ack: () => void acks.push(id) }] } as unknown as MessageBatch<{ id: string }>;
+
+    // Intake runs; the project then waits for the user's approval, so nothing more is queued.
+    await consume(batch, h.env, h.d);
+    expect((await projectView(h.d, id)).status).toBe("awaiting_approval");
+    expect(h.sent).toEqual([]);
+    expect(acks).toEqual([id]);
+
+    // Planning leaves the project active (plan review is next), so the consumer queues it again.
+    await approveIntake(h.d, id);
+    await consume(batch, h.env, h.d);
+    expect((await projectView(h.d, id)).status).toBe("plan_review");
+    expect(h.sent).toEqual([{ id }]);
+  });
+
+  it("a leased project is skipped and not re-queued", async () => {
     const h = harness({ intake: [INTAKE] });
-    const a = await createProject(h.d, "a");
-    const b = await createProject(h.d, "b");
-    await h.env.DB.prepare("UPDATE projects SET lease_until = ? WHERE id = ?").bind(9e15, b).run();
-    expect(await tick(h.d)).toBe(1);
-    expect((await projectView(h.d, a)).status).toBe("awaiting_approval");
-    expect((await projectView(h.d, b)).status).toBe("intake");
+    const id = await createProject(h.d, "a");
+    await h.env.DB.prepare("UPDATE projects SET lease_until = ? WHERE id = ?").bind(9e15, id).run();
+    const batch = { messages: [{ body: { id }, ack: () => {} }] } as unknown as MessageBatch<{ id: string }>;
+    await consume(batch, h.env, h.d);
+    expect(h.calls).toHaveLength(0);
+    expect(h.sent).toEqual([]);
+  });
+
+  it("the cron re-queues only stalled, unleased, active projects", async () => {
+    const h = harness({});
+    const fresh = await createProject(h.d, "fresh");
+    const old = await createProject(h.d, "old");
+    const leased = await createProject(h.d, "leased");
+    const waiting = await createProject(h.d, "waiting");
+    await h.env.DB.prepare("UPDATE projects SET updated_at = 0 WHERE id IN (?, ?, ?)").bind(old, leased, waiting).run();
+    await h.env.DB.prepare("UPDATE projects SET lease_until = ? WHERE id = ?").bind(9e15, leased).run();
+    await h.env.DB.prepare("UPDATE projects SET status = 'awaiting_approval' WHERE id = ?").bind(waiting).run();
+    expect(await stalled(h.d)).toEqual([old]);
+    expect(await sweep(h.env, h.d)).toBe(1);
+    expect(h.sent).toEqual([{ id: old }]);
+    void fresh;
   });
 });
 
@@ -340,6 +379,7 @@ describe("HTTP", () => {
     const res = await handle(req("/api/projects", { method: "POST", body: JSON.stringify({ request: "fix my thing" }) }), h.env, ctx, h.d);
     expect(res.status).toBe(201);
     const { id } = (await res.json()) as { id: string };
+    expect(h.sent).toEqual([{ id }]); // the first step is queued straight away
     const got = await handle(req(`/api/projects/${id}`), h.env, ctx, h.d);
     expect(((await got.json()) as { status: string }).status).toBe("intake");
     expect(res.headers.get("access-control-allow-origin")).toBe("https://penpost.co");

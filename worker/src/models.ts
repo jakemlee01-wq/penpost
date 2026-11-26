@@ -33,15 +33,18 @@ export type ModelCaller = (cfg: ModelConfig, call: ModelCall) => Promise<ModelRe
 
 export class ModelError extends Error {}
 
+/** Anthropic models that accept the server-side refusal fallback. */
+const SERVER_FALLBACK_MODELS = new Set(["claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"]);
+
 export function modelConfig(env: Env, role: Role): ModelConfig {
   const p = role === "A" ? "MODEL_A" : "MODEL_B";
   const provider = (env[`${p}_PROVIDER`] ?? (role === "A" ? "anthropic" : "gemini")) as Provider;
   return {
     role,
     provider,
-    model: env[p] ?? (provider === "anthropic" ? "claude-opus-5-5" : "gemini-3.1-pro-preview"),
-    priceIn: Number(env[`${p}_PRICE_IN`] ?? (provider === "anthropic" ? 4 : 2)),
-    priceOut: Number(env[`${p}_PRICE_OUT`] ?? (provider === "anthropic" ? 20 : 12)),
+    model: env[p] ?? (provider === "anthropic" ? "claude-haiku-5-5" : "gemini-3.8-flash"),
+    priceIn: Number(env[`${p}_PRICE_IN`] ?? (provider === "anthropic" ? 0.1 : 1.5)),
+    priceOut: Number(env[`${p}_PRICE_OUT`] ?? (provider === "anthropic" ? 0.5 : 7.5)),
   };
 }
 
@@ -71,8 +74,10 @@ async function callAnthropic(env: Env, cfg: ModelConfig, call: ModelCall): Promi
       thinking: { type: "adaptive" },
       output_config: { effort },
       // On a safety decline, let the API re-run the request on its default fallback model.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      // Only some models accept server-side fallbacks (Haiku does not), so send it only for those.
+      ...(SERVER_FALLBACK_MODELS.has(cfg.model)
+        ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }
+        : {}),
     })
     .finalMessage();
   const tokensIn =

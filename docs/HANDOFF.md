@@ -1,6 +1,6 @@
 # PenPost Problem Solver: Handoff Brief
 
-Status as of 2026-11-26. This brief is self-contained: it assumes you have the repo but none of the earlier conversation.
+Status as of 2026-11-26 (updated after the first deployment). This brief is self-contained: it assumes you have the repo but none of the earlier conversation.
 
 ---
 
@@ -52,9 +52,9 @@ The owner is **Jake**. Anything that spends real money, uses real credentials or
   3. Progress screen: a live feed of steps showing who did what, pass or fail, cost so far, and idle time.
 - **Build order:**
   1. Audit the existing repo and Cloudflare setup; propose what to keep and delete. **Done.**
-  2. Worker with secrets, database, and the one-step-per-run orchestrator. **Done (code), not deployed.**
-  3. Bare-bones interface wired to it. **Done (code), not deployed.**
-  4. Run one small test problem end to end with low caps. **Not done: needs API keys and a deployed Worker.**
+  2. Worker with secrets, database, and the one-step-per-run orchestrator. **Done and deployed** (Cloudflare Free plan). The model keys and access code are not set yet.
+  3. Bare-bones interface wired to it. **Done.** It goes live on penpost.co once the branch merges to `main`.
+  4. Run one small test problem end to end with low caps. **Not done: waiting on the three secrets.**
   5. Add the estimator, feasibility check and logging roll-up. **Partly done** (see section 9).
   6. Payments come later and are out of scope.
 
@@ -99,13 +99,15 @@ Browser (penpost.co, GitHub Pages, static)
    ▼
 Cloudflare Worker "penpost-solver"
    ├─ fetch handler: REST API (create / read / approve / revise / start / resume)
-   │     └─ after each user action: ctx.waitUntil(runOne(projectId))   ← immediate "kick"
-   ├─ scheduled handler: cron "* * * * *" → tick(): advance every active project by one step
+   │     └─ after each user action: STEPS.send({id})                     ← queue the next step
+   ├─ queue consumer (penpost-solver-steps, batch size 1, no retries):
+   │     runOne(id) = one step under a lease; if still active → STEPS.send({id}) again
+   ├─ scheduled handler: cron "* * * * *" → sweep(): re-queue active projects whose chain broke
    ├─ D1 database "penpost-solver" (binding DB): projects, steps, events
    └─ secrets: ANTHROPIC_API_KEY, GEMINI_API_KEY, ACCESS_CODE
          │
-         ├─ Model A: Anthropic Messages API via @anthropic-ai/sdk (default claude-opus-5-5)
-         └─ Model B: Gemini generateContent REST (default gemini-3.1-pro-preview)
+         ├─ Model A: Anthropic Messages API via @anthropic-ai/sdk (default claude-haiku-5-5)
+         └─ Model B: Gemini generateContent REST (default gemini-3.8-flash)
 ```
 
 - **Stack:**
@@ -125,10 +127,10 @@ Cloudflare Worker "penpost-solver"
 index.html                       site shell; loads src/main.ts and src/style.css
 src/main.ts                      the whole front end: access-code screen, problem screen, project screen
 src/style.css                    light/dark tokens, phone-first layout
-worker/wrangler.toml             Worker config: cron, D1 binding (database_id is a PLACEHOLDER), vars
+worker/wrangler.toml             Worker config: cron, queue producer and consumer, D1 binding (real id), vars
 worker/tsconfig.json             Worker-only typecheck (workers-types)
 worker/migrations/0001_init.sql  D1 schema: projects, steps, events
-worker/src/index.ts              HTTP routing, CORS, access code, cron handler
+worker/src/index.ts              HTTP routing, CORS, access code, queue consumer (consume), cron sweeper (sweep)
 worker/src/engine.ts             the orchestrator: state machine, guardrails, logging, view builder
 worker/src/prompts.ts            system and user prompts for each action (all replies are JSON)
 worker/src/models.ts             model configs, Anthropic and Gemini callers, cost math, JSON extraction
@@ -136,7 +138,7 @@ worker/src/estimate.ts           cost and time estimate from the reviewed plan
 worker/src/env.ts                Env interface (bindings, secrets, vars) and a num() helper
 worker/src/types.ts              shared types for the Worker and the front end (ProjectView etc.)
 tests/d1.ts                      minimal D1 stand-in over node:sqlite; runs the real migration
-tests/engine.test.ts             18 tests: full loop with scripted fake models, guardrails, HTTP
+tests/engine.test.ts             20 tests: full loop with scripted fake models, guardrails, HTTP
 .github/workflows/deploy.yml     CI: test, typecheck the Worker, build the site, deploy Pages (main only)
 README.md                        setup and developer guide
 docs/HANDOFF.md                  this file
@@ -190,10 +192,11 @@ any active state ──guardrail──▶ escalated     any active state ──e
 escalated/failed ──Jake "resume" (optional new cap)──▶ resume_status
 ```
 
-- **Active statuses** (those the cron advances): `intake`, `planning`, `plan_review`, `solving`, `final_check`.
+- **Active statuses** (those that keep queuing steps): `intake`, `planning`, `plan_review`, `solving`, `final_check`.
 - **`advance(deps, id)`** does exactly one unit of work and returns.
-- **`runOne`** wraps `advance` in a lease. It takes `UPDATE … WHERE lease_until IS NULL OR lease_until < now … RETURNING id`, and the lease lasts 14 minutes.
-- **`tick`** runs `runOne` in parallel for up to 20 active, unleased projects, oldest `updated_at` first.
+- **`runOne`** wraps `advance` in a lease. It takes `UPDATE … WHERE lease_until IS NULL OR lease_until < now … RETURNING id` and also bumps `updated_at`. The lease lasts 16 minutes, longer than a queue consumer's 15-minute limit. `runOne` returns true if the project is still active, and the consumer then queues the next step. If the lease is taken, the message is dropped: the run holding the lease queues the next step itself.
+- **`stalled` / `sweep`:** the cron finds active projects with no lease that haven't been touched for 2 minutes (a broken chain), and re-queues them with `sendBatch`.
+- **Why one message per step:** the Free plan allows 50 D1 queries per invocation, and one solve step uses about 25 at most. Batch size 1 keeps each invocation well under that.
 
 ### One solving "step" (`runSolve`)
 
@@ -228,7 +231,7 @@ A failed check increments `rounds`, stores the checker's notes, and sets the ste
 | Guardrail | Implementation |
 |---|---|
 | Max rounds | `MAX_ROUNDS` (default 3) per step and per plan, then `escalated` |
-| Dollar cap | `ensureBudget` runs before every call or batch. It reserves the worst case (approx input tokens, taken as prompt chars / 3.5, plus the full `MAX_OUTPUT_TOKENS` allowance, at the configured prices). If spent + reserve > cap, the project escalates **before** the call. The cap is `preview_cap_usd` (default $0.75) before the solve starts and `cap_usd` (default $5) after. |
+| Dollar cap | `ensureBudget` runs before every call or batch. It reserves the worst case (approx input tokens, taken as prompt chars / 3.5, plus the full `MAX_OUTPUT_TOKENS` allowance, at the configured prices). If spent + reserve > cap, the project escalates **before** the call. The cap is `preview_cap_usd` (default $0.50) before the solve starts and `cap_usd` (default $2) after. |
 | Start gate | The start is refused if the checklist exists and isn't confirmed, or if the estimate's low end is above `cap_usd`. |
 | Escalate to Jake | The maker returns `needs_human` (money, credentials, production, going live, contacting people), a cap is hit, the plan is stuck, the plan is rejected too often, a step fails too often, or the final check fails. |
 | Stop at first unexplained failure | An API error, a reply with no parseable JSON, an empty artifact, or a missing intake field sets the project to `failed` with the reason. The orchestrator never retries. (The Anthropic SDK's own transport retries, `maxRetries: 2` for 429/5xx, still apply.) Unexpected exceptions also set `failed`. |
@@ -261,21 +264,21 @@ Every route requires `x-access-code`. JSON in and out. Errors come back as `{"er
 | Var | Default | Notes |
 |---|---|---|
 | `ALLOWED_ORIGINS` | `https://penpost.co,https://www.penpost.co,http://localhost:5173` | |
-| `MODEL_A_PROVIDER` / `MODEL_A` | `anthropic` / `claude-opus-5-5` | |
+| `MODEL_A_PROVIDER` / `MODEL_A` | `anthropic` / `claude-haiku-5-5` | Haiku takes no server-side refusal fallback, so the code only sends `fallbacks` for models that accept it |
 | `MODEL_A_PRICE_IN` / `_OUT` | `4` / `20` | USD per million tokens |
-| `MODEL_B_PROVIDER` / `MODEL_B` | `gemini` / `gemini-3.1-pro-preview` | **Unverified name and price.** Check https://ai.google.dev/gemini-api/docs/pricing |
+| `MODEL_B_PROVIDER` / `MODEL_B` | `gemini` / `gemini-3.8-flash` | the price below is Google's rate from 2027-01-01; until 2026-12-31 Google lists an introductory $0.75 / $3.75 |
 | `MODEL_B_PRICE_IN` / `_OUT` | `2` / `12` | |
 | `SWAP_KINDS` | `research` | comma-separated step kinds where B makes and A checks |
 | `ANTHROPIC_EFFORT` | `high` | `low` / `medium` / `high` / `xhigh` / `max` |
 | `MAX_OUTPUT_TOKENS` | `16000` | per call; also sets the worst-case reservation |
 | `MAX_ROUNDS` | `3` | |
 | `PROJECT_CAP_USD` | `5` | |
-| `PREVIEW_CAP_USD` | `0.75` | |
+| `PREVIEW_CAP_USD` | `0.50` | |
 | `PARALLEL_STEPS` | `3` | |
 
 **Secrets** (set with `wrangler secret put … --config worker/wrangler.toml`): `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `ACCESS_CODE`.
 
-**Front end:** `VITE_API_URL` at build time, fed by the GitHub Actions repo **variable** `PENPOST_API_URL` in `deploy.yml`.
+**Front end:** `VITE_API_URL` at build time. `deploy.yml` uses the repo variable `PENPOST_API_URL` if it's set, and otherwise `https://penpost-solver.jakemlee01.workers.dev`.
 
 ### Model call details (`worker/src/models.ts`)
 
@@ -292,10 +295,10 @@ Every route requires `x-access-code`. JSON in and out. Errors come back as `{"er
 
 ### Estimator (`worker/src/estimate.ts`)
 
-The constants are guesses with no calibration yet: spec tokens 1,500; checker output 1,500; maker thinking factor 1.5; 60 seconds per call; 60 seconds per cron tick.
+The constants are guesses with no calibration yet: spec tokens 1,500; checker output 1,500; maker thinking factor 1.5; 40 seconds per call; 5 seconds of queue hand-off between steps.
 
 - **Low cost:** every step passes first time. **High cost:** the base times (1 + retry share), where the retry share is 0.5 at `MAX_ROUNDS` = 2 and grows with more rounds. The final check is added to both.
-- **Time:** based on the critical path (the longest dependency chain) times about 2 ticks per step.
+- **Time:** based on the critical path (the longest dependency chain) times about 2 calls per step.
 
 ---
 
@@ -317,13 +320,13 @@ The constants are guesses with no calibration yet: spec tokens 1,500; checker ou
 
 ## 11. Verification done so far
 
-- `npm test`: **18/18 pass.** They cover:
+- `npm test`: **20/20 pass.** They cover:
   - Happy path: intake, plan, review, preview, start, the solve with one failed check and a retry, the final check, then done.
   - The checklist and estimate shapes.
   - The start gate.
   - The role swap for research steps.
   - Parallelism, with the batch limited to `PARALLEL_STEPS`.
-  - `tick` skipping leased projects.
+  - The queue chain: a step queues the next one while the project is active, and stops when it waits on the user. A leased project is skipped and not re-queued. The cron sweeper re-queues only stalled, unleased, active projects.
   - A revise that redrafts with the user's note.
   - An empty plan ending as `done`.
   - Escalation after 3 failed checks, then resume.
@@ -344,13 +347,9 @@ The constants are guesses with no calibration yet: spec tokens 1,500; checker ou
 
 ## 12. Known gaps and risks (read before changing things)
 
-1. **The kick can be cut off.** The immediate kick after a user action runs in `ctx.waitUntil`, which Cloudflare limits to about 30 seconds after the response. A long model call can be cancelled mid-flight. When that happens:
-   - the project's lease stays set for up to 14 minutes, so the cron skips it and the project looks frozen;
-   - the call may have cost money that never gets logged or added to `spent_usd`.
-
-   **Recommended fix:** move step execution to Cloudflare Queues (the consumer gets up to 15 minutes of wall time), and have user actions enqueue rather than run inline. Or keep the kick only for cheap work and shorten the lease.
-2. **Workers plan limits are unknown.** On the Free plan, CPU time per invocation is very small (around 10 ms). Waiting on `fetch` doesn't count, but JSON parsing of large replies and the SDK stream handling might. The Paid plan is probably needed. Check which plan the account is on.
-3. **The pace is slow.** With one step per project per minute, a project with N sequential steps takes roughly 2N minutes plus the final check. Queues would remove this.
+1. **Fixed: long calls are no longer cut off.** Steps now run as queue consumers, which get up to 15 minutes of wall time, and the lease (16 minutes) outlasts that. If a consumer dies mid-step, the lease expires and the cron sweeper re-queues the project. A call cut off that way could still have cost money that never got logged, but that now needs an infrastructure failure, not routine use.
+2. **Free plan CPU limit.** The Workers Free plan allows about 10 ms of CPU per invocation. Waiting on `fetch` (model calls, D1) doesn't count, but parsing a large model reply and the Anthropic SDK's stream handling do. If invocations get killed for exceeding CPU, the symptom is projects stalling, then being re-queued by the cron, and failing again. Fixes, if needed: lower `MAX_OUTPUT_TOKENS`, call Anthropic without streaming, or upgrade. Jake wants to stay on Free for now.
+3. **Free plan quotas.** Queues get 10,000 operations a day; each step uses about 3 (write, read, delete). D1 gets 50 queries per invocation (the step budget is about 25) plus daily read and write limits.
 4. **No real evidence execution.** The brief says the checker should use independent evidence such as **test results**. Right now artifacts are plain text and the checker only reasons over them; nothing runs code or tests. A sandbox would close this, for example Anthropic's server-side code execution tool or a separate runner.
 5. **Resuming a `needs_human` escalation re-runs the same step,** which will likely escalate again. There's no endpoint to mark a step done externally or to edit it. The same applies to a failed final check: resume re-runs the final check only and can't send the work back to solving.
 6. **Cost accuracy.** Costs are computed from tokens times the configured prices. If the Anthropic server-side fallback routes to a different model, the cost is still charged at Model A's price. Prices must be kept in sync by hand.
@@ -366,25 +365,24 @@ The constants are guesses with no calibration yet: spec tokens 1,500; checker ou
 ## 13. Setup steps still owed (Jake has to do these, or give access)
 
 1. **Set hard monthly spend limits** in the Anthropic Console and Google AI Studio / Cloud billing. Do this first.
-2. Run `npm install` then `npx wrangler login`.
-3. Run `npx wrangler d1 create penpost-solver`, then paste the returned `database_id` into `worker/wrangler.toml`, replacing `REPLACE_WITH_ID_FROM_wrangler_d1_create`.
-4. Run `npm run db:migrate:remote`, then `npm run worker:deploy`.
-5. Set the three secrets with `npx wrangler secret put … --config worker/wrangler.toml`: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `ACCESS_CODE`.
-6. **Confirm the Gemini model ID and price,** and update `MODEL_B` and the `MODEL_B_PRICE_*` values if needed.
-7. In GitHub, set the repo **variable** `PENPOST_API_URL` to the Worker URL.
-8. Merge the branch to `main`. This deploys the site and removes the old daily news workflow.
-9. **Cleanup of the old product:**
+2. ~~Create D1, run the migration, create the queue, deploy the Worker.~~ **Done 2026-11-26:** D1 `penpost-solver`, queue `penpost-solver-steps`, Worker at https://penpost-solver.jakemlee01.workers.dev.
+3. ~~Check that it's live.~~ **Done.** It answers 503 "server not configured" until `ACCESS_CODE` is set, refuses other origins with 403, and the CORS preflight from penpost.co returns 204.
+4. **Add the three secrets** in the Cloudflare dashboard (Workers & Pages, then `penpost-solver`, Settings, Variables and Secrets, type Secret): `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `ACCESS_CODE`.
+5. ~~Confirm the Gemini model.~~ **Done:** `gemini-3.8-flash`. Its price is set at Google's 2027 rate.
+6. ~~Set `PENPOST_API_URL`.~~ **No longer needed:** the Worker URL is the default in `deploy.yml`.
+7. Merge the branch to `main`. This deploys the site and removes the old daily news workflow.
+8. **Cleanup of the old product:**
    - delete the old `penpost-setup` Worker and its Gemini key in Cloudflare;
    - remove the old `PENPOST_PARSE_URL` Actions variable and the `GEMINI_API_KEY` and `UNSPLASH_ACCESS_KEY` Actions secrets (the new Worker's keys live in Cloudflare, not GitHub);
    - decide whether to close draft PR #21 and the roughly 22 stale branches.
-10. If the "Workers plan limits" risk in section 12 applies, upgrade to the Workers Paid plan.
+9. If the Free plan CPU limit (section 12, item 2) bites, upgrade to the Workers Paid plan or apply the fixes listed there.
 
 ---
 
 ## 14. Suggested next steps, in order
 
-1. **Fix the long-call execution path** (gap 1): adopt Cloudflare Queues for step execution, with the cron kept as a sweeper for stuck leases. Add a test that an expired lease gets picked up again.
-2. **Build order step 4:** with the keys in and caps set low (for example `PREVIEW_CAP_USD=0.50`, `PROJECT_CAP_USD=2`), run one small real problem end to end. Watch the events, compare the logged cost with the provider dashboards, and tune the prompts if replies fail JSON parsing.
+1. ~~Fix the long-call execution path.~~ **Done** (Queues).
+2. **Build order step 4:** with the keys in (caps are already low: $0.50 preview, $2 per project), run one small real problem end to end. Watch the events, compare the logged cost with the provider dashboards, and tune the prompts if replies fail JSON parsing.
 3. **Build order step 5:**
    - per-project roll-up: average idle per cycle and idle by cause;
    - estimator calibration from history (estimate against actual, per step kind and model);
@@ -399,7 +397,7 @@ The constants are guesses with no calibration yet: spec tokens 1,500; checker ou
 
 ```bash
 npm install
-npm test                                   # 18 engine + HTTP tests
+npm test                                   # 20 engine, queue and HTTP tests
 npx tsc -p tsconfig.json                   # site + tests typecheck
 npx tsc -p worker/tsconfig.json            # Worker typecheck
 npm run build                              # site to dist/

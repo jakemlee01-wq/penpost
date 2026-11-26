@@ -9,11 +9,13 @@
  *   POST /api/projects/:id/resume      {capUsd?}          (Jake clears an escalation)
  *
  * Every request must carry the x-access-code header while payments are out of scope.
- * The cron advances every active project by one step a minute; user actions also kick
- * the next step straight away.
+ * Execution: every user action queues a message on STEPS. The queue consumer advances that
+ * project by one step and, if it is still active, queues the next step, so the loop runs as
+ * fast as the models answer. A queue consumer may run up to 15 minutes, so long model calls
+ * are not cut off. The cron (each minute) only re-queues projects whose chain broke.
  */
-import { approveIntake, createProject, projectView, resume, reviseIntake, runOne, startSolve, tick, UserError, type Deps } from "./engine";
-import type { Env } from "./env";
+import { approveIntake, createProject, projectView, resume, reviseIntake, runOne, stalled, startSolve, UserError, type Deps } from "./engine";
+import type { Env, StepMessage } from "./env";
 import { liveCaller } from "./models";
 
 const DEFAULT_ORIGINS = "https://penpost.co,https://www.penpost.co,http://localhost:5173";
@@ -40,7 +42,7 @@ function same(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export async function handle(req: Request, env: Env, ctx: Pick<ExecutionContext, "waitUntil">, deps?: Deps): Promise<Response> {
+export async function handle(req: Request, env: Env, _ctx?: Pick<ExecutionContext, "waitUntil">, deps?: Deps): Promise<Response> {
   const d: Deps = deps ?? { env, callModel: liveCaller(env) };
   const url = new URL(req.url);
   const origin = req.headers.get("origin") ?? "";
@@ -64,13 +66,13 @@ export async function handle(req: Request, env: Env, ctx: Pick<ExecutionContext,
       return {};
     }
   };
-  const kick = (pid: string) => ctx.waitUntil(runOne(d, pid).catch((err) => console.error("kick failed", pid, err)));
+  const kick = (pid: string) => env.STEPS.send({ id: pid });
 
   try {
     if (!id && req.method === "POST") {
       const b = await body();
       const newId = await createProject(d, typeof b.request === "string" ? b.request : "");
-      kick(newId);
+      await kick(newId);
       return json({ id: newId }, 201, headers);
     }
     if (id && !action && req.method === "GET") return json(await projectView(d, id), 200, headers);
@@ -81,7 +83,7 @@ export async function handle(req: Request, env: Env, ctx: Pick<ExecutionContext,
       else if (action === "start") await startSolve(d, id, b.confirmed === true);
       else if (action === "resume") await resume(d, id, b.capUsd === undefined ? undefined : Number(b.capUsd));
       else return json({ error: "not found" }, 404, headers);
-      kick(id);
+      await kick(id);
       return json({ ok: true }, 200, headers);
     }
     return json({ error: "method not allowed" }, 405, headers);
@@ -92,11 +94,38 @@ export async function handle(req: Request, env: Env, ctx: Pick<ExecutionContext,
   }
 }
 
+/** Queue consumer: one message = one step for one project (max_batch_size is 1). */
+export async function consume(batch: MessageBatch<StepMessage>, env: Env, deps?: Deps): Promise<void> {
+  const d: Deps = deps ?? { env, callModel: liveCaller(env) };
+  for (const msg of batch.messages) {
+    const id = msg.body?.id;
+    try {
+      if (id && (await runOne(d, id))) await env.STEPS.send({ id });
+    } catch (err) {
+      // The engine already records model and step failures on the project; this is
+      // infrastructure trouble (D1 or the queue). Don't retry: the cron sweeper re-queues it.
+      console.error("step failed", id, err);
+    }
+    msg.ack();
+  }
+}
+
+/** Cron: re-queue active projects whose chain of queued steps broke. */
+export async function sweep(env: Env, deps?: Deps): Promise<number> {
+  const d: Deps = deps ?? { env, callModel: liveCaller(env) };
+  const ids = await stalled(d);
+  if (ids.length) await env.STEPS.sendBatch(ids.map((id) => ({ body: { id } })));
+  return ids.length;
+}
+
 export default {
   fetch(req: Request, env: Env, ctx: ExecutionContext) {
     return handle(req, env, ctx);
   },
-  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(tick({ env, callModel: liveCaller(env) }));
+  async queue(batch: MessageBatch<StepMessage>, env: Env) {
+    await consume(batch, env);
   },
-} satisfies ExportedHandler<Env>;
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(sweep(env));
+  },
+} satisfies ExportedHandler<Env, StepMessage>;

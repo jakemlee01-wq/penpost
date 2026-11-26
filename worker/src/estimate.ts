@@ -19,8 +19,8 @@ export interface PlanStep {
 const SPEC_TOKENS = 1500; // system prompt + spec
 const CHECK_OUT_TOKENS = 1500; // checker verdict incl. thinking
 const THINKING_FACTOR = 1.5; // maker output includes thinking tokens
-const SECONDS_PER_CALL = 60; // typical latency of a long model call
-const TICK_SECONDS = 60; // the cron advances each project once a minute
+const SECONDS_PER_CALL = 40; // typical latency of a long call on a fast model
+const TICK_SECONDS = 5; // queue hand-off between steps
 
 export function estimate(steps: PlanStep[], finalChecker: ModelConfig, maxRounds: number): Estimate {
   const model = steps.filter((s) => s.bucket === "model");

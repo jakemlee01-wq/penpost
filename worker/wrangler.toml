@@ -4,33 +4,45 @@ main = "src/index.ts"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-# The orchestrator advances every active project by one step each minute.
+# Each step queues the next one. The cron only re-queues projects whose chain broke.
 [triggers]
 crons = ["* * * * *"]
+
+[[queues.producers]]
+binding = "STEPS"
+queue = "penpost-solver-steps"
+
+[[queues.consumers]]
+queue = "penpost-solver-steps"
+max_batch_size = 1        # one message = one step for one project
+max_batch_timeout = 0
+max_retries = 0           # no silent retries; the cron sweeper picks up anything dropped
 
 [[d1_databases]]
 binding = "DB"
 database_name = "penpost-solver"
-database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+database_id = "2084e04b-c786-4cd5-863c-8a2f2c6d10c5"
 migrations_dir = "migrations"
 
 [vars]
 ALLOWED_ORIGINS = "https://penpost.co,https://www.penpost.co,http://localhost:5173"
 # Model A (maker and planner by default) and Model B (checker by default).
 MODEL_A_PROVIDER = "anthropic"
-MODEL_A = "claude-opus-5-5"
-MODEL_A_PRICE_IN = "4"        # USD per million input tokens
-MODEL_A_PRICE_OUT = "20"      # USD per million output tokens (thinking included)
+MODEL_A = "claude-haiku-5-5"
+MODEL_A_PRICE_IN = "0.10"     # USD per million input tokens (prompts up to 100K tokens)
+MODEL_A_PRICE_OUT = "0.50"    # USD per million output tokens (thinking included)
 MODEL_B_PROVIDER = "gemini"
-MODEL_B = "gemini-3.1-pro-preview"
-MODEL_B_PRICE_IN = "2"
-MODEL_B_PRICE_OUT = "12"
+MODEL_B = "gemini-3.8-flash"
+# Google lists $0.75 / $3.75 as an introductory price through 2026-12-31 and $1.50 / $7.50 after.
+# The higher price is used so estimates and cap reservations stay on the safe side.
+MODEL_B_PRICE_IN = "1.50"
+MODEL_B_PRICE_OUT = "7.50"
 # Step kinds where the roles swap (Model B makes, Model A checks).
 SWAP_KINDS = "research"
 ANTHROPIC_EFFORT = "high"
 MAX_OUTPUT_TOKENS = "16000"
 # Guardrails.
 MAX_ROUNDS = "3"              # tries per step (and per plan) before escalating to Jake
-PROJECT_CAP_USD = "5"         # hard dollar cap per project, enforced before every call
-PREVIEW_CAP_USD = "0.75"      # cap for the free part (intake, plan, review)
+PROJECT_CAP_USD = "2"         # hard dollar cap per project, enforced before every call
+PREVIEW_CAP_USD = "0.50"      # cap for the free part (intake, plan, review)
 PARALLEL_STEPS = "3"          # independent steps worked at once in one run

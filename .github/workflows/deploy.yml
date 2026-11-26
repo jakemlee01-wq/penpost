@@ -27,8 +27,8 @@ jobs:
       - run: npx tsc -p worker/tsconfig.json
       - run: npm run build   # typechecks and builds dist/
         env:
-          # The penpost-solver Worker's URL (repo variable), e.g. https://penpost-solver.<subdomain>.workers.dev
-          VITE_API_URL: ${{ vars.PENPOST_API_URL }}
+          # The penpost-solver Worker's URL. Override with the PENPOST_API_URL repo variable if it moves.
+          VITE_API_URL: ${{ vars.PENPOST_API_URL || 'https://penpost-solver.jakemlee01.workers.dev' }}
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:

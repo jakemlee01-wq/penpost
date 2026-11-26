@@ -1,5 +1,11 @@
+export interface StepMessage {
+  id: string;
+}
+
 export interface Env {
   DB: D1Database;
+  /** Queue of {id} messages; each message advances one project by one step. */
+  STEPS: Queue<StepMessage>;
   /** Secrets (wrangler secret put). */
   ANTHROPIC_API_KEY?: string;
   GEMINI_API_KEY?: string;

@@ -94,7 +94,10 @@ export class UserError extends Error {
   }
 }
 
-const LEASE_MS = 14 * 60 * 1000;
+/** Longer than a queue consumer's 15-minute wall-time limit, so a live run never loses its lease. */
+const LEASE_MS = 16 * 60 * 1000;
+/** A project untouched this long, with no lease, has lost its queue chain; the cron re-queues it. */
+const STALE_MS = 2 * 60 * 1000;
 const MAX_REQUEST_CHARS = 8000;
 const PRE_START: ProjectStatus[] = ["intake", "awaiting_approval", "planning", "plan_review", "awaiting_start"];
 
@@ -102,8 +105,8 @@ const now = (d: Deps) => (d.now ? d.now() : Date.now());
 const db = (d: Deps) => d.env.DB;
 const settings = (env: Env) => ({
   maxRounds: num(env.MAX_ROUNDS, 3),
-  capUsd: num(env.PROJECT_CAP_USD, 5),
-  previewCapUsd: num(env.PREVIEW_CAP_USD, 0.75),
+  capUsd: num(env.PROJECT_CAP_USD, 2),
+  previewCapUsd: num(env.PREVIEW_CAP_USD, 0.5),
   parallel: Math.max(1, num(env.PARALLEL_STEPS, 3)),
   maxTokens: num(env.MAX_OUTPUT_TOKENS, 16000),
   swapKinds: String(env.SWAP_KINDS ?? "research")
@@ -630,34 +633,48 @@ async function runFinalCheck(d: Deps, p: ProjectRow): Promise<void> {
 async function acquire(d: Deps, id: string): Promise<boolean> {
   const t = now(d);
   const r = await db(d)
-    .prepare("UPDATE projects SET lease_until = ? WHERE id = ? AND (lease_until IS NULL OR lease_until < ?) RETURNING id")
-    .bind(t + LEASE_MS, id, t)
+    .prepare(
+      "UPDATE projects SET lease_until = ?, updated_at = ? WHERE id = ? AND (lease_until IS NULL OR lease_until < ?) RETURNING id",
+    )
+    .bind(t + LEASE_MS, t, id, t)
     .first<{ id: string }>();
   return Boolean(r);
 }
 
 async function release(d: Deps, id: string): Promise<void> {
-  await db(d).prepare("UPDATE projects SET lease_until = NULL WHERE id = ?").bind(id).run();
+  await db(d).prepare("UPDATE projects SET lease_until = NULL, updated_at = ? WHERE id = ?").bind(now(d), id).run();
 }
 
+/**
+ * Advance one project by one step under a lease. Returns true when the project is still
+ * active afterwards, so the caller should queue its next step.
+ */
 export async function runOne(d: Deps, id: string): Promise<boolean> {
-  if (!(await acquire(d, id))) return false;
+  if (!(await acquire(d, id))) return false; // another run holds it; that run queues the next step
   try {
-    return await advance(d, id);
+    await advance(d, id);
   } finally {
     await release(d, id);
   }
+  const p = await db(d).prepare("SELECT status FROM projects WHERE id = ?").bind(id).first<{ status: ProjectStatus }>();
+  return Boolean(p && ACTIVE_STATUSES.includes(p.status));
 }
 
-/** Cron entry point: advance every active project by one step, in parallel. */
-export async function tick(d: Deps, limit = 20): Promise<number> {
+/**
+ * Cron sweeper: active projects nobody has touched for `staleMs` and that hold no lease.
+ * Normally each step queues the next one, so this only finds chains that broke (a crashed
+ * run, a dropped message). The caller re-queues them.
+ */
+export async function stalled(d: Deps, staleMs = STALE_MS, limit = 25): Promise<string[]> {
+  const t = now(d);
   const placeholders = ACTIVE_STATUSES.map(() => "?").join(", ");
   const r = await db(d)
-    .prepare(`SELECT id FROM projects WHERE status IN (${placeholders}) AND (lease_until IS NULL OR lease_until < ?) ORDER BY updated_at LIMIT ?`)
-    .bind(...ACTIVE_STATUSES, now(d), limit)
+    .prepare(
+      `SELECT id FROM projects WHERE status IN (${placeholders}) AND (lease_until IS NULL OR lease_until < ?) AND updated_at < ? ORDER BY updated_at LIMIT ?`,
+    )
+    .bind(...ACTIVE_STATUSES, t, t - staleMs, limit)
     .all<{ id: string }>();
-  const done = await Promise.all(r.results.map((x) => runOne(d, x.id)));
-  return done.filter(Boolean).length;
+  return r.results.map((x) => x.id);
 }
 
 // ---------------------------------------------------------------- views

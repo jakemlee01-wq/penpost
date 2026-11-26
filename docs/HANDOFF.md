@@ -290,14 +290,14 @@ Every route requires `x-access-code`. JSON in and out. Errors come back as `{"er
 |---|---|---|
 | `ALLOWED_ORIGINS` | `https://penpost.co,https://www.penpost.co,http://localhost:5173` | |
 | `MODEL_A_PROVIDER` / `MODEL_A` | `anthropic` / `claude-haiku-5-5` | Haiku takes no server-side refusal fallback, so the code only sends `fallbacks` for models that accept it |
-| `MODEL_A_PRICE_IN` / `_OUT` | `4` / `20` | USD per million tokens |
+| `MODEL_A_PRICE_IN` / `_OUT` | `0.10` / `0.50` | USD per million tokens (prompts up to 100K tokens) |
 | `MODEL_B_PROVIDER` / `MODEL_B` | `gemini` / `gemini-3.8-flash` | the price below is Google's rate from 2027-01-01; until 2026-12-31 Google lists an introductory $0.75 / $3.75 |
-| `MODEL_B_PRICE_IN` / `_OUT` | `2` / `12` | |
+| `MODEL_B_PRICE_IN` / `_OUT` | `1.50` / `7.50` | |
 | `SWAP_KINDS` | `research` | comma-separated step kinds where B makes and A checks |
 | `ANTHROPIC_EFFORT` | `high` | `low` / `medium` / `high` / `xhigh` / `max` |
 | `MAX_OUTPUT_TOKENS` | `16000` | per call; also sets the worst-case reservation |
 | `MAX_ROUNDS` | `3` | |
-| `PROJECT_CAP_USD` | `5` | |
+| `PROJECT_CAP_USD` | `2` | |
 | `PREVIEW_CAP_USD` | `0.50` | |
 | `PARALLEL_STEPS` | `3` | |
 
